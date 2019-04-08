@@ -1,11 +1,8 @@
-module Filter
-# filter functions
-# Julia translation of obspy.signal.filter
-using ..SeisJul
-export bandpass, bandstop, lowpass, highpass, envelope
+export bandpass, bandpass!, bandstop, bandstop!, lowpass, lowpass!,
+export highpass, highpass!, envelope
 
 """
-    bandpass(A,freqmin,freqmax,fs,corners=4,zerophase=false)
+    bandpass!(A,freqmin,freqmax,fs,corners=4,zerophase=false)
 
 Butterworth-Bandpass Filter.
 
@@ -21,7 +18,8 @@ Filter data `A` from `freqmin` to `freqmax` using `corners` corners.
 This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
-function bandpass(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real; corners::Int=4, zerophase::Bool=false)
+function bandpass!(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
+                   corners::Int=4, zerophase::Bool=false)
     fe = 0.5 * fs
     low = freqmin / fe
     high = freqmax / fe
@@ -30,7 +28,8 @@ function bandpass(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real; corn
     if high - oneunit(high) > -1e-6
         @warn "Selected high corner frequency ($freqmax) of bandpass is at or
         above Nyquist ($fe). Applying a high-pass instead."
-        return highpass(A,freqmin,fs,corners=corners,zerophase=zerophase)
+        highpass!(A,freqmin,fs,corners=corners,zerophase=zerophase)
+        return nothing
     end
 
     # throw error if low above Nyquist frequency
@@ -42,16 +41,41 @@ function bandpass(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real; corn
     responsetype = Bandpass(freqmin, freqmax; fs=fs)
     designmethod = Butterworth(corners)
     if zerophase
-        X = filtfilt(digitalfilter(responsetype, designmethod), A)
+        A[:] = filtfilt(digitalfilter(responsetype, designmethod), A)
     else
-        X = filt(digitalfilter(responsetype, designmethod), A)
+        A[:] = filt(digitalfilter(responsetype, designmethod), A)
     end
 
-    return X
+    return nothing
+end
+bandpass(A::AbstractArray,freqmin::Real, freqmax::Real; corners::Int=4,
+         zerophase::Bool=false) = (U = deepcopy(A);bandpass!(A,freqmin,freqmax,
+                                  corners=corners,zerophase=zerophase);return U)
+
+function bandpass!(C::SeisChannel, freqmin::Real, freqmax::Real;
+                   corners::Int=4, zerophase::Bool=false)
+    fs = C.fs
+    bandpass!(C.x,freqmin,freqmax,fs,corners=corners,zerophase=zerophase)
+    return nothing
+end
+bandpass(C::SeisChannel,freqmin::Real, freqmax::Real; corners::Int=4,
+         zerophase::Bool=false) = (U = deepcopy(C);bandpass!(U,freqmin,freqmax,
+                                  corners=corners,zerophase=zerophase);return U)
+
+function bandpass!(S::SeisData, freqmin::Real, freqmax::Real;
+                   corners::Int=4, zerophase::Bool=false)
+    @inbounds for i = 1:S.n
+        bandpass!(S[i],freqmin,freqmax,corners=corners,zerophase=zerophase)
+    end
+    return nothing
 end
 
+bandpass(S::SeisData,freqmin::Real, freqmax::Real; corners::Int=4,
+         zerophase::Bool=false) = (U = deepcopy(S);bandpass!(U,freqmin,freqmax,
+                                  corners=corners,zerophase=zerophase);return U)
+
 """
-    bandstop(A,freqmin,freqmax,fs,corners=4,zerophase=false)
+    bandstop!(A,freqmin,freqmax,fs,corners=4,zerophase=false)
 
 Butterworth-Bandstop Filter.
 
@@ -68,7 +92,8 @@ Filter data `A` removing data between frequencies `freqmin` to `freqmax` using
 This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
-function bandstop(A::AbstractArray,freqmin::Real,freqmax::Real,fs::Real; corners::Int=4, zerophase::Bool=false)
+function bandstop!(A::AbstractArray,freqmin::Real,freqmax::Real,fs::Real;
+                   corners::Int=4, zerophase::Bool=false)
     fe = 0.5 * fs
     low = freqmin / fe
     high = freqmax / fe
@@ -89,13 +114,37 @@ function bandstop(A::AbstractArray,freqmin::Real,freqmax::Real,fs::Real; corners
     responsetype = Bandstop(freqmin, freqmax; fs=fs)
     designmethod = Butterworth(corners)
     if zerophase
-        X = filtfilt(digitalfilter(responsetype, designmethod), A)
+        A[:] = filtfilt(digitalfilter(responsetype, designmethod), A)
     else
-        X = filt(digitalfilter(responsetype, designmethod), A)
+        A[:] = filt(digitalfilter(responsetype, designmethod), A)
     end
 
-    return X
+    return nothing
 end
+bandstop(A::AbstractArray,freqmin::Real, freqmax::Real; corners::Int=4,
+         zerophase::Bool=false) = (U = deepcopy(A);bandstop!(U,freqmin,freqmax,
+                                  corners=corners,zerophase=zerophase);return U)
+
+function bandstop!(C::SeisChannel, freqmin::Real, freqmax::Real;
+                   corners::Int=4, zerophase::Bool=false)
+    bandstop!(C.x,freqmin,freqmax,C.fs,corners=corners,zerophase=zerophase)
+    return nothing
+end
+bandstop(C::SeisChannel,freqmin::Real, freqmax::Real; corners::Int=4,
+         zerophase::Bool=false) = (U = deepcopy(C);bandstop!(U,freqmin,freqmax,
+                                  corners=corners,zerophase=zerophase);return U)
+
+function bandstop!(S::SeisData, freqmin::Real, freqmax::Real;
+                   corners::Int=4, zerophase::Bool=false)
+    @inbounds for i = 1:S.n
+        bandstop!(S[i],freqmin,freqmax,corners=corners,zerophase=zerophase)
+    end
+    return nothing
+end
+
+bandstop(S::SeisData,freqmin::Real, freqmax::Real; corners::Int=4,
+         zerophase::Bool=false) = (U = deepcopy(S);bandstop!(U,freqmin,freqmax,
+                                  corners=corners,zerophase=zerophase);return U)
 
 """
     lowpass(A,freq,fs,corners=4,zerophase=false)
@@ -113,28 +162,49 @@ Filter data `A` over certain frequency `freq` using `corners` corners.
 This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
-function lowpass(A::AbstractArray,freq::Real,fs::Real; corners::Int=4, zerophase::Bool=false)
+function lowpass!(A::AbstractArray,freq::Real,fs::Real; corners::Int=4, zerophase::Bool=false)
     fe = 0.5 * fs
     f = freq / fe
 
     # warn if above Nyquist frequency
-    if f > 1
-        @warn "Selected corner frequency ($freq) is"
-        "above Nyquist ($fe). Setting Nyquist as high corner."
-        freq = fe
+    if f >= 1
+        @warn """Selected corner frequency ($freq) is
+        above Nyquist ($fe). Setting Nyquist as high corner."""
+        freq = fe - 1. / fs
     end
 
     # create filter
     responsetype = Lowpass(freq; fs=fs)
     designmethod = Butterworth(corners)
     if zerophase
-        X = filtfilt(digitalfilter(responsetype, designmethod), A)
+        A[:] = filtfilt(digitalfilter(responsetype, designmethod), A)
     else
-        X = filt(digitalfilter(responsetype, designmethod), A)
+        A[:] = filt(digitalfilter(responsetype, designmethod), A)
     end
-
-    return X
+    return nothing
 end
+lowpass(A::AbstractArray,freq::Real; corners::Int=4,zerophase::Bool=false) =
+       (U = deepcopy(A);lowpass!(U,freq,corners=corners,zerophase=zerophase);
+        return U)
+
+function lowpass!(C::SeisChannel, freq::Real;corners::Int=4, zerophase::Bool=false)
+    lowpass!(C.x,freq,C.fs,corners=corners,zerophase=zerophase)
+    return nothing
+end
+lowpass(C::SeisChannel,freq::Real; corners::Int=4,zerophase::Bool=false) =
+       (U = deepcopy(C);lowpass!(U,freq,corners=corners,zerophase=zerophase);
+        return U)
+
+function lowpass!(S::SeisData, freq::Real;corners::Int=4, zerophase::Bool=false)
+    @inbounds for i = 1:S.n
+        lowpass!(S[i],freq,corners=corners,zerophase=zerophase)
+    end
+    return nothing
+end
+
+lowpass(S::SeisData,freq::Real; corners::Int=4,zerophase::Bool=false) =
+       (U = deepcopy(S);lowpass!(U,freq,corners=corners,zerophase=zerophase);
+       return U)
 
 """
     highpass(A,freq,fs,corners=4,zerophase=false)
@@ -152,7 +222,7 @@ Filter data `A` removing data below certain frequency `freq` using `corners` cor
 This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
-function highpass(A::AbstractArray,freq::Real,fs::Real; corners::Int=4, zerophase::Bool=false)
+function highpass!(A::AbstractArray,freq::Real,fs::Real; corners::Int=4, zerophase::Bool=false)
     fe = 0.5 * fs
     f = freq / fe
 
@@ -165,13 +235,78 @@ function highpass(A::AbstractArray,freq::Real,fs::Real; corners::Int=4, zerophas
     responsetype = Highpass(freq; fs=fs)
     designmethod = Butterworth(corners)
     if zerophase
-        X = filtfilt(digitalfilter(responsetype, designmethod), A)
+        A[:] = filtfilt(digitalfilter(responsetype, designmethod), A)
     else
-        X = filt(digitalfilter(responsetype, designmethod), A)
+        A[:] = filt(digitalfilter(responsetype, designmethod), A)
     end
-
-    return X
+    return nothing
 end
+highpass(A::AbstractArray,freq::Real; corners::Int=4,zerophase::Bool=false) =
+       (U = deepcopy(A);highpass!(U,freq,corners=corners,zerophase=zerophase);
+        return U)
+
+function highpass!(C::SeisChannel, freq::Real;corners::Int=4, zerophase::Bool=false)
+    highpass!(C.x,freq,C.fs,corners=corners,zerophase=zerophase)
+    return nothing
+end
+highpass(C::SeisChannel,freq::Real; corners::Int=4,zerophase::Bool=false) =
+       (U = deepcopy(C);highpass!(U,freq,corners=corners,zerophase=zerophase);
+        return U)
+
+function highpass!(S::SeisData, freq::Real;corners::Int=4, zerophase::Bool=false)
+    @inbounds for i = 1:S.n
+        highpass!(S[i],freq,corners=corners,zerophase=zerophase)
+    end
+    return nothing
+end
+highpass(S::SeisData,freq::Real; corners::Int=4,zerophase::Bool=false) =
+       (U = deepcopy(S);highpass!(U,freq,corners=corners,zerophase=zerophase);
+       return U)
+
+"""
+   taper!(A,fs; max_percentage=0.05, type="hann", max_length=20)
+
+Taper a time series `A` with sampling_rate `fs`.
+Defaults to 'hann' window. Uses smallest of `max_percentage` * `fs`
+or `max_length`.
+
+# Arguments
+- `A::AbstractArray`: Time series.
+- `fs::Real`: Sampling rate of time series `A`.
+- `max_percentage::float`: Decimal percentage of taper at one end (ranging
+   from 0. to 0.5).
+- `max_length::Real`: Length of taper at one end in seconds.
+"""
+function taper!(A::AbstractArray, fs::Real; max_percentage::Real=0.05,
+   max_length::Real=20)
+   N = length(A)
+   wlen = min(Int(N * max_percentage), Int(max_length * fs), Int(N/2))
+   taper_sides = [-hanning(2 * wlen -1, zerophase=true) .+ 1;0]
+   A[1:wlen] .= A[1:wlen] .* taper_sides[1:wlen]
+   A[end-wlen+1:end] .= A[end-wlen+1:end] .* taper_sides[wlen+1:end]
+   return nothing
+end
+taper(A::AbstractArray, fs::Real; max_percentage::Real=0.05,
+   max_length::Real=20) = (U = deepcopy(A);taper!(U,fs,
+   max_percentage=max_percentage,max_length=max_length);return U)
+
+function taper!(C::SeisChannel; max_percentage::Real=0.05, max_length::Real=20)
+    taper!(C.x,C.fs,max_percentage=max_percentage,max_length=max_length)
+    return nothing
+end
+taper(C::SeisChannel; max_percentage::Real=0.05, max_length::Real=20) =
+     (U = deepcopy(A);taper!(U,max_percentage=max_percentage,
+      max_length=max_length);return U)
+
+function taper!(S::SeisData; max_percentage::Real=0.05, max_length::Real=20)
+    @inbounds for i = 1:S.n
+        taper!(S[i],max_percentage=max_percentage, max_length=max_length)
+    end
+  return nothing
+end
+taper(S::SeisData; max_percentage::Real=0.05, max_length::Real=20) =
+   (U = deepcopy(S);taper!(U,max_percentage=max_percentage,
+    max_length=max_length);return U)
 
 """
     envelope(A)
@@ -190,6 +325,4 @@ function envelope(A::AbstractArray)
     upper = env .+ Amean
     lower = -env .+ Amean
     return upper, lower
-end
-
 end

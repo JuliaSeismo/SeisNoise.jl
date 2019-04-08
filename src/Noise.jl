@@ -1,8 +1,10 @@
 module Noise
 
-using Dates, DSP, FFTW, LinearAlgebra, Plots, PyCall, Statistics
+using Dates, DataFrames, DSP, FFTW, JLD2, LinearAlgebra, Plots, Statistics
+using SeisIO
 include("tools.jl")
 include("filter.jl")
+include("downsample.jl")
 include("correlate.jl")
 include("availability.jl")
 include("compute_cc.jl")

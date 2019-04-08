@@ -1,7 +1,5 @@
-module Correlate
 # cross-correlation module
 export clean_up, lstsq, detrend, taper, whiten, correlate
-using ..SeisJul
 
 """
     clean_up(A,fs,freqmin,freqmax)
@@ -49,30 +47,6 @@ function detrend(X::AbstractArray)
     A[:,1] = Array(1:N) ./ N
     coeff = lstsq(A,X)
     newX = X .- A *coeff
-end
-
-"""
-    taper(A,fs; max_percentage=0.05, type="hann", max_length=20)
-
-Taper a time series `A` with sampling_rate `fs`.
-Defaults to 'hann' window. Uses smallest of `max_percentage` * `fs`
-or `max_length`.
-
-# Arguments
-- `A::AbstractArray`: Time series.
-- `fs::Real`: Sampling rate of time series `A`.
-- `max_percentage::float`: Decimal percentage of taper at one end (ranging
-    from 0. to 0.5).
-- `type::String`: Type of taper to use for detrending. Defaults to 'hann'.
-- `max_length::Real`: Length of taper at one end in seconds.
-"""
-function taper(A::AbstractArray, fs::Real; max_percentage=0.05,
-               type="hann", max_length::Real=20)
-    N = length(A)
-    wlen = min(Int(N * max_percentage), Int(max_length * fs), Int(N/2))
-    taper_sides = -hanning(2 * wlen, zerophase=true) .+ 1
-    tape = vcat(taper_sides[1:wlen], ones(N - 2 * wlen), taper_sides[wlen+1:end])
-    newA = A .* tape
 end
 
 """
@@ -149,6 +123,4 @@ function correlate(fft1::AbstractArray, fft2::AbstractArray, N::Int, maxlag::Int
     t = range(-Int(N/2) + 1, Int(N/2) - 1)
     ind = findall(x -> abs(x) <= maxlag,t)
     corrT = corrT[ind]
-end
-
 end
