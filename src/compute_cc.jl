@@ -1,6 +1,47 @@
 export process_raw, process_raw!
 
 """
+    compute_fft()
+
+
+Computes windowed fft of ambient noise data.
+
+Cross-correlates data using either cross-correlation, deconvolution or
+cross-coherence. Saves cross-correlations in JLD2 data set.
+
+TO DO:
+    - load in data []
+    - process_raw [X]
+    - check start/end times []
+    - chop into matrix []
+    - normalize time / freq domain []
+    - take fft (with plan_fft) []
+    - get parameters for each window []
+    - save fft and parameters to JLD2 []
+
+
+:type maxlag: int
+:param maxlag: maximum lag, in seconds, in cross-correlation
+:type downsamp_freq: float
+:param downsamp_freq: Frequency to which waveforms in stream are downsampled
+:return: Downsampled trace or stream object
+:type min_dist: float
+:param min_dist: minimum distance between stations in km
+:type max_dist: float
+:param max_dist: maximum distance between stations in km
+:type freqmin: float
+:param freqmin: minimun frequency for whitening
+:type freqmax: float
+:param freqmax: maximum frequency for whitening
+:type step: float
+:param step: time, in seconds, between success cross-correlation windows
+:type step: float
+:param step: length of noise data window, in seconds, to cross-correlate
+"""
+function compute_fft()
+end
+
+"""
     process_raw!(C,fs)
 
 Pre-process month-long stream of data.
@@ -26,7 +67,7 @@ function process_raw!(C::SeisChannel, fs::Real)
     return nothing
 end
 process_raw(C::SeisChannel, fs::Real) = (U = deepcopy(C);
-            process_raw!(U); return U)
+            process_raw!(U,fs); return U)
 
 """
   process_raw!(S::SeisData, fs::Real)
@@ -45,7 +86,7 @@ process_raw(C::SeisChannel, fs::Real) = (U = deepcopy(C);
 """
 function process_raw!(S::SeisData, fs::Real)
   @inbounds for i = 1:S.n
-      process_raw!(S[i])
+      process_raw!(S[i],fs)
   end
   return nothing
 end
@@ -53,51 +94,28 @@ process_raw(S::SeisData, fs::Real) = (U = deepcopy(S);
             process_raw!(U,fs); return U)
 
 """
-    check_and_phase_shift!(C::SeisChannel)
+    pre_process(args)
 
-Phase shift SeisChannel if starttime is not aligned with sampling rate.
+apply 1-bit, filter, whitening
 """
-function check_and_phase_shift!(C::SeisChannel)
-    t = C.t[1,2]
-    dt = 1. / C.fs
-    off = mod(millisecond(u2d(t)) * 1e-3, 1. / C.fs)
-    n = length(C.x)
+function pre_process()
 
-    if dt - off <= eps(Float64)
-        off = 0.
-    end
-
-    if off != 0.
-        if off <= dt / 2.
-            off = -off
-        else
-            off = dt - off
-        end
-        nfft = nextprod([2, 3, 5],n)
-        C.x[:] = [C.x; zeros(eltype(C.x), nfft - n)]
-        freq = fftfreq(nfft,C.fs)
-        fftdata = fft(C.x)
-        fftdata .= fftdata .* exp.(1im .* 2 .* pi .* fftfreq .* dt)
-        C.x[:] = ifft(fftdata)[1:n]
-        C.t[1,2] += off * 1e6
-    end
-    return nothing
 end
-check_and_phase_shift(C::SeisChannel) = (U = deepcopy(C);
-                                         check_and_phase_shift!(U);
-                                         return U)
+
 
 """
-    check_and_phase_shift!(S::SeisData)
 
-Phase shift SeisData if starttime is not aligned with sampling rate.
+Chop seischannel into matrix with windowing based on noise window and overlap
 """
-function check_and_phase_shift!(S::SeisData)
-    @inbounds for i = 1:S.n
-        check_and_phase_shift!(S[i])
-    end
-    return nothing
+function window_seis(C::SeisChannel)
+
 end
-check_and_phase_shift(S::SeisData) = (U = deepcopy(S);
-                                      check_and_phase_shift!(U);
-                                      return U)
+
+"""
+    remove_resp(args)
+
+remove instrument response - will require reading stationXML and extracting poles
+and zeros
+"""
+function remove_resp(args)
+end

@@ -1,5 +1,5 @@
 export bandpass, bandpass!, bandstop, bandstop!, lowpass, lowpass!,
-export highpass, highpass!, envelope
+        highpass, highpass!, taper, taper!, envelope
 
 """
     bandpass!(A,freqmin,freqmax,fs,corners=4,zerophase=false)

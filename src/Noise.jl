@@ -7,6 +7,7 @@ include("filter.jl")
 include("downsample.jl")
 include("correlate.jl")
 include("availability.jl")
+include("phase_shift.jl")
 include("compute_cc.jl")
 
 end # module

@@ -1,12 +1,16 @@
-export downsample, downsample!
+export downsample
 
 """
 
-  downsample!(C::SeisChannel,fs::Real)
+  downsample(C::SeisChannel,fs::Real)
 
 Downsample SeisChannel sampling rate to frequency `fs`.
+
+Implements the weighted average slopes interpolation scheme proposed in
+[Wiggins1976] for evenly sampled data from
+obspy.signal.interpolation.weighted_average_slopes.
 """
-function downsample!(C::SeisChannel,fs::Real)
+function downsample(C::SeisChannel,fs::Real)
     dt = float(fs)
 
     if dt <= 0.
@@ -15,7 +19,7 @@ function downsample!(C::SeisChannel,fs::Real)
 
     dt = 1. / fs
     if fs == C.fs
-        return nothing
+        return C
     end
 
     old_start = C.t[1,2] * 1e-6
@@ -23,28 +27,23 @@ function downsample!(C::SeisChannel,fs::Real)
     starttime, endtime = t_win(C.t,C.fs)
     starttime, endtime = starttime *1e-6, endtime * 1e-6
     npts = Int(floor((endtime-starttime)/dt)) + 1
-    C.x[:] = weighted_average_slopes(C.x,old_start,old_dt,starttime,dt,npts)
+    C.x = weighted_average_slopes(C.x,old_start,old_dt,starttime,dt,npts)
     C.fs = fs
     C.t[2,1] = npts
-    return nothing
+    return C
 end
-downsample(C::SeisChannel, fs::Real) = (U = deepcopy(C);
-           downsample!(U,fs);return U)
 
 """
-    downsample!(S::SeisData)
+    downsample(S::SeisData)
 
 Downsample SeisData sampling rate to frequency `fs`.
 """
-function downsample!(S::SeisData,fs)
+function downsample(S::SeisData,fs::Real)
     @inbounds for i = 1:S.n
-        downsample!(S[i],fs)
+        S[i]=downsample(S[i],fs)
     end
-    return nothing
+    return S
 end
-downsample(S::SeisData,fs::Real) = (U = deepcopy(S);
-                            downsample!(U,fs);
-                            return U)
 
 """
 
@@ -119,8 +118,8 @@ function hermite_interpolation(y_in::AbstractArray,slope::AbstractArray,
         d_0 = c_1 - c_0
 
         y_out[idx] = a_0 + (b_0 + (c_0 + d_0 * t) * (t - 1.)) * t
-
     end
+    return y_out
 end
 
 """

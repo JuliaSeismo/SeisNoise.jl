@@ -1,8 +1,5 @@
-module Tools
 export snr, smooth, nextpow2, abs_max, standardize, mad, savitsky_golay,
      running_mean, pws
-
-using ..SeisJul
 
 """
     snr(A,sampling_rate)
@@ -159,6 +156,4 @@ function pws(A::AbstractArray, sampling_rate::Real=20; power::Int=2, timegate::I
     phase_stack = running_mean(phase_stack,timegate_samples)
     weighted = A * phase_stack
     return weighted
-end
-
 end
