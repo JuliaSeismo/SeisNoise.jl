@@ -6,6 +6,7 @@ export downsample
 
 Downsample SeisChannel sampling rate to frequency `fs`.
 
+For best results, lowpass filter data to `fs` before downsampling.
 Implements the weighted average slopes interpolation scheme proposed in
 [Wiggins1976] for evenly sampled data from
 obspy.signal.interpolation.weighted_average_slopes.

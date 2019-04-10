@@ -1,8 +1,8 @@
 # cross-correlation module
-export clean_up, lstsq, detrend, taper, whiten, correlate
+export clean_up!, clean_up, whiten, correlate, next_fast_len
 
 """
-    clean_up(A,fs,freqmin,freqmax)
+    clean_up!(A,fs,freqmin,freqmax)
 
 Demean, detrend, taper and filter time series.
 
@@ -12,42 +12,18 @@ Demean, detrend, taper and filter time series.
 - `freqmin::Real`: Pass band low corner frequency.
 - `freqmax::Real`: Pass band high corner frequency.
 """
-function clean_up(A::AbstractArray, fs::Real, freqmin::Real, freqmax::Real)
-    clean = A .- mean(A,dims=1)
-    clean = detrend(clean)
-    clean = taper(clean,fs)
-    clean = bandpass(clean,freqmin,freqmax,fs)
-    return clean
+function clean_up!(A::AbstractArray, fs::Real, freqmin::Real, freqmax::Real;
+                   corners::Int=4, zerophase::Bool=false)
+    ArrayFuncs.demean!(A)
+    ArrayFuncs.detrend!(A)
+    taper!(A,fs)
+    bandpass!(A,freqmin,freqmax,fs,corners=corners,zerophase=zerophase)
+    return nothing
 end
+clean_up(A::AbstractArray, fs::Real, freqmin::Real, freqmax::Real) =
+                 (U = deepcopy(A); clean_up!(U,fs,freqmin,freqmax); return U)
 
-"""
-    lstsq(A,X)
 
-Least-squares regression of array `A` using the pseudo-inverse.
-
-Solves the equation `A X = B` by computing a vector `X` that
-    minimizes the Euclidean 2-norm `|| B - A X ||^2`.
-
-# Arguments
-- `A::AbstractArray`: Coefficient matrix.
-- `X::AbstractArray`: Dependent variable.
-"""
-function lstsq(A::AbstractArray,X::AbstractArray)
-    coeff = pinv(A' * A) * A' * X
-end
-
-"""
-    detrend(A)
-
-Remove linear trend from array `A` using least-squares regression.
-"""
-function detrend(X::AbstractArray)
-    N = length(X)
-    A = ones(N,2)
-    A[:,1] = Array(1:N) ./ N
-    coeff = lstsq(A,X)
-    newX = X .- A *coeff
-end
 
 """
     whiten(A, fs, freqmin, freqmax, pad=100)
@@ -63,7 +39,12 @@ Returns the whitened (single-sided) fft of the time series.
 - `freqmax::Real`: Pass band high corner frequency.
 - `pad::Int`: Number of tapering points outside whitening band.
 """
-function whiten(A::AbstractArray, fs::Real, freqmin::Real, freqmax::Real; pad::Int=100)
+function whiten(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
+                pad::Int=100)
+    if ndims(A) == 1
+        A = reshape(A,size(A)...,1) # if 1D array, reshape to (length(A),1)
+    end
+
     N = length(A)
 
     # get whitening frequencies
@@ -83,17 +64,17 @@ function whiten(A::AbstractArray, fs::Real, freqmin::Real, freqmax::Real; pad::I
     # take fft and whiten
     fftraw = rfft(A,1)
     # left zero cut-off
-    fftraw[1:low] .= 0. + 0.0im
+    fftraw[1:low,:] .= 0. + 0.0im
     # left tapering
-    fftraw[low+1:left] .= cos.(LinRange(pi / 2., pi, left - low)).^2 .* exp.(
+    fftraw[low+1:left,:] .= cos.(LinRange(pi / 2., pi, left - low)).^2 .* exp.(
         im .* angle.(fftraw[low:left-1]))
     # pass band
-    fftraw[left:right] .= exp.(im .* angle.(fftraw[left:right]))
+    fftraw[left:right,:] .= exp.(im .* angle.(fftraw[left:right]))
     # right tapering
-    fftraw[right+1:high] .= cos.(LinRange(0., pi/2., high-right)).^2 .* exp.(
+    fftraw[right+1:high,:] .= cos.(LinRange(0., pi/2., high-right)).^2 .* exp.(
         im .* angle.(fftraw[right+1:high]))
     # right zero cut-off
-    fftraw[high+1:end] .= 0. + 0.0im
+    fftraw[high+1:end,:] .= 0. + 0.0im
     return fftraw
 end
 
@@ -104,7 +85,7 @@ Cross-correlation of two ffts.
 
 
 """
-function correlate(fft1::AbstractArray, fft2::AbstractArray, N::Int, maxlag::Int;
+function cross_corr(fft1::AbstractArray, fft2::AbstractArray, N::Int, maxlag::Int;
                    method::String="cross-correlation")
 
     corrF = conj.(fft1) .* fft2
@@ -123,4 +104,13 @@ function correlate(fft1::AbstractArray, fft2::AbstractArray, N::Int, maxlag::Int
     t = range(-Int(N/2) + 1, Int(N/2) - 1)
     ind = findall(x -> abs(x) <= maxlag,t)
     corrT = corrT[ind]
+end
+
+"""
+    next_fast_len(N::Real)
+
+
+"""
+function next_fast_len(N::Real)
+    return nextprod([2,3,5],N)
 end
