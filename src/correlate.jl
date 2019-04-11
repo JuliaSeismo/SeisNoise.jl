@@ -45,7 +45,7 @@ function whiten(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
         A = reshape(A,size(A)...,1) # if 1D array, reshape to (length(A),1)
     end
 
-    N = length(A)
+    N,_ = size(A)
 
     # get whitening frequencies
     freqvec = rfftfreq(N,fs)
@@ -55,10 +55,12 @@ function whiten(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
 
     if low <= 1
         low = 1
+        left = low + 100
     end
 
-    if high > length(freqvec) / 2
-        high = Int(length(freqind) / 2)
+    if high > length(freqvec)
+        high = length(freqvec)- 1
+        right = high - 100
     end
 
     # take fft and whiten
@@ -67,12 +69,12 @@ function whiten(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
     fftraw[1:low,:] .= 0. + 0.0im
     # left tapering
     fftraw[low+1:left,:] .= cos.(LinRange(pi / 2., pi, left - low)).^2 .* exp.(
-        im .* angle.(fftraw[low:left-1]))
+        im .* angle.(fftraw[low:left-1,:]))
     # pass band
-    fftraw[left:right,:] .= exp.(im .* angle.(fftraw[left:right]))
+    fftraw[left:right,:] .= exp.(im .* angle.(fftraw[left:right,:]))
     # right tapering
     fftraw[right+1:high,:] .= cos.(LinRange(0., pi/2., high-right)).^2 .* exp.(
-        im .* angle.(fftraw[right+1:high]))
+        im .* angle.(fftraw[right+1:high,:]))
     # right zero cut-off
     fftraw[high+1:end,:] .= 0. + 0.0im
     return fftraw

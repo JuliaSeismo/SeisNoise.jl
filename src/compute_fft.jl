@@ -1,4 +1,4 @@
-export process_raw, process_raw!, process_fft
+export process_raw, process_raw!, process_fft, compute_fft
 
 """
     compute_fft()
@@ -11,12 +11,12 @@ cross-coherence. Saves cross-correlations in JLD2 data set.
 
 TO DO:
     - load in data []
-    - process_raw [X]
-    - check start/end times []
-    - chop into matrix []
-    - normalize time / freq domain []
-    - take fft (with plan_fft) []
-    - get parameters for each window []
+    - process_raw [x]
+    - check start/end times [x]
+    - chop into matrix [x]
+    - normalize time / freq domain [x]
+    - take fft [x]
+    - get parameters for each window (amplitude, mad) []
     - save fft and parameters to JLD2 []
 
 
@@ -33,9 +33,9 @@ TO DO:
 :type cc_len: Real
 :param cc_len: length of noise data window, in seconds, to cross-correlate
 """
-function compute_fft(S::SeisData,fs::Real,freqmin,freqmax,cc_step::Real,
-                     cc_len::Int, starttime::DateTime, endtime::DateTime;
-                     time_norm::Union{Bool,String}=false,
+function compute_fft(S::SeisData,fs::Real,freqmin::Float64,freqmax::Float64,
+                     cc_step::Int, cc_len::Int, starttime::DateTime,
+                     endtime::DateTime; time_norm::Union{Bool,String}=false,
                      to_whiten::Union{Bool,String}=false)
 
     process_raw!(S,fs)  # demean, detrend, taper, lowpass, downsample
@@ -44,7 +44,9 @@ function compute_fft(S::SeisData,fs::Real,freqmin,freqmax,cc_step::Real,
     A, starts, ends = slide(S[1], cc_len, cc_step)
     FFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,
                       to_whiten=to_whiten)
-
+    return F = FFTData(S[1].name, S[1].id, S[1].loc, S[1].fs, S[1].gain, freqmin, freqmax,
+                cc_len, cc_step, to_whiten, time_norm, S[1].resp, S[1].misc,
+                S[1].notes, hcat(starts,ends), fft)
 end
 
 """
@@ -91,8 +93,8 @@ process_raw(S::SeisData, fs::Real) = (U = deepcopy(S);
 
 apply 1-bit, filter, whitening
 """
-function process_fft(A::AbstractArray,freqmin::Real,freqmax::Real,fs::Real;
-                     time_norm::Union{Bool,String}=false,
+function process_fft(A::AbstractArray,freqmin::Float64,freqmax::Float64,
+                     fs::Float64; time_norm::Union{Bool,String}=false,
                      to_whiten::Union{Bool,String}=false,
                      corners::Int=4,
                      zerophase::Bool=true)
@@ -103,7 +105,7 @@ function process_fft(A::AbstractArray,freqmin::Real,freqmax::Real,fs::Real;
     for ii = 1:N
         ArrayFuncs.demean!(A[:,ii])
         ArrayFuncs.detrend!(A[:,ii])
-        taper!(A[:,ii])
+        taper!(A[:,ii],fs)
         bandpass!(A[:,ii],freqmin,freqmax,fs,corners=corners,
                   zerophase=zerophase)
         ArrayFuncs.demean!(A[:,ii])
