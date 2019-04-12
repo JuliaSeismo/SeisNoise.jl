@@ -1,4 +1,4 @@
-export process_raw, process_raw!, process_fft, compute_fft
+export process_raw, process_raw!, process_fft, compute_fft, save_fft
 
 """
     compute_fft()
@@ -10,43 +10,46 @@ Cross-correlates data using either cross-correlation, deconvolution or
 cross-coherence. Saves cross-correlations in JLD2 data set.
 
 TO DO:
-    - load in data []
+    - load in data [x]
     - process_raw [x]
     - check start/end times [x]
     - chop into matrix [x]
     - normalize time / freq domain [x]
     - take fft [x]
     - get parameters for each window (amplitude, mad) []
-    - save fft and parameters to JLD2 []
+    - save fft and parameters to JLD2 [x]
 
 
 :type maxlag: int
 :param maxlag: maximum lag, in seconds, in cross-correlation
-:type fs: Real
+:type fs: Float64
 :param fs: Frequency to which waveforms in stream are downsampled
 :type freqmin: float
 :param freqmin: minimun frequency for whitening
 :type freqmax: float
 :param freqmax: maximum frequency for whitening
-:type cc_step: Real
+:type cc_step: Int
 :param cc_step: time, in seconds, between success cross-correlation windows
-:type cc_len: Real
+:type cc_len: Int
 :param cc_len: length of noise data window, in seconds, to cross-correlate
 """
-function compute_fft(S::SeisData,fs::Real,freqmin::Float64,freqmax::Float64,
-                     cc_step::Int, cc_len::Int, starttime::DateTime,
-                     endtime::DateTime; time_norm::Union{Bool,String}=false,
+function compute_fft(S::SeisData,fs::Float64,freqmin::Float64,freqmax::Float64,
+                     cc_step::Int, cc_len::Int;
+                     time_norm::Union{Bool,String}=false,
                      to_whiten::Union{Bool,String}=false)
 
+    # sync!(S,s=starttime,t=endtime)
     process_raw!(S,fs)  # demean, detrend, taper, lowpass, downsample
     merge!(S)
-    sync!(S,starttime,endtime)
+    starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
+    sync!(S,s=starttime,t=endtime)
     A, starts, ends = slide(S[1], cc_len, cc_step)
     FFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,
                       to_whiten=to_whiten)
-    return F = FFTData(S[1].name, S[1].id, S[1].loc, S[1].fs, S[1].gain, freqmin, freqmax,
-                cc_len, cc_step, to_whiten, time_norm, S[1].resp, S[1].misc,
-                S[1].notes, hcat(starts,ends), fft)
+    return F = FFTData(S[1].name, Dates.format(u2d(starts[1]),"Y-mm-dd"),
+                       S[1].loc, S[1].fs, S[1].gain, freqmin, freqmax,
+                       cc_len, cc_step, to_whiten, time_norm, S[1].resp,
+                       S[1].misc, S[1].notes, starts, FFT)
 end
 
 """
@@ -71,23 +74,23 @@ Checks:
 
 # Arguments
 - `S::SeisChannel`: SeisData structure.
-- `fs::Real`: Sampling rate to downsample `S`.
+- `fs::Float64`: Sampling rate to downsample `S`.
 """
-function process_raw!(S::SeisData, fs::Real)
+function process_raw!(S::SeisData, fs::Float64)
     demean!(S)        # remove mean from channel
     ungap!(S)         # replace gaps with mean of channel
     detrend!(S)       # remove linear trend from channel
     taper!(S)         # taper channel ends
-    lowpass!(S,fs)    # lowpass filter before downsampling
+    lowpass!(S,fs/2)    # lowpass filter before downsampling
     S = downsample(S,fs) # downsample to lower fs
     phase_shift!(S) # timing offset from sampling period
     return nothing
 end
-process_raw(S::SeisData, fs::Real) = (U = deepcopy(S);
+process_raw(S::SeisData, fs::Float64) = (U = deepcopy(S);
             process_raw!(U,fs); return U)
 
 """
-    process_fft(A::AbstractArray,freqmin::Real,freqmax::Real,fs::Real;
+    process_fft(A::AbstractArray,freqmin::Float64,freqmax::Float64,fs::Float64;
                 time_norm=false,to_whiten=false,corners=corners,
                 zerophase=zerophase)
 
@@ -133,4 +136,28 @@ remove instrument response - will require reading stationXML and extracting pole
 and zeros
 """
 function remove_resp(args)
+end
+
+"""
+    save_fft(F::FFTData, OUT::String)
+
+Save FFTData `F` to JLD2.
+"""
+function save_fft(F::FFTData, FFTOUT::String)
+    # check if FFT DIR exists
+    if isdir(FFTOUT) == false
+        mkpath(FFTOUT)
+    end
+
+    # create JLD2 file and save mseed
+    net,sta,loc,chan = split(F.name,'.')
+    filename = joinpath(FFTOUT,"$net.$sta.jld2")
+    file = jldopen(filename, "a+")
+    if !(chan in keys(file))
+        group = JLD2.Group(file, chan)
+        group[F.id] = F
+    else
+        file[chan][F.id] = F
+    end
+    close(file)
 end

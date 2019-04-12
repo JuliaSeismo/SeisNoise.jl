@@ -6,8 +6,8 @@ const fftfields = [:id, :name, :loc, :fs, :gain, :freqmin, :freqmax, :cc_step,
 
 # This is type-stable for F = FFTData() but not for keyword args
 mutable struct FFTData
-  name::String                                # name
-  id::String                                  # id
+  name::String                                # name [Net.Sta.Loc.Chan]
+  id::String                                  # id [Y-mm-dd] this is date of fft
   loc::Array{Float64,1}                       # loc
   fs::Float64                                 # sampling rate [Hz]
   gain::Float64                               # gain
@@ -20,7 +20,7 @@ mutable struct FFTData
   resp  ::Array{Complex{Float64},2}           # response poles/zeros
   misc::Dict{String,Any}                      # misc
   notes::Array{String,1}                      # notes
-  t::Array{Int64,2}                           # time
+  t::Array{Float64,1}                           # time
   fft::Array{Complex{Float64},2}              # fft data
 
   function FFTData(
@@ -38,7 +38,7 @@ mutable struct FFTData
       resp     ::Array{Complex{Float64},2},
       misc     ::Dict{String,Any},
       notes    ::Array{String,1},
-      t        ::Array{Int64,2},
+      t        ::Array{Float64,1},
       fft      ::Array{Complex{Float64},2}
       )
 
@@ -62,14 +62,14 @@ FFTData(;
           resp     ::Array{Complex{Float64},2} = Array{Complex{Float64},2}(undef, 0, 2),
           misc     ::Dict{String,Any}          = Dict{String,Any}(),
           notes    ::Array{String,1}           = Array{String,1}(undef, 0),
-          t        ::Array{Int64,2}            = Array{Int64,2}(undef, 0, 2),
+          t        ::Array{Float64,1}            = Array{Float64,1}(undef, 0),
           fft      ::Array{Complex{Float64},2} = Array{Complex{Float64},2}(undef, 0, 2)
           ) = FFTData(name, id, loc, fs, gain, freqmin, freqmax, cc_len, cc_step,
                      whiten, time_norm, resp, misc, notes, t, fft)
 
 FFTData(C::SeisChannel,freqmin::Float64, freqmax::Float64,cc_len::Int,
         cc_step::Int, whitened::Union{Bool,String},time_norm::Union{Bool,String},
-        t::Array{Int64,2},fft::Array{Complex{Float64},2}
+        t::Array{Float64,1},fft::Array{Complex{Float64},2}
        ) = FFTData(C.name, C.id, C.loc, C.fs, C.gain, freqmin, freqmax, cc_len,
                    cc_step, whitened, time_norm, C.resp, C.misc, C.notes, t, fft)
 

@@ -1,7 +1,4 @@
-using SeisIO
-using DataFrames
-using Dates
-using JLD2
+export get_files, get_info, raw_data_available
 
 function get_files(ROOT::String; format::String="mseed")
     # add files to path

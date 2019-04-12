@@ -1,4 +1,4 @@
-export start_end, slide
+export start_end, slide, nearest_start_end
 const μs = 1.0e-6
 const sμ = 1000000.0
 """
@@ -39,11 +39,11 @@ end
 
 Generate equal length sliding windows into an array.
 """
-function slide(C::SeisChannel, window_length::Real, cc_step::Real)
-  window_samples = Int(window_length * C.fs)
+function slide(C::SeisChannel, cc_len::Int, cc_step::Int)
+  window_samples = Int(cc_len * C.fs)
   su,eu = t_win(C.t,C.fs) * μs
   starts = Array(range(su,stop=eu,step=cc_step))
-  ends = starts .+ window_length .- 1. / C.fs
+  ends = starts .+ cc_len .- 1. / C.fs
   ind = findall(x -> x <= eu,ends)
   starts = starts[ind]
   ends = ends[ind]
@@ -55,4 +55,17 @@ function slide(C::SeisChannel, window_length::Real, cc_step::Real)
     A[:,ii] .= C.x[s:e]
   end
   return A,starts,ends
+end
+
+"""
+    nearest_start_end(C::SeisChannel, cc_len::Int, cc_step::Int)
+
+Return best possible start, end times for data in `C` given the c
+"""
+function nearest_start_end(C::SeisChannel, cc_len::Int, cc_step::Int)
+  su,eu = t_win(C.t,C.fs) * μs
+  ideal_start = d2u(DateTime(Date(u2d(su)))) # midnight of same day
+  starts = Array(range(ideal_start,stop=eu,step=cc_step))
+  ends = starts .+ cc_len .- 1. / C.fs
+  return starts[findfirst(x -> x >= su, starts)], ends[findlast(x -> x <= eu,ends)]
 end

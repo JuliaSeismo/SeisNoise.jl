@@ -9,6 +9,7 @@ include("downsample.jl")
 include("correlate.jl")
 include("availability.jl")
 include("phase_shift.jl")
+include("FFTData.jl")
 include("compute_fft.jl")
 
 end # module
