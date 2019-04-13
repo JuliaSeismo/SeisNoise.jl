@@ -79,13 +79,13 @@ CorrData(;
           maxlag   ::Float64,                  = zero(Float64),
           t        ::Array{Float64,1}          = Array{Float64,1}(undef, 0),
           corr     ::Array{Float64,2}          = Array{Float64,2}(undef, 0, 2)
-          ) = CorrData(name, id, loc, comp, rotated, corr_type, fs, gain, 
+          ) = CorrData(name, id, loc, comp, rotated, corr_type, fs, gain,
                       freqmin, freqmax, cc_len, cc_step, whiten, time_norm,
                       resp, misc, notes, t, corr)
 
 CorrData(F1::FFTData, F2::FFTData, comp::String, rotated::Bool, corr_type::String,
         maxlag::Float64, corr::Array{Float64,2}
-       ) = FFTData(F1.name * '.' * F2.name, F1.id, F1.loc, comp, rotated,
+       ) = CorrData(F1.name * '.' * F2.name, F1.id, F1.loc, comp, rotated,
                   corr_type, F1.fs, F1.gain, F1.freqmin, F1.freqmax, F1.cc_len,
                   F1.cc_step, F1.whitened, F1.time_norm, F1.resp, F1.misc,
                   F1.notes, maxlag, t, corr)
@@ -94,7 +94,7 @@ in(s::String, C::CorrData) = C.id==s
 
 isempty(C::CorrData) = minimum([isempty(getfield(C,f)) for f in corrfields])
 
-isequal(C::CorrData, U::FFTData) = minimum([hash(getfield(C,i))==hash(getfield(U,i)) for i in corrfields]::Array{Bool,1})
+isequal(C::CorrData, U::CorrData) = minimum([hash(getfield(C,i))==hash(getfield(U,i)) for i in corrfields]::Array{Bool,1})
 ==(C::CorrData, U::CorrData) = isequal(C,U)::Bool
 
 function sizeof(C::CorrData)
