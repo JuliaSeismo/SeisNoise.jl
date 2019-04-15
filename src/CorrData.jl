@@ -3,7 +3,7 @@ export CorrData
 
 const corrfields = [:id, :name, :loc, :comp, :rotated, :corr_type, :fs, :gain,
                     :freqmin, :freqmax, :cc_step, :whitened, :time_norm, :resp,
-                    :notes, :misc, :maxlag, :t, :fft]
+                    :notes, :misc, :maxlag, :t, :corr]
 
 # This is type-stable for C = CorrData() but not for keyword args
 mutable struct CorrData
@@ -62,9 +62,9 @@ CorrData(;
           name     ::String                    = "",
           id       ::String                    = "",
           loc      ::Array{Float64,1}          = Array{Float64,1}(undef, 0),
-          comp     ::String,                   = "",
-          rotated  ::Bool,                     = false,
-          corr_type::String,                   = "",
+          comp     ::String                    = "",
+          rotated  ::Bool                      = false,
+          corr_type::String                    = "",
           fs       ::Float64                   = zero(Float64),
           gain     ::Float64                   = one(Float64),
           freqmin  ::Float64                   = zero(Float64),
@@ -76,12 +76,12 @@ CorrData(;
           resp     ::Array{Complex{Float64},2} = Array{Complex{Float64},2}(undef, 0, 2),
           misc     ::Dict{String,Any}          = Dict{String,Any}(),
           notes    ::Array{String,1}           = Array{String,1}(undef, 0),
-          maxlag   ::Float64,                  = zero(Float64),
+          maxlag   ::Float64                   = zero(Float64),
           t        ::Array{Float64,1}          = Array{Float64,1}(undef, 0),
           corr     ::Array{Float64,2}          = Array{Float64,2}(undef, 0, 2)
           ) = CorrData(name, id, loc, comp, rotated, corr_type, fs, gain,
                       freqmin, freqmax, cc_len, cc_step, whiten, time_norm,
-                      resp, misc, notes, t, corr)
+                      resp, misc, notes, maxlag, t, corr)
 
 CorrData(F1::FFTData, F2::FFTData, comp::String, rotated::Bool, corr_type::String,
         maxlag::Float64, corr::Array{Float64,2}
