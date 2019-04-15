@@ -1,4 +1,4 @@
-export snr, smooth, nextpow2, abs_max, standardize, mad, savitsky_golay,
+export snr, smooth, smooth!, nextpow2, abs_max, standardize, mad, savitsky_golay,
      running_mean, pws
 
 """
@@ -21,25 +21,33 @@ end
 """
     smooth(x,half_win=3)
 
-Smooth vector `x` with half-window `half_win` (defaults to 3).
+Smooth Array `A` with half-window `half_win` (defaults to 3).
 """
-function smooth(x::AbstractArray; half_win::Int=3)
+function smooth!(A::AbstractArray; half_win::Int=3, dims::Int=1)
     # only use odd numbers
     if half_win % 2 != 1
         half_win += oneunit(half_win)
     end
     window_len = 2 * half_win + 1
 
+    if ndims(A) == 1
+        A = reshape(A,size(A)...,1) # if 1D array, reshape to (length(A),1)
+    end
+
     # extending the data at beginning and at the end
     # to apply the window at the borders
-    A = vcat(x,x[window_len:-1:2])
-    append!(A,x[end-1:-1:end-window_len+1])
+    X = vcat(A[window_len:-1:2,:],A,A[end-1:-1:end-window_len+1,:])
 
     # convolve with boxcar
     w = rect(window_len)
-    y = conv(A,w/sum(w))
-    y = y[window_len+half_win:end-window_len-half_win+1]
+    w ./= sum(w)
+    for ii = 1:size(X,2)
+        A[:,ii] .= conv(X[:,ii],w)[window_len+half_win:end-window_len-half_win+1]
+    end
+    return nothing
 end
+smooth(A::AbstractArray;half_win::Int=3, dims::Int=1) =
+      (U = deepcopy(A);smooth!(U,half_win=half_win,dims=dims);return U)
 
 """
     nextpow2(x)
