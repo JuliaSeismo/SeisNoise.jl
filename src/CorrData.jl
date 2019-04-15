@@ -7,8 +7,7 @@ const corrfields = [:id, :name, :loc, :comp, :rotated, :corr_type, :fs, :gain,
 
 # This is type-stable for C = CorrData() but not for keyword args
 mutable struct CorrData
-  name::String                                # name [Net1.Sta1.Loc1.Chan1.Net2.
-                                              # Sta2.Loc2.Chan2]
+  name::String                                # name [Net1.Sta1.Loc1.Chan1.Net2.Sta2.Loc2.Chan2]
   id::String                                  # id [Y-mm-dd] this is date of corr
   loc::Array{Float64,1}                       # loc
   comp::String                                # 1st channel, 2nd channel [ZZ,RT,..]
@@ -54,7 +53,7 @@ mutable struct CorrData
 
       return new(name, id, loc, comp, rotated, corr_type, fs, gain, freqmin,
                  freqmax, cc_len, cc_step, whitened, time_norm, resp, misc,
-                 notes, t, corr)
+                 notes, maxlag, t, corr)
     end
 end
 
@@ -84,7 +83,7 @@ CorrData(;
                       resp, misc, notes, maxlag, t, corr)
 
 CorrData(F1::FFTData, F2::FFTData, comp::String, rotated::Bool, corr_type::String,
-        maxlag::Float64, corr::Array{Float64,2}
+        maxlag::Float64, t::Array{Float64,1}, corr::Array{Float64,2}
        ) = CorrData(F1.name * '.' * F2.name, F1.id, F1.loc, comp, rotated,
                   corr_type, F1.fs, F1.gain, F1.freqmin, F1.freqmax, F1.cc_len,
                   F1.cc_step, F1.whitened, F1.time_norm, F1.resp, F1.misc,
