@@ -1,5 +1,5 @@
 # cross-correlation module
-export clean_up!, clean_up, whiten, correlate, next_fast_len
+export clean_up!, clean_up, whiten, correlate, compute_cc, next_fast_len
 
 """
     clean_up!(A,fs,freqmin,freqmax)
@@ -88,7 +88,7 @@ Cross-correlation of two ffts.
 
 """
 function correlate(fft1::AbstractArray, fft2::AbstractArray, N::Int,
-                   maxlag::Float64;
+                   maxlag::Int;
                    smoothing_half_win::Int=20,
                    corr_type::String="cross-correlation")
 
@@ -132,23 +132,45 @@ function compute_cc(FFT1::FFTData, FFT2::FFTData, N::Int, maxlag::Float64,
     ind1 = findall(x -> x ∈ inter, FFT1.t)
     ind2 = findall(x -> x ∈ inter, FFT2.t)
 
-    corr = correlate(FFT1.fft[:,ind1], FFT2.fft[:,ind2], N, maxlag,
+    corr = correlate(FFT1.fft[:,ind1], FFT2.fft[:,ind2], N,
+                     convert(Int,round(maxlag * FFT1.fs)),
                      corr_type=corr_type)
     rotated = false
 
-    return CorrData(FFT1.name * '.' * FFT2.name, FFT1.id, FFT1.loc, comp, 
-                    rotated, corr_type, FFT1.fs, FFT1.gain, FFT1.freqmin,
-                    FFT1.freqmax, FFT1.cc_len, FFT1.cc_step, FFT1.whitened,
-                    FFT1.time_norm, FFT1.resp, FFT1.misc, FFT1.notes, maxlag,
-                    inter, corr)
+    return CorrData(FFT1, FFT2, comp, rotated, corr_type,
+                    maxlag, inter, corr)
 
 end
 
 """
     next_fast_len(N::Real)
 
-
+Return next fast length for fft with FFTW.
 """
 function next_fast_len(N::Real)
     return nextprod([2,3,5],N)
+end
+
+"""
+    save_fft(C::CorrData, OUT::String)
+
+Save CorrData `C` to JLD2.
+"""
+function save_fft(C::CorrData, CORROUT::String)
+    # check if FFT DIR exists
+    if isdir(CORROUT) == false
+        mkpath(CORROUT)
+    end
+
+    # create JLD2 file and save correlation
+    net1,sta1,loc1,chan1,net2,sta2,loc1,chan2 = split(C.name,'.')
+    filename = joinpath(CORROUT,"$net1.$sta1.$net2.$sta2.jld2")
+    file = jldopen(filename, "a+")
+    if !(chan in keys(file))
+        group = JLD2.Group(file, chan)
+        group[C.id] = C
+    else
+        file[chan][C.id] = C
+    end
+    close(file)
 end

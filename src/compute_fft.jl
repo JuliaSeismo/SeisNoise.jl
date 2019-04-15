@@ -149,7 +149,7 @@ function save_fft(F::FFTData, FFTOUT::String)
         mkpath(FFTOUT)
     end
 
-    # create JLD2 file and save mseed
+    # create JLD2 file and save FFT
     net,sta,loc,chan = split(F.name,'.')
     filename = joinpath(FFTOUT,"$net.$sta.jld2")
     file = jldopen(filename, "a+")
