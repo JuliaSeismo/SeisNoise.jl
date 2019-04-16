@@ -15,12 +15,12 @@ mutable struct FFTData
   freqmax::Float64                            # maximum frequency [Hz]
   cc_len::Int                                 # window_length [s]
   cc_step::Int                                # step between windows [s]
-  whitened::Union{Bool,String}                  # whitening applied
+  whitened::Bool                              # whitening applied
   time_norm::Union{Bool,String}               # time normaliation
   resp  ::Array{Complex{Float64},2}           # response poles/zeros
   misc::Dict{String,Any}                      # misc
   notes::Array{String,1}                      # notes
-  t::Array{Float64,1}                           # time
+  t::Array{Float64,1}                         # time
   fft::Array{Complex{Float64},2}              # fft data
 
   function FFTData(
@@ -33,7 +33,7 @@ mutable struct FFTData
       freqmax  ::Float64,
       cc_len   ::Int,
       cc_step  ::Int,
-      whitened ::Union{Bool,String},
+      whitened ::Bool,
       time_norm::Union{Bool,String},
       resp     ::Array{Complex{Float64},2},
       misc     ::Dict{String,Any},
@@ -57,7 +57,7 @@ FFTData(;
           freqmax  ::Float64                   = zero(Float64),
           cc_len   ::Int                       = zero(Int),
           cc_step  ::Int                       = zero(Int),
-          whitened   ::Union{Bool,String}        = false,
+          whitened ::Bool                      = false,
           time_norm::Union{Bool,String}        = false,
           resp     ::Array{Complex{Float64},2} = Array{Complex{Float64},2}(undef, 0, 2),
           misc     ::Dict{String,Any}          = Dict{String,Any}(),
@@ -68,7 +68,7 @@ FFTData(;
                      whiten, time_norm, resp, misc, notes, t, fft)
 
 FFTData(C::SeisChannel,freqmin::Float64, freqmax::Float64,cc_len::Int,
-        cc_step::Int, whitened::Union{Bool,String},time_norm::Union{Bool,String},
+        cc_step::Int, whitened::Bool,time_norm::Union{Bool,String},
         t::Array{Float64,1},fft::Array{Complex{Float64},2}
        ) = FFTData(C.name, C.id, C.loc, C.fs, C.gain, freqmin, freqmax, cc_len,
                    cc_step, whitened, time_norm, C.resp, C.misc, C.notes, t, fft)

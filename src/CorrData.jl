@@ -19,7 +19,7 @@ mutable struct CorrData
   freqmax::Float64                            # maximum frequency [Hz]
   cc_len::Int                                 # window_length [s]
   cc_step::Int                                # step between windows [s]
-  whitened::Union{Bool,String}                # whitening applied
+  whitened::Bool                              # whitening applied
   time_norm::Union{Bool,String}               # time normaliation
   resp  ::Array{Complex{Float64},2}           # response poles/zeros
   misc::Dict{String,Any}                      # misc
@@ -41,7 +41,7 @@ mutable struct CorrData
       freqmax  ::Float64,
       cc_len   ::Int,
       cc_step  ::Int,
-      whitened ::Union{Bool,String},
+      whitened ::Bool,
       time_norm::Union{Bool,String},
       resp     ::Array{Complex{Float64},2},
       misc     ::Dict{String,Any},
@@ -70,7 +70,7 @@ CorrData(;
           freqmax  ::Float64                   = zero(Float64),
           cc_len   ::Int                       = zero(Int),
           cc_step  ::Int                       = zero(Int),
-          whitened ::Union{Bool,String}        = false,
+          whitened ::Bool                      = false,
           time_norm::Union{Bool,String}        = false,
           resp     ::Array{Complex{Float64},2} = Array{Complex{Float64},2}(undef, 0, 2),
           misc     ::Dict{String,Any}          = Dict{String,Any}(),

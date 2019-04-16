@@ -10,6 +10,7 @@ include("availability.jl")
 include("phase_shift.jl")
 include("FFTData.jl")
 include("CorrData.jl")
+include("show.jl")
 include("compute_fft.jl")
 include("correlation.jl")
 
