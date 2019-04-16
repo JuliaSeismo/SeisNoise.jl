@@ -1,6 +1,6 @@
 # cross-correlation module
 export clean_up!, clean_up, correlate, compute_cc, next_fast_len
-
+import ArrayFuncs
 """
     clean_up!(A,fs,freqmin,freqmax)
 

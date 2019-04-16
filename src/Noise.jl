@@ -1,7 +1,7 @@
 module Noise
 
 using Dates, DataFrames, DSP, FFTW, JLD2, LinearAlgebra, Plots, SeisIO
-include("ArrayFuncs.jl")
+# include("ArrayFuncs.jl")
 include("tools.jl")
 include("slicing.jl")
 include("filter.jl")
