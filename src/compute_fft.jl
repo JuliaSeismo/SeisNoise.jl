@@ -108,11 +108,9 @@ function process_fft(A::AbstractArray,fs::Float64,freqmin::Float64,
     # pre-process each window
     ArrayFuncs.demean!(A)
     ArrayFuncs.detrend!(A)
-    for ii = 1:N
-        taper!(A[:,ii],fs)
-        bandpass!(A[:,ii],freqmin,freqmax,fs,corners=corners,
-                  zerophase=zerophase)
-    end
+    ArrayFuncs.taper!(A,fs)
+    ArrayFuncs.bandpass!(A,freqmin,freqmax,fs,corners=corners,
+                         zerophase=zerophase)
     ArrayFuncs.demean!(A)
 
     # apply one-bit normalization

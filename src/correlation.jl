@@ -13,11 +13,11 @@ Demean, detrend, taper and filter time series.
 - `freqmax::Real`: Pass band high corner frequency.
 """
 function clean_up!(A::AbstractArray, fs::Real, freqmin::Real, freqmax::Real;
-                   corners::Int=4, zerophase::Bool=false)
+                   corners::Int=4, zerophase::Bool=true)
     ArrayFuncs.demean!(A)
     ArrayFuncs.detrend!(A)
-    taper!(A,fs)
-    bandpass!(A,freqmin,freqmax,fs,corners=corners,zerophase=zerophase)
+    ArrayFuncs.taper!(A,fs)
+    ArrayFuncs.bandpass!(A,freqmin,freqmax,fs,corners=corners,zerophase=zerophase)
     return nothing
 end
 clean_up(A::AbstractArray, fs::Real, freqmin::Real, freqmax::Real;
