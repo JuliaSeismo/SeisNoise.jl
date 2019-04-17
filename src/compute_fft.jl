@@ -1,7 +1,7 @@
 export process_raw, process_raw!, process_fft, compute_fft, whiten, save_fft
 import ArrayFuncs
 """
-    compute_fft(S::SeisData,fs::Float64,freqmin::Float64,freqmax::Float64,
+    compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64, fs::Float64
                          cc_step::Int, cc_len::Int;
                          time_norm::Union{Bool,String}=false,
                          to_whiten::Bool=false)
@@ -14,15 +14,15 @@ cross-coherence. Saves cross-correlations in JLD2 data set.
 
 # Arguments
 - `S::SeisChannel`: SeisData structure.
+- `freqmin::Float64`: minimun frequency for whitening.
+- `freqmax::Float64`: maximum frequency for whitening.
 - `fs::Float64`: Sampling rate to downsample `S`.
-- `freqmin::Float64`: minimun frequency for whitening
-- `freqmax::Float64`: maximum frequency for whitening
-- `cc_step::Int`: time, in seconds, between successive cross-correlation windows
-- `cc_len::Int`: length of noise data window, in seconds, to cross-correlate
-- `time_norm::Union{Bool,String}`: time domain normalization to perform
-- `to_whiten::Bool`: Apply whitening in frequency domain
+- `cc_step::Int`: time, in seconds, between successive cross-correlation windows.
+- `cc_len::Int`: length of noise data window, in seconds, to cross-correlate.
+- `time_norm::Union{Bool,String}`: time domain normalization to perform.
+- `to_whiten::Bool`: Apply whitening in frequency domain.
 """
-function compute_fft(S::SeisData,fs::Float64,freqmin::Float64,freqmax::Float64,
+function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
                      cc_step::Int, cc_len::Int;
                      time_norm::Union{Bool,String}=false,
                      to_whiten::Bool=false)
@@ -88,22 +88,19 @@ process_raw(S::SeisData, fs::Float64) = (U = deepcopy(S);
 # Arguments
 - `A::AbstractArray`: Array with time domain data.
 - `fs::Float64`: Sampling rate of data in `A`.
-- `freqmin::Float64`: minimun frequency for whitening
-- `freqmax::Float64`: maximum frequency for whitening
-- `time_norm::Union{Bool,String}`: time domain normalization to perform
-- `to_whiten::Bool`: Apply whitening in frequency domain
+- `freqmin::Float64`: minimum frequency for whitening.
+- `freqmax::Float64`: maximum frequency for whitening.
+- `time_norm::Union{Bool,String}`: time domain normalization to perform.
+- `to_whiten::Bool`: Apply whitening in frequency domain.
 - `corners::Int`: Number of corners in Butterworth filter.
 - `zerophase::Bool`: If true, apply Butterworth filter twice for zero phase
                      change in output signal.
 """
-function process_fft(A::AbstractArray,fs::Float64,freqmin::Float64,
-                     freqmax::Float64;
-                     time_norm::Union{Bool,String}=false,
+function process_fft(A::AbstractArray,freqmin::Float64, freqmax::Float64,
+                     fs::Float64; time_norm::Union{Bool,String}=false,
                      to_whiten::Bool=false,
                      corners::Int=4,
                      zerophase::Bool=true)
-
-    window_samples, N = size(A)
 
     # pre-process each window
     ArrayFuncs.demean!(A)
@@ -128,7 +125,7 @@ function process_fft(A::AbstractArray,fs::Float64,freqmin::Float64,
 end
 
 """
-    whiten(A, fs, freqmin, freqmax, pad=100)
+    whiten(A, freqmin, freqmax, fs, pad=100)
 
 Whiten spectrum of time series `A` between frequencies `freqmin` and `freqmax`.
 Uses real fft to speed up computation.

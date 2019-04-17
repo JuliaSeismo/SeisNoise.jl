@@ -53,7 +53,7 @@ function correlate(fft1::AbstractArray, fft2::AbstractArray, N::Int,
     corrT = fftshift(corrT)
 
     # return corr[-maxlag:maxlag]
-    t = range(-Int(N/2) + 1, Int(N/2) - 1)
+    t = range(-Int(N/2) + 1, stop=Int(N/2) - 1)
     ind = findall(x -> abs(x) <= maxlag,t)
     corrT = corrT[ind,:]
 end
