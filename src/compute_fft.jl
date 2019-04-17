@@ -1,5 +1,5 @@
 export process_raw, process_raw!, process_fft, compute_fft, whiten, save_fft
-
+import ArrayFuncs
 """
     compute_fft(S::SeisData,fs::Float64,freqmin::Float64,freqmax::Float64,
                          cc_step::Int, cc_len::Int;
@@ -68,8 +68,8 @@ Checks:
 function process_raw!(S::SeisData, fs::Float64)
     demean!(S)        # remove mean from channel
     ungap!(S)         # replace gaps with mean of channel
-    detrend!(S)       # remove linear trend from channel
     if fs ∉ S.fs
+        detrend!(S)       # remove linear trend from channel
         taper!(S)         # taper channel ends
         lowpass!(S,fs/2)    # lowpass filter before downsampling
         S = downsample(S,fs) # downsample to lower fs
@@ -106,14 +106,12 @@ function process_fft(A::AbstractArray,fs::Float64,freqmin::Float64,
     window_samples, N = size(A)
 
     # pre-process each window
-    for ii = 1:N
-        ArrayFuncs.demean!(A[:,ii])
-        ArrayFuncs.detrend!(A[:,ii])
-        taper!(A[:,ii],fs)
-        bandpass!(A[:,ii],freqmin,freqmax,fs,corners=corners,
-                  zerophase=zerophase)
-        ArrayFuncs.demean!(A[:,ii])
-    end
+    ArrayFuncs.demean!(A)
+    ArrayFuncs.detrend!(A)
+    ArrayFuncs.taper!(A,fs)
+    ArrayFuncs.bandpass!(A,freqmin,freqmax,fs,corners=corners,
+                         zerophase=zerophase)
+    ArrayFuncs.demean!(A)
 
     # apply one-bit normalization
     if time_norm == "one_bit"
