@@ -36,10 +36,15 @@ end
 detrend(A::AbstractArray{<:Union{Float32,Float64},1}) = (U = deepcopy(A);
         detrend!(U);return U)
 
+"""
+    detrend!(A)
+
+Remove linear trend from columns of `X` using least-squares regression.
+"""
 function detrend!(X::AbstractArray{<:Union{Float32,Float64},2})
     M,N = size(X)
     A = ones(M,2)
-    A[:,1] = Array(1:N) ./ N
+    A[:,1] = Array(1:M) ./ M
     for ii = 1:N
         coeff = lstsq(A,X[:,ii])
         X[:,ii] = X[:,ii] .- A *coeff
@@ -52,7 +57,7 @@ detrend(A::AbstractArray{<:Union{Float32,Float64},2}) = (U = deepcopy(A);
 """
     demean!(A)
 
-Remove mean from columns of array `A`.
+Remove mean from array `A`.
 """
 function demean!(A::AbstractArray{<:Union{Float32,Float64},1})
       μ = mean(A)
@@ -64,6 +69,11 @@ end
 demean(A::AbstractArray{<:Union{Float32,Float64},1}) = (U = deepcopy(A);
        demean!(U);return U)
 
+"""
+   demean!(A)
+
+Remove mean from columns of array `A`.
+"""
 function demean!(A::AbstractArray{<:Union{Float32,Float64},2})
       M,N = size(A)
       for ii = 1:N
