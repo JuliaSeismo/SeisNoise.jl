@@ -1,6 +1,8 @@
 # cross-correlation module
-export clean_up!, clean_up, correlate, compute_cc, next_fast_len
+export clean_up!, clean_up, correlate, compute_cc, next_fast_len, save_corr, load_fft
+export correlate_parallel, generate_pairs
 import ArrayFuncs
+import Statistics: mean
 """
     clean_up!(A,fs,freqmin,freqmax)
 
@@ -59,15 +61,17 @@ function correlate(fft1::AbstractArray, fft2::AbstractArray, N::Int,
 end
 
 """
-    compute_cc(FFT1::FFTData, FFT2::FFTData, N::Int, maxlag::Float64,
-               comp::String; smoothing_half_win::Int=20,
+    compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;
+               smoothing_half_win::Int=20,
                corr_type::String="cross-correlation" )
 
 """
-function compute_cc(FFT1::FFTData, FFT2::FFTData, N::Int, maxlag::Float64,
-                    comp::String;
+function compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;
                     smoothing_half_win::Int=20,
                     corr_type::String="cross-correlation")
+
+    N = convert(Int,round(FFT1.cc_len * FFT1.fs)) # number of data points
+    comp = FFT1.name[end] * FFT2.name[end]
     # get intersect of dates; return nothing if no intersect
     inter = intersect(FFT1.t,FFT2.t)
     if length(inter) == 0
@@ -96,6 +100,20 @@ function next_fast_len(N::Real)
     return nextprod([2,3,5],N)
 end
 
+
+"""
+
+  load_fft(filename,chan,day)
+
+Loads FFTData for channel `chan` on day `day` from JLD2 file `filename`.
+"""
+function load_fft(filename::String,chan::String,day::String)
+    file = jldopen(filename,"a+")
+    F = file[chan][day]
+    close(file)
+    return F
+end
+
 """
     save_corr(C::CorrData, OUT::String)
 
@@ -109,13 +127,67 @@ function save_corr(C::CorrData, CORROUT::String)
 
     # create JLD2 file and save correlation
     net1,sta1,loc1,chan1,net2,sta2,loc1,chan2 = split(C.name,'.')
-    filename = joinpath(CORROUT,"$net1.$sta1.$net2.$sta2.jld2")
+    filename = joinpath(CORROUT,"$net1.$sta1.$chan1.$net2.$sta2.$chan2.jld2")
     file = jldopen(filename, "a+")
-    if !(chan in keys(file))
-        group = JLD2.Group(file, chan)
+    if !(C.comp in keys(file))
+        group = JLD2.Group(file, C.comp)
         group[C.id] = C
     else
-        file[chan][C.id] = C
+        file[C.comp][C.id] = C
     end
     close(file)
+end
+
+function correlate_parallel(pair,maxlag,smoothing_half_win,corr_type,FFTOUT,CORROUT)
+    nsc1, nsc2 = pair[1],pair[2]
+    net1,sta1,chan1 = string.(split(nsc1,"."))
+    net2,sta2,chan2 = string.(split(nsc2,"."))
+    filepath1 = joinpath(FFTOUT,nsc1*".jld2")
+    filepath2 = joinpath(FFTOUT,nsc2*".jld2")
+    println("Correlating $nsc1 with $nsc2")
+
+    # autocorrelation vs cross-correlation
+    if filepath1 == filepath2
+        file1 = jldopen(filepath1,"a+")
+        days = keys(file1[chan1])
+        close(file1)
+        for day in days
+            FFT1 = load_fft(filepath1,chan1,day)
+            C = compute_cc(FFT1,FFT1,maxlag,
+                           smoothing_half_win=smoothing_half_win,
+                           corr_type=corr_type)
+            save_corr(C,CORROUT)
+        end
+    else # cross-correlations
+        file1 = jldopen(filepath1,"a+")
+        file2 = jldopen(filepath2,"a+")
+        days1 = keys(file1[chan1])
+        days2 = keys(file2[chan2])
+        close(file1)
+        close(file2)
+        days = intersect(days1,days2)
+        for day in days
+            FFT1 = load_fft(filepath1,chan1,day)
+            FFT2 = load_fft(filepath2,chan2,day)
+            C = compute_cc(FFT1,FFT2,maxlag,
+                           smoothing_half_win=smoothing_half_win,
+                           corr_type=corr_type)
+            save_corr(C,CORROUT)
+        end
+    end
+    return nothing
+end
+
+function generate_pairs(files::AbstractArray)
+    N = length(files)
+    num_pairs = convert(Int,round(N * (N-1) / 2 + N))
+    pairs = Array{Array{String,1},1}(undef,num_pairs)
+    count = 0
+    for ii = 1:length(files)
+        for jj = ii:length(files)
+            count += 1
+            pairs[count] = [files[ii], files[jj]]
+        end
+    end
+    return pairs
 end

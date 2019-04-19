@@ -201,7 +201,7 @@ function save_fft(F::FFTData, FFTOUT::String)
 
     # create JLD2 file and save FFT
     net,sta,loc,chan = split(F.name,'.')
-    filename = joinpath(FFTOUT,"$net.$sta.jld2")
+    filename = joinpath(FFTOUT,"$net.$sta.$chan.jld2")
     file = jldopen(filename, "a+")
     if !(chan in keys(file))
         group = JLD2.Group(file, chan)

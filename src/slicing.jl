@@ -69,3 +69,15 @@ function nearest_start_end(C::SeisChannel, cc_len::Int, cc_step::Int)
   ends = starts .+ cc_len .- 1. / C.fs
   return starts[findfirst(x -> x >= su, starts)], ends[findlast(x -> x <= eu,ends)]
 end
+
+"""
+    nearest_start_end(D::DateTime, cc_len::Int, cc_step::Int)
+
+Return best possible start, end times for given starttime `D`
+"""
+function nearest_start_end(S::DateTime, E::DateTime, fs::Float, cc_len::Int, cc_step::Int)
+  ideal_start = DateTime(Date(S)) # midnight of same day
+  starts = Array(ideal_start:Second(cc_step):endtime)
+  ends = starts .+ Second(cc_len) .- Millisecond(convert(Int,1. / fs * 1e3))
+  return starts[findfirst(x -> x >= S, starts)], ends[findlast(x -> x <= E,ends)]
+end
