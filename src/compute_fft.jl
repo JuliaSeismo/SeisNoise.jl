@@ -35,7 +35,7 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
     A, starts, ends = slide(S[1], cc_len, cc_step)
     FFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,
                       to_whiten=to_whiten)
-    return F = FFTData(S[1].name, Dates.format(u2d(starts[1]),"Y-mm-dd"),
+    return F = FFTData(S[1].id, Dates.format(u2d(starts[1]),"Y-mm-dd"),
                        S[1].loc, S[1].fs, S[1].gain, freqmin, freqmax,
                        cc_len, cc_step, to_whiten, time_norm, S[1].resp,
                        S[1].misc, S[1].notes, starts, FFT)
@@ -66,15 +66,17 @@ Checks:
 - `fs::Float64`: Sampling rate to downsample `S`.
 """
 function process_raw!(S::SeisData, fs::Float64)
-    demean!(S)        # remove mean from channel
-    ungap!(S)         # replace gaps with mean of channel
-    if fs ∉ S.fs
-        detrend!(S)       # remove linear trend from channel
-        taper!(S)         # taper channel ends
-        lowpass!(S,fs/2)    # lowpass filter before downsampling
-        S = downsample(S,fs) # downsample to lower fs
+    for ii = 1:S.n
+        ArrayFuncs.demean!(S[ii].x)        # remove mean from channel
+        ungap!(S[ii])         # replace gaps with mean of channel
+        if fs ∉ S.fs
+            ArrayFuncs.detrend!(S[ii].x)       # remove linear trend from channel
+            ArrayFuncs.taper!(S[ii].x,S[ii].fs)         # taper channel ends
+            ArrayFuncs.lowpass!(S[ii].x,fs/2,S[ii].fs)    # lowpass filter before downsampling
+            S[ii] = downsample(S[ii],fs) # downsample to lower fs
+        end
+        phase_shift!(S[ii]) # timing offset from sampling period
     end
-    phase_shift!(S) # timing offset from sampling period
     return nothing
 end
 process_raw(S::SeisData, fs::Float64) = (U = deepcopy(S);
@@ -119,6 +121,9 @@ function process_fft(A::AbstractArray,freqmin::Float64, freqmax::Float64,
     if to_whiten
         FFT = whiten(A,freqmin, freqmax, fs)
     else
+        if eltype(A) != Float32
+            A = Float32.(A)
+        end
         FFT = rfft(A,1)
     end
     return FFT
@@ -138,46 +143,71 @@ Returns the whitened (single-sided) fft of the time series.
 - `freqmax::Real`: Pass band high corner frequency.
 - `pad::Int`: Number of tapering points outside whitening band.
 """
-function whiten(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
-                pad::Int=100)
+function whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64;
+                pad::Int=50)
     if ndims(A) == 1
         A = reshape(A,size(A)...,1) # if 1D array, reshape to (length(A),1)
     end
 
-    N,_ = size(A)
+    # get size and convert to Float32
+    M,N = size(A)
+    if eltype(A) != Float32
+        A = Float32.(A)
+    end
 
     # get whitening frequencies
-    freqvec = rfftfreq(N,fs)
-    freqind = findall(x -> x >= freqmin && x <= freqmax, freqvec)
-    low, high = freqind[1] - pad, freqind[end] + pad
-    left, right = freqind[1], freqind[end]
+    freqvec = rfftfreq(M,fs)
+    left = findfirst(x -> x >= freqmin, freqvec)
+    right = findlast(x -> x <= freqmax, freqvec)
+    low, high = left - pad, right + pad
 
     if low <= 1
         low = 1
-        left = low + 100
+        left = low + pad
     end
 
     if high > length(freqvec)
         high = length(freqvec)- 1
-        right = high - 100
+        right = high - pad
     end
 
     # take fft and whiten
     fftraw = rfft(A,1)
     # left zero cut-off
-    fftraw[1:low,:] .= 0. + 0.0im
+     for jj = 1:N
+         for ii = 1:low
+            fftraw[ii,jj] = 0. + 0.0im
+        end
+    end
     # left tapering
-    fftraw[low+1:left,:] .= cos.(LinRange(pi / 2., pi, left - low)).^2 .* exp.(
-        im .* angle.(fftraw[low:left-1,:]))
+     for jj = 1:N
+         for ii = low+1:left
+            fftraw[ii,jj] = cos(pi / 2 + pi / 2* (ii-low-1) / pad).^2 * exp(
+            im * angle(fftraw[ii,jj]))
+        end
+    end
     # pass band
-    fftraw[left:right,:] .= exp.(im .* angle.(fftraw[left:right,:]))
+     for jj = 1:N
+         for ii = left:right
+            fftraw[ii,jj] = exp(im * angle(fftraw[ii,jj]))
+        end
+    end
     # right tapering
-    fftraw[right+1:high,:] .= cos.(LinRange(0., pi/2., high-right)).^2 .* exp.(
-        im .* angle.(fftraw[right+1:high,:]))
+     for jj = 1:N
+         for ii = right+1:high
+            fftraw[ii,jj] = cos(pi/2 * (ii-right) / pad).^2 * exp(
+            im * angle(fftraw[ii,jj]))
+        end
+    end
     # right zero cut-off
-    fftraw[high+1:end,:] .= 0. + 0.0im
+     for jj = 1:N
+         for ii = high+1:size(fftraw,1)
+            fftraw[ii,jj] = 0. + 0.0im
+        end
+    end
     return fftraw
 end
+
 
 """
     remove_resp(args)

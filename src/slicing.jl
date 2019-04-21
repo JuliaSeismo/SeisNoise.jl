@@ -44,15 +44,15 @@ function slide(C::SeisChannel, cc_len::Int, cc_step::Int)
   su,eu = t_win(C.t,C.fs) * μs
   starts = Array(range(su,stop=eu,step=cc_step))
   ends = starts .+ cc_len .- 1. / C.fs
-  ind = findall(x -> x <= eu,ends)
-  starts = starts[ind]
-  ends = ends[ind]
+  ind = findlast(x -> x <= eu,ends)
+  starts = starts[1:ind]
+  ends = ends[1:ind]
 
   # fill array with overlapping windows
   A = Array{Float64,2}(undef, window_samples,length(starts))
-  @inbounds for ii = 1:length(starts)
-    s,e = convert.(Int,round.(([starts[ii],ends[ii]] .- su) * C.fs .+ 1.))
-    A[:,ii] .= C.x[s:e]
+  s = convert.(Int,round.((hcat(starts,ends) .- su) .* C.fs .+ 1.))
+  for ii = 1:length(starts)
+    A[:,ii] = C.x[s[ii,1]:s[ii,2]]
   end
   return A,starts,ends
 end
@@ -75,7 +75,7 @@ end
 
 Return best possible start, end times for given starttime `D`
 """
-function nearest_start_end(S::DateTime, E::DateTime, fs::Float, cc_len::Int, cc_step::Int)
+function nearest_start_end(S::DateTime, E::DateTime, fs::Float64, cc_len::Int, cc_step::Int)
   ideal_start = DateTime(Date(S)) # midnight of same day
   starts = Array(ideal_start:Second(cc_step):endtime)
   ends = starts .+ Second(cc_len) .- Millisecond(convert(Int,1. / fs * 1e3))

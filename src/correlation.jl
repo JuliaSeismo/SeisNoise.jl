@@ -4,7 +4,7 @@ export correlate_parallel, generate_pairs
 import ArrayFuncs
 import Statistics: mean
 """
-    clean_up!(A,fs,freqmin,freqmax)
+    clean_up!(A,freqmin,freqmax,fs)
 
 Demean, detrend, taper and filter time series.
 
@@ -14,7 +14,7 @@ Demean, detrend, taper and filter time series.
 - `freqmin::Real`: Pass band low corner frequency.
 - `freqmax::Real`: Pass band high corner frequency.
 """
-function clean_up!(A::AbstractArray, fs::Real, freqmin::Real, freqmax::Real;
+function clean_up!(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
                    corners::Int=4, zerophase::Bool=true)
     ArrayFuncs.demean!(A)
     ArrayFuncs.detrend!(A)
@@ -22,9 +22,9 @@ function clean_up!(A::AbstractArray, fs::Real, freqmin::Real, freqmax::Real;
     ArrayFuncs.bandpass!(A,freqmin,freqmax,fs,corners=corners,zerophase=zerophase)
     return nothing
 end
-clean_up(A::AbstractArray, fs::Real, freqmin::Real, freqmax::Real;
+clean_up(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
          corners::Int=4, zerophase::Bool=false) =
-                 (U = deepcopy(A); clean_up!(U,fs,freqmin,freqmax,
+                 (U = deepcopy(A); clean_up!(U,freqmin,freqmax, fs,
                   corners=corners, zerophase=zerophase); return U)
 
 """
@@ -138,44 +138,45 @@ function save_corr(C::CorrData, CORROUT::String)
     close(file)
 end
 
-function correlate_parallel(pair,maxlag,smoothing_half_win,corr_type,FFTOUT,CORROUT)
-    nsc1, nsc2 = pair[1],pair[2]
-    net1,sta1,chan1 = string.(split(nsc1,"."))
-    net2,sta2,chan2 = string.(split(nsc2,"."))
-    filepath1 = joinpath(FFTOUT,nsc1*".jld2")
-    filepath2 = joinpath(FFTOUT,nsc2*".jld2")
-    println("Correlating $nsc1 with $nsc2")
+function correlate_parallel(P::InputParams)
+   nsc1, nsc2 = P.pair[1],P.pair[2]
+   net1,sta1,chan1 = string.(split(nsc1,"/"))[end-2:end]
+   net2,sta2,chan2 = string.(split(nsc2,"/"))[end-2:end]
+   println("Correlating $net1.$sta1.$chan1 with $net2.$sta2.$chan2")
 
-    # autocorrelation vs cross-correlation
-    if filepath1 == filepath2
-        file1 = jldopen(filepath1,"a+")
-        days = keys(file1[chan1])
-        close(file1)
-        for day in days
-            FFT1 = load_fft(filepath1,chan1,day)
-            C = compute_cc(FFT1,FFT1,maxlag,
-                           smoothing_half_win=smoothing_half_win,
-                           corr_type=corr_type)
-            save_corr(C,CORROUT)
-        end
-    else # cross-correlations
-        file1 = jldopen(filepath1,"a+")
-        file2 = jldopen(filepath2,"a+")
-        days1 = keys(file1[chan1])
-        days2 = keys(file2[chan2])
-        close(file1)
-        close(file2)
-        days = intersect(days1,days2)
-        for day in days
-            FFT1 = load_fft(filepath1,chan1,day)
-            FFT2 = load_fft(filepath2,chan2,day)
-            C = compute_cc(FFT1,FFT2,maxlag,
-                           smoothing_half_win=smoothing_half_win,
-                           corr_type=corr_type)
-            save_corr(C,CORROUT)
-        end
-    end
-    return nothing
+   # autocorrelation vs cross-correlation
+   if nsc1 == nsc2
+       df1 = raw_data_available(nsc1)
+       for ii = 1:size(df1,1)
+           S1 = readmseed(df1[ii,:FILE])
+           FFT1 = compute_fft(S1,P.freqmin, P.freqmax, P.fs, P.cc_step, P.cc_len,
+                             time_norm=P.time_norm,to_whiten=P.to_whiten)
+           C = compute_cc(FFT1,FFT1,P.maxlag,
+                          smoothing_half_win=P.smoothing_half_win,
+                          corr_type=P.corr_type)
+           save_corr(C,P.CORROUT)
+       end
+   else # cross-correlations
+       df1 = raw_data_available(nsc1)
+       df2 = raw_data_available(nsc2)
+       inter = intersect(df1[:STARTTIME],df2[:STARTTIME])
+       # subset matching days memory efficient
+       df1 = df1[∈(inter).(df1.STARTTIME), :]
+       df2 = df2[∈(inter).(df2.STARTTIME), :]
+       for ii = 1:size(df1,1)
+           S1 = readmseed(df1[ii,:FILE])
+           S2 = readmseed(df2[ii,:FILE])
+           FFT1 = compute_fft(S1,P.freqmin, P.freqmax, P.fs, P.cc_step, P.cc_len,
+                             time_norm=P.time_norm,to_whiten=P.to_whiten)
+           FFT2 = compute_fft(S2,P.freqmin, P.freqmax, P.fs, P.cc_step, P.cc_len,
+                             time_norm=P.time_norm,to_whiten=P.to_whiten)
+           C = compute_cc(FFT1,FFT2,P.maxlag,
+                          smoothing_half_win=P.smoothing_half_win,
+                          corr_type=P.corr_type)
+           save_corr(C,P.CORROUT)
+       end
+   end
+   return nothing
 end
 
 function generate_pairs(files::AbstractArray)

@@ -21,7 +21,7 @@ mutable struct FFTData
   misc::Dict{String,Any}                      # misc
   notes::Array{String,1}                      # notes
   t::Array{Float64,1}                         # time
-  fft::Array{Complex{Float64},2}              # fft data
+  fft::Array{<:Union{Complex{Float32},Complex{Float64}},2}  # fft data
 
   function FFTData(
       name     ::String,
@@ -39,7 +39,7 @@ mutable struct FFTData
       misc     ::Dict{String,Any},
       notes    ::Array{String,1},
       t        ::Array{Float64,1},
-      fft      ::Array{Complex{Float64},2}
+      fft      ::Array{<:Union{Complex{Float32},Complex{Float64}},2}
       )
 
       return new(name, id, loc, fs, gain, freqmin, freqmax, cc_len, cc_step,
@@ -63,13 +63,14 @@ FFTData(;
           misc     ::Dict{String,Any}          = Dict{String,Any}(),
           notes    ::Array{String,1}           = Array{String,1}(undef, 0),
           t        ::Array{Float64,1}            = Array{Float64,1}(undef, 0),
-          fft      ::Array{Complex{Float64},2} = Array{Complex{Float64},2}(undef, 0, 2)
+          fft      ::Array{<:Union{Complex{Float32},Complex{Float64}},2} =
+                     Array{Complex{Float32},2}(undef, 0, 2)
           ) = FFTData(name, id, loc, fs, gain, freqmin, freqmax, cc_len, cc_step,
                      whiten, time_norm, resp, misc, notes, t, fft)
 
 FFTData(C::SeisChannel,freqmin::Float64, freqmax::Float64,cc_len::Int,
         cc_step::Int, whitened::Bool,time_norm::Union{Bool,String},
-        t::Array{Float64,1},fft::Array{Complex{Float64},2}
+        t::Array{Float64,1},fft::Array{<:Union{Complex{Float32},Complex{Float64}},2}
        ) = FFTData(C.name, C.id, C.loc, C.fs, C.gain, freqmin, freqmax, cc_len,
                    cc_step, whitened, time_norm, C.resp, C.misc, C.notes, t, fft)
 

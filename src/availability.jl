@@ -1,42 +1,27 @@
-export get_files, get_info, raw_data_available
-
-function get_files(ROOT::String; format::String="mseed")
-    # add files to path
-    paths = []
-    for (root, dirs, files) in walkdir(ROOT)
-        for file in files
-            file = joinpath(root,file)
-            push!(paths,file)
-        end
-    end
-
-    # check file format
-    filter!(x-> occursin(Regex(".$format"),x), paths)
-    return paths
-end
-
-function get_info(file::String)
-    path, mseed = splitdir(file)
-    chan, loc, starttime, endtime, _ = split(mseed,'.')
-    path, chan = splitdir(path)
-    path, sta = splitdir(path)
-    path, net = splitdir(path)
-    starttime = DateTime(starttime,"yyyymmddTHHMMSSZ")
-    endtime = DateTime(endtime,"yyyymmddTHHMMSSZ")
-    return Dict(:NET => net,:STA => sta, :LOC => loc, :CHAN => chan,
-                :STARTTIME => starttime, :ENDTIME => endtime,
-                :FILE => file)
-end
+export raw_data_available
 
 function raw_data_available(ROOT::String; format::String="mseed")
-    files = get_files(ROOT)
-    df = DataFrame(NET = String[], STA = String[], LOC = String[], CHAN = String[],
-               STARTTIME = DateTime[], ENDTIME = DateTime[], FILE = String[])
+    files = glob("*"*format,ROOT)
+    N = length(files)
+    NET = Array{String,1}(undef,N)
+    STA = Array{String,1}(undef,N)
+    LOC = Array{String,1}(undef,N)
+    CHAN = Array{String,1}(undef,N)
+    STARTTIME = Array{DateTime,1}(undef,N)
+    ENDTIME = Array{DateTime,1}(undef,N)
 
-    # daily files to data frame
-    for ii = 1:length(files)
-        push!(df,get_info(files[ii]))
+    for ii = 1:N
+        path, mseed = splitdir(files[ii])
+        chan, LOC[ii], starttime, endtime, _ = string.(split(mseed,'.'))
+        path, CHAN[ii] = splitdir(path)
+        path, STA[ii] = splitdir(path)
+        path, NET[ii] = splitdir(path)
+        STARTTIME[ii] = DateTime(starttime,"yyyymmddTHHMMSSZ")
+        ENDTIME[ii] = DateTime(endtime,"yyyymmddTHHMMSSZ")
     end
+
+    df = DataFrame(NET = NET, STA = STA, LOC = LOC, CHAN = CHAN,
+               STARTTIME = STARTTIME, ENDTIME = ENDTIME, FILE = files)
     return df
 end
 
