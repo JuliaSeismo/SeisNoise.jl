@@ -30,6 +30,9 @@ function smooth!(A::AbstractArray; half_win::Int=3, dims::Int=1)
     end
     window_len = 2 * half_win + 1
 
+    # get type of input Array
+    T = eltype(A)
+
     if ndims(A) == 1
         A = reshape(A,size(A)...,1) # if 1D array, reshape to (length(A),1)
     end
@@ -41,6 +44,7 @@ function smooth!(A::AbstractArray; half_win::Int=3, dims::Int=1)
     # convolve with boxcar
     w = rect(window_len)
     w ./= sum(w)
+    w = T.(w)
     for ii = 1:size(X,2)
         A[:,ii] .= conv(X[:,ii],w)[window_len+half_win:end-window_len-half_win+1]
     end

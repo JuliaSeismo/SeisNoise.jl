@@ -28,10 +28,10 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
                      to_whiten::Bool=false)
 
     # sync!(S,s=starttime,t=endtime)
-    process_raw!(S,fs)  # demean, detrend, taper, lowpass, downsample
     merge!(S)
     starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
     sync!(S,s=starttime,t=endtime)
+    process_raw!(S,fs)  # demean, detrend, taper, lowpass, downsample
     A, starts, ends = slide(S[1], cc_len, cc_step)
     FFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,
                       to_whiten=to_whiten)

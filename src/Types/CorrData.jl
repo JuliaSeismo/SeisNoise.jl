@@ -26,7 +26,7 @@ mutable struct CorrData
   notes::Array{String,1}                      # notes
   maxlag::Float64                             # maximum lag time [s]
   t::Array{Float64,1}                         # time
-  corr::Array{Float64,2}                      # corr data
+  corr::Array{<:Union{Float32,Float64},2}     # corr data
 
   function CorrData(
       name     ::String,
@@ -48,7 +48,7 @@ mutable struct CorrData
       notes    ::Array{String,1},
       maxlag   ::Float64,
       t        ::Array{Float64,1},
-      corr     ::Array{Float64,2}
+      corr     ::Array{<:Union{Float32,Float64},2}
       )
 
       return new(name, id, loc, comp, rotated, corr_type, fs, gain, freqmin,
@@ -77,13 +77,13 @@ CorrData(;
           notes    ::Array{String,1}           = Array{String,1}(undef, 0),
           maxlag   ::Float64                   = zero(Float64),
           t        ::Array{Float64,1}          = Array{Float64,1}(undef, 0),
-          corr     ::Array{Float64,2}          = Array{Float64,2}(undef, 0, 2)
+          corr     ::Array{<:Union{Float32,Float64},2} = Array{Float32,2}(undef, 0, 2)
           ) = CorrData(name, id, loc, comp, rotated, corr_type, fs, gain,
                       freqmin, freqmax, cc_len, cc_step, whiten, time_norm,
                       resp, misc, notes, maxlag, t, corr)
 
 CorrData(F1::FFTData, F2::FFTData, comp::String, rotated::Bool, corr_type::String,
-        maxlag::Float64, t::Array{Float64,1}, corr::Array{Float64,2}
+        maxlag::Float64, t::Array{Float64,1}, corr::Array{<:Union{Float32,Float64},2}
        ) = CorrData(F1.name * '.' * F2.name, F1.id, F1.loc, comp, rotated,
                   corr_type, F1.fs, F1.gain, F1.freqmin, F1.freqmax, F1.cc_len,
                   F1.cc_step, F1.whitened, F1.time_norm, F1.resp, F1.misc,

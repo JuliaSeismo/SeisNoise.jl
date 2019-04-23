@@ -167,7 +167,7 @@ function validate_parameters(A::AbstractArray,
 end
 
 
-function find_nonzero(c::Array{Float64,1})
+function find_nonzero(c::Array{<:Union{Float32,Float64},1})
     a = similar(c, Int)
     count = 1
     @inbounds for i in eachindex(c)
