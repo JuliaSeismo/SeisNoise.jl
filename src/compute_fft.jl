@@ -30,9 +30,9 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
     # sync!(S,s=starttime,t=endtime)
     merge!(S)
     ungap!(S)
+    process_raw!(S,fs)  # demean, detrend, taper, lowpass, downsample
     starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
     sync!(S,s=starttime,t=endtime)
-    process_raw!(S,fs)  # demean, detrend, taper, lowpass, downsample
     A, starts, ends = slide(S[1], cc_len, cc_step)
     FFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,
                       to_whiten=to_whiten)
@@ -49,6 +49,11 @@ end
 Perform sanity checks on input raw data.
 """
 function data_checks!(S::SeisData)
+    for ii = 1:S.n
+        if S[ii].fs < 1
+            S[ii].fs = 1 / S[ii].fs
+        end
+    end
 end
 
 """

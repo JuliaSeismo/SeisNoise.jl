@@ -1,3 +1,4 @@
+__precompile__()
 module Noise
 
 using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO
