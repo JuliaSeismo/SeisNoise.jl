@@ -29,6 +29,7 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
 
     # sync!(S,s=starttime,t=endtime)
     merge!(S)
+    ungap!(S)
     starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
     sync!(S,s=starttime,t=endtime)
     process_raw!(S,fs)  # demean, detrend, taper, lowpass, downsample
@@ -68,7 +69,6 @@ Checks:
 function process_raw!(S::SeisData, fs::Float64)
     for ii = 1:S.n
         ArrayFuncs.demean!(S[ii].x)        # remove mean from channel
-        ungap!(S[ii])         # replace gaps with mean of channel
         if fs ∉ S.fs
             ArrayFuncs.detrend!(S[ii].x)       # remove linear trend from channel
             ArrayFuncs.taper!(S[ii].x,S[ii].fs)         # taper channel ends
