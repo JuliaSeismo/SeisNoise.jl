@@ -26,7 +26,7 @@ function phase_shift!(C::SeisChannel)
         freq = rfftfreq(nfft,C.fs)
         fftdata = rfft(C.x)
         fftdata .= fftdata .* exp.(1im .* 2 .* pi .* freq .* off)
-        C.x[:] = irfft(fftdata,n)[1:n]
+        C.x[:] = irfft(fftdata,nfft)[1:n]
         C.t[1,2] += off * 1e6
     end
     return nothing
