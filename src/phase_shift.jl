@@ -8,7 +8,7 @@ Phase shift SeisChannel if starttime is not aligned with sampling rate.
 function phase_shift!(C::SeisChannel)
     t = C.t[1,2]
     dt = 1. / C.fs
-    off = mod(millisecond(u2d(t)) * 1e-3, 1. / C.fs)
+    off = mod(millisecond(u2d(t*1e-6)) * 1e-3, 1. / C.fs)
     n = length(C.x)
 
     if dt - off <= eps(Float64)
@@ -23,10 +23,10 @@ function phase_shift!(C::SeisChannel)
         end
         nfft = nextprod([2, 3, 5],n)
         C.x[:] = [C.x; zeros(eltype(C.x), nfft - n)]
-        freq = fftfreq(nfft,C.fs)
-        fftdata = fft(C.x)
-        fftdata .= fftdata .* exp.(1im .* 2 .* pi .* fftfreq .* dt)
-        C.x[:] = ifft(fftdata)[1:n]
+        freq = rfftfreq(nfft,C.fs)
+        fftdata = rfft(C.x)
+        fftdata .= fftdata .* exp.(1im .* 2 .* pi .* freq .* off)
+        C.x[:] = irfft(fftdata,n)[1:n]
         C.t[1,2] += off * 1e6
     end
     return nothing
