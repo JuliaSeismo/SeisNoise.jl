@@ -1,7 +1,6 @@
 # cross-correlation module
 export clean_up!, clean_up, correlate, compute_cc, next_fast_len, save_corr, load_fft
 export correlate_parallel, generate_pairs
-import .ArrayFuncs
 import Statistics: mean
 """
     clean_up!(A,freqmin,freqmax,fs)
@@ -16,10 +15,10 @@ Demean, detrend, taper and filter time series.
 """
 function clean_up!(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
                    corners::Int=4, zerophase::Bool=true)
-    ArrayFuncs.demean!(A)
-    ArrayFuncs.detrend!(A)
-    ArrayFuncs.taper!(A,fs)
-    ArrayFuncs.bandpass!(A,freqmin,freqmax,fs,corners=corners,zerophase=zerophase)
+    demean!(A)
+    detrend!(A)
+    taper!(A,fs)
+    bandpass!(A,freqmin,freqmax,fs,corners=corners,zerophase=zerophase)
     return nothing
 end
 clean_up(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;

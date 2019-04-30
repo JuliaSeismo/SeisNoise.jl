@@ -1,4 +1,5 @@
-module ArrayFuncs
+export detrend, detrend!, demean, demean!, bandpass, bandpass!, bandstop, bandstop!,
+       lowpass, lowpass!, highpass, highpass!  
 import Statistics.mean
 import LinearAlgebra.pinv
 using DSP
@@ -460,4 +461,3 @@ end
 highpass(A::AbstractArray{<:Union{Float32,Float64},2},freq::Float64,fs::Float64;
 corners::Int=4,zerophase::Bool=false) = (U = deepcopy(A);
 highpass!(U,freq,fs,corners=corners,zerophase=zerophase);return U)
-end
