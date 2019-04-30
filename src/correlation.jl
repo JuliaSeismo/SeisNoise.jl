@@ -1,7 +1,7 @@
 # cross-correlation module
 export clean_up!, clean_up, correlate, compute_cc, next_fast_len, save_corr, load_fft
 export correlate_parallel, generate_pairs
-import ..ArrayFuncs
+import .ArrayFuncs
 import Statistics: mean
 """
     clean_up!(A,freqmin,freqmax,fs)
