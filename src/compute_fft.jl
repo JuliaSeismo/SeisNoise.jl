@@ -1,5 +1,5 @@
 export process_raw, process_raw!, process_fft, compute_fft, whiten, save_fft
-import ArrayFuncs
+import ..ArrayFuncs
 """
     compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64, fs::Float64
                          cc_step::Int, cc_len::Int;

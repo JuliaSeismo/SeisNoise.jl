@@ -1,6 +1,6 @@
 export bandpass, bandpass!, bandstop, bandstop!, lowpass, lowpass!,
         highpass, highpass!, taper, taper!, envelope
-import ArrayFuncs
+import ..ArrayFuncs
 
 """
     bandpass!(C,freqmin,freqmax,fs,corners=4,zerophase=false)
