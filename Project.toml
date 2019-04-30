@@ -1,0 +1,14 @@
+name = "Noise"
+uuid = "8cc7c3c0-6b5d-11e9-39fe-c9cd0236e08b"
+authors = ["timclements <thclements@g.harvard.edu>"]
+version = "0.1.0"
+
+[deps]
+DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+SeisIO = "b372bb87-02dd-52bb-bcf6-c30dd83fd342"
