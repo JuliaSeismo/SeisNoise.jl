@@ -1,6 +1,5 @@
 export bandpass, bandpass!, bandstop, bandstop!, lowpass, lowpass!,
         highpass, highpass!, taper, taper!, envelope
-import .ArrayFuncs
 
 """
     bandpass!(C,freqmin,freqmax,fs,corners=4,zerophase=false)
@@ -21,7 +20,7 @@ the resulting filtered trace.
 """
 function bandpass!(C::SeisChannel, freqmin::Float64, freqmax::Float64;
                    corners::Int=4, zerophase::Bool=false)
-    ArrayFuncs.bandpass!(C.x,freqmin,freqmax,C.fs,corners=corners,zerophase=zerophase)
+    bandpass!(C.x,freqmin,freqmax,C.fs,corners=corners,zerophase=zerophase)
     return nothing
 end
 bandpass(C::SeisChannel,freqmin::Float64, freqmax::Float64; corners::Int=4,
@@ -48,7 +47,7 @@ the resulting filtered trace.
 function bandpass!(S::SeisData, freqmin::Float64, freqmax::Float64;
                    corners::Int=4, zerophase::Bool=false)
     @inbounds for i = 1:S.n
-        ArrayFuncs.bandpass!(S[i].x,freqmin,freqmax,S[i].fs,corners=corners,
+        bandpass!(S[i].x,freqmin,freqmax,S[i].fs,corners=corners,
                              zerophase=zerophase)
     end
     return nothing
@@ -77,7 +76,7 @@ the resulting filtered trace.
 """
 function bandstop!(C::SeisChannel, freqmin::Float64, freqmax::Float64;
                    corners::Int=4, zerophase::Bool=false)
-    ArrayFuncs.bandstop!(C.x,freqmin,freqmax,C.fs,corners=corners,zerophase=zerophase)
+    bandstop!(C.x,freqmin,freqmax,C.fs,corners=corners,zerophase=zerophase)
     return nothing
 end
 bandstop(C::SeisChannel,freqmin::Float64, freqmax::Float64; corners::Int=4,
@@ -87,7 +86,7 @@ bandstop(C::SeisChannel,freqmin::Float64, freqmax::Float64; corners::Int=4,
 function bandstop!(S::SeisData, freqmin::Float64, freqmax::Float64;
                    corners::Int=4, zerophase::Bool=false)
     @inbounds for i = 1:S.n
-        ArrayFuncs.bandstop!(S[i].x,freqmin,freqmax,s[i].fs,corners=corners,zerophase=zerophase)
+        bandstop!(S[i].x,freqmin,freqmax,s[i].fs,corners=corners,zerophase=zerophase)
     end
     return nothing
 end
@@ -131,7 +130,7 @@ This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
 function lowpass!(C::SeisChannel, freq::Float64;corners::Int=4, zerophase::Bool=false)
-    ArrayFunc.lowpass!(C.x,freq,C.fs,corners=corners,zerophase=zerophase)
+    lowpass!(C.x,freq,C.fs,corners=corners,zerophase=zerophase)
     return nothing
 end
 lowpass(C::SeisChannel,freq::Float64; corners::Int=4,zerophase::Bool=false) =
@@ -156,7 +155,7 @@ the resulting filtered trace.
 """
 function lowpass!(S::SeisData, freq::Float64;corners::Int=4, zerophase::Bool=false)
     @inbounds for i = 1:S.n
-        ArrayFuncs.lowpass!(S[i].x,freq,S[i].fs,corners=corners,
+        lowpass!(S[i].x,freq,S[i].fs,corners=corners,
                             zerophase=zerophase)
     end
     return nothing
@@ -183,7 +182,7 @@ This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
 function highpass!(C::SeisChannel, freq::Float64;corners::Int=4, zerophase::Bool=false)
-    ArrayFuncs.highpass!(C.x,freq,C.fs,corners=corners,zerophase=zerophase)
+    highpass!(C.x,freq,C.fs,corners=corners,zerophase=zerophase)
     return nothing
 end
 highpass(C::SeisChannel,freq::Float64; corners::Int=4,zerophase::Bool=false) =
@@ -208,7 +207,7 @@ the resulting filtered trace.
 """
 function highpass!(S::SeisData, freq::Float64;corners::Int=4, zerophase::Bool=false)
     @inbounds for i = 1:S.n
-        ArrayFuncs.highpass!(S[i].x,freq,S[i].fs,corners=corners,
+        highpass!(S[i].x,freq,S[i].fs,corners=corners,
                              zerophase=zerophase)
     end
     return nothing
