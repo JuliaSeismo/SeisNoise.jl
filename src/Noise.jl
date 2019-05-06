@@ -1,7 +1,7 @@
 __precompile__()
 module Noise
 
-using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO
+using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, Printf, SeisIO, Statistics
 include("ArrayFuncs.jl")
 include("tools.jl")
 include("slicing.jl")
