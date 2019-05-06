@@ -25,7 +25,7 @@ function downsample(C::SeisChannel,fs::Float64)
 
     old_start = C.t[1,2] * 1e-6
     old_dt = 1. / C.fs
-    starttime, endtime = t_win(C.t,C.fs)
+    starttime, endtime = SeisIO.t_win(C.t,C.fs)
     starttime, endtime = starttime *1e-6, endtime * 1e-6
     npts = Int(floor((endtime-starttime)/dt)) + 1
     C.x = weighted_average_slopes(C.x,old_start,old_dt,starttime,dt,npts)

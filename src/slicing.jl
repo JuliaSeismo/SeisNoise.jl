@@ -8,7 +8,7 @@ const sμ = 1000000.0
 Return start and endtimes of SeisChannel in DateTime format.
 """
 function start_end(C::SeisChannel)
-    return u2d.(t_win(C.t,C.fs) * 1e-6)
+    return u2d.(SeisIO.t_win(C.t,C.fs) * 1e-6)
 end
 
 """
@@ -41,7 +41,7 @@ Generate equal length sliding windows into an array.
 """
 function slide(C::SeisChannel, cc_len::Int, cc_step::Int)
   window_samples = Int(cc_len * C.fs)
-  su,eu = t_win(C.t,C.fs) * μs
+  su,eu = SeisIO.t_win(C.t,C.fs) * μs
   starts = Array(range(su,stop=eu,step=cc_step))
   ends = starts .+ cc_len .- 1. / C.fs
   ind = findlast(x -> x <= eu,ends)
@@ -63,7 +63,7 @@ end
 Return best possible start, end times for data in `C` given the c
 """
 function nearest_start_end(C::SeisChannel, cc_len::Int, cc_step::Int)
-  su,eu = t_win(C.t,C.fs) * μs
+  su,eu = SeisIO.t_win(C.t,C.fs) * μs
   ideal_start = d2u(DateTime(Date(u2d(su)))) # midnight of same day
   starts = Array(range(ideal_start,stop=eu,step=cc_step))
   ends = starts .+ cc_len .- 1. / C.fs
