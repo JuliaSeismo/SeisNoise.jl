@@ -5,7 +5,33 @@ const corrfields = [:id, :name, :loc, :comp, :rotated, :corr_type, :fs, :gain,
                     :freqmin, :freqmax, :cc_step, :whitened, :time_norm, :resp,
                     :notes, :misc, :maxlag, :t, :corr]
 
-# This is type-stable for C = CorrData() but not for keyword args
+"""
+   CorrData
+
+A structure for cross-correlations of ambient noise data.
+
+## Fields: CorrData
+| **Field** | **Description** |
+|:------------|:-------------|
+| :name       | Freeform channel names |
+| :id         | Channel ids. use NET.STA.LOC.CHAN format when possible. |
+| :loc        | Location (position) vector; freeform. |
+| :fs         | Sampling frequency in Hz. |
+| :gain       | Scalar gain; divide data by the gain to convert to units  |
+| :freqmin    | Minimum frequency for whitening.  |
+| :freqmax    | Maximum frequency for whitening. |
+| :cc_len     | Length of each correlation in seconds. |
+| :cc_step    | Spacing between correlation windows in seconds. |
+| :whitened   | Whitening applied.
+| :time_norm  | Apply one-bit whitening with "one_bit". |
+| :resp       | Instrument response; two-column matrix, format [zeros poles] |
+| :misc       | Dictionary for non-critical information. |
+| :notes      | Timestamped notes; includes automatically-logged acquisition and |
+|             | processing information. |
+| :maxlag     | Maximum lag time in seconds to keep from correlations. |
+| :t          | Starttime of each correlation. |
+| :corr       | Correlations stored in columns. |
+"""
 mutable struct CorrData
   name::String                                # name [Net1.Sta1.Loc1.Chan1.Net2.Sta2.Loc2.Chan2]
   id::String                                  # id [Y-mm-dd] this is date of corr

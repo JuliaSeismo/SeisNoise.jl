@@ -35,7 +35,7 @@ function downsample(C::SeisChannel,fs::Float64)
 end
 
 """
-    downsample(S::SeisData)
+    downsample(S::SeisData, fs::Float64)
 
 Downsample SeisData sampling rate to frequency `fs`.
 """

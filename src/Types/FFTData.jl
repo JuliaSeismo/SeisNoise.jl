@@ -4,7 +4,33 @@ export FFTData
 const fftfields = [:id, :name, :loc, :fs, :gain, :freqmin, :freqmax, :cc_step,
                    :whitened, :time_norm, :resp,:notes, :misc, :t, :fft]
 
-# This is type-stable for F = FFTData() but not for keyword args
+"""
+   FFTData
+
+A structure for fourier transforms (FFT) of ambient noise data.
+
+## Fields: FFTData
+| **Field** | **Description** |
+|:--------------------|:--------------------|
+| :name       | Freeform channel names |
+| :id         | Channel ids. use NET.STA.LOC.CHAN format when possible. |
+| :loc        | Location (position) vector; freeform. |
+| :fs         | Sampling frequency in Hz. |
+| :gain       | Scalar gain; divide data by the gain to convert to units  |
+| :freqmin    | Minimum frequency for whitening.  |
+| :freqmax    | Maximum frequency for whitening. |
+| :cc_len     | Length of each correlation in seconds. |
+| :cc_step    | Spacing between correlation windows in seconds. |
+| :whitened   | Whitening applied.
+| :time_norm  | Apply one-bit whitening with "one_bit". |
+| :resp       | Instrument response; two-column matrix, format [zeros poles] |
+| :misc       | Dictionary for non-critical information. |
+| :notes      | Timestamped notes; includes automatically-logged acquisition and |
+|             | processing information. |
+| :maxlag     | Maximum lag time in seconds to keep from correlations. |
+| :t          | Starttime of each FFT. |
+| :fft        | FFTs stored in columns. |
+"""
 mutable struct FFTData
   name::String                                # name [Net.Sta.Loc.Chan]
   id::String                                  # id [Y-mm-dd] this is date of fft

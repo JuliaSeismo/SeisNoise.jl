@@ -1,5 +1,5 @@
 export detrend, detrend!, demean, demean!, bandpass, bandpass!, bandstop, bandstop!,
-       lowpass, lowpass!, highpass, highpass!  
+       lowpass, lowpass!, highpass, highpass!
 import Statistics.mean
 import LinearAlgebra.pinv
 using DSP
@@ -22,9 +22,9 @@ function lstsq(A::AbstractArray,X::AbstractArray)
 end
 
 """
-    detrend!(A)
+    detrend!(X::AbstractArray{<:Union{Float32,Float64},1})
 
-Remove linear trend from array `A` using least-squares regression.
+Remove linear trend from array `X` using least-squares regression.
 """
 function detrend!(X::AbstractArray{<:Union{Float32,Float64},1})
     N = length(X)
@@ -38,7 +38,7 @@ detrend(A::AbstractArray{<:Union{Float32,Float64},1}) = (U = deepcopy(A);
         detrend!(U);return U)
 
 """
-    detrend!(A)
+    detrend!(X::AbstractArray{<:Union{Float32,Float64},2})
 
 Remove linear trend from columns of `X` using least-squares regression.
 """
@@ -56,7 +56,7 @@ detrend(A::AbstractArray{<:Union{Float32,Float64},2}) = (U = deepcopy(A);
         detrend!(U);return U)
 
 """
-    demean!(A)
+    demean!(A::AbstractArray{<:Union{Float32,Float64},1})
 
 Remove mean from array `A`.
 """
@@ -71,7 +71,7 @@ demean(A::AbstractArray{<:Union{Float32,Float64},1}) = (U = deepcopy(A);
        demean!(U);return U)
 
 """
-   demean!(A)
+   demean!(A::AbstractArray{<:Union{Float32,Float64},2})
 
 Remove mean from columns of array `A`.
 """
