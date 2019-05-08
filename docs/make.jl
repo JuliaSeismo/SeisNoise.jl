@@ -3,7 +3,6 @@ using Documenter, Noise
 
 makedocs(
     modules = [Noise],
-    format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
     sitename = "Noise.jl",
     authors = "Tim Clements",
     pages = Any[
