@@ -15,7 +15,7 @@ A structure for cross-correlations of ambient noise data.
 |:------------|:-------------|
 | :name       | Freeform channel names |
 | :id         | Channel ids. use NET.STA.LOC.CHAN format when possible. |
-| :loc        | Location (position) vector; freeform. |
+| :loc        | Location (position) object. |
 | :fs         | Sampling frequency in Hz. |
 | :gain       | Scalar gain; divide data by the gain to convert to units  |
 | :freqmin    | Minimum frequency for whitening.  |
@@ -24,7 +24,7 @@ A structure for cross-correlations of ambient noise data.
 | :cc_step    | Spacing between correlation windows in seconds. |
 | :whitened   | Whitening applied.
 | :time_norm  | Apply one-bit whitening with "one_bit". |
-| :resp       | Instrument response; two-column matrix, format [zeros poles] |
+| :resp       | Instrument response object, format [zeros poles] |
 | :misc       | Dictionary for non-critical information. |
 | :notes      | Timestamped notes; includes automatically-logged acquisition and |
 |             | processing information. |
@@ -35,7 +35,7 @@ A structure for cross-correlations of ambient noise data.
 mutable struct CorrData
   name::String                                # name [Net1.Sta1.Loc1.Chan1.Net2.Sta2.Loc2.Chan2]
   id::String                                  # id [Y-mm-dd] this is date of corr
-  loc::Array{Float64,1}                       # loc
+  loc::GeoLoc                                 # loc
   comp::String                                # 1st channel, 2nd channel [ZZ,RT,..]
   rotated::Bool                               # rotation applied?
   corr_type::String                           # "corr", "deconv", "coh"
@@ -47,7 +47,7 @@ mutable struct CorrData
   cc_step::Int                                # step between windows [s]
   whitened::Bool                              # whitening applied
   time_norm::Union{Bool,String}               # time normaliation
-  resp  ::Array{Complex{Float64},2}           # response poles/zeros
+  resp::PZResp                                # response poles/zeros
   misc::Dict{String,Any}                      # misc
   notes::Array{String,1}                      # notes
   maxlag::Float64                             # maximum lag time [s]
@@ -57,7 +57,7 @@ mutable struct CorrData
   function CorrData(
       name     ::String,
       id       ::String,
-      loc      ::Array{Float64,1},
+      loc      ::GeoLoc,
       comp     ::String,
       rotated  ::Bool,
       corr_type::String,
@@ -69,7 +69,7 @@ mutable struct CorrData
       cc_step  ::Int,
       whitened ::Bool,
       time_norm::Union{Bool,String},
-      resp     ::Array{Complex{Float64},2},
+      resp     ::PZResp,
       misc     ::Dict{String,Any},
       notes    ::Array{String,1},
       maxlag   ::Float64,
@@ -86,7 +86,7 @@ end
 CorrData(;
           name     ::String                    = "",
           id       ::String                    = "",
-          loc      ::Array{Float64,1}          = Array{Float64,1}(undef, 0),
+          loc      ::GeoLoc                    = GeoLoc(),
           comp     ::String                    = "",
           rotated  ::Bool                      = false,
           corr_type::String                    = "",
@@ -98,14 +98,14 @@ CorrData(;
           cc_step  ::Int                       = zero(Int),
           whitened ::Bool                      = false,
           time_norm::Union{Bool,String}        = false,
-          resp     ::Array{Complex{Float64},2} = Array{Complex{Float64},2}(undef, 0, 2),
+          resp     ::PZResp                    = PZResp(),
           misc     ::Dict{String,Any}          = Dict{String,Any}(),
           notes    ::Array{String,1}           = Array{String,1}(undef, 0),
           maxlag   ::Float64                   = zero(Float64),
           t        ::Array{Float64,1}          = Array{Float64,1}(undef, 0),
           corr     ::Array{<:Union{Float32,Float64},2} = Array{Float32,2}(undef, 0, 2)
           ) = CorrData(name, id, loc, comp, rotated, corr_type, fs, gain,
-                      freqmin, freqmax, cc_len, cc_step, whiten, time_norm,
+                      freqmin, freqmax, cc_len, cc_step, whitened, time_norm,
                       resp, misc, notes, maxlag, t, corr)
 
 CorrData(F1::FFTData, F2::FFTData, comp::String, rotated::Bool, corr_type::String,

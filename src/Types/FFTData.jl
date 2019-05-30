@@ -14,7 +14,7 @@ A structure for fourier transforms (FFT) of ambient noise data.
 |:--------------------|:--------------------|
 | :name       | Freeform channel names |
 | :id         | Channel ids. use NET.STA.LOC.CHAN format when possible. |
-| :loc        | Location (position) vector; freeform. |
+| :loc        | Location (position) object |
 | :fs         | Sampling frequency in Hz. |
 | :gain       | Scalar gain; divide data by the gain to convert to units  |
 | :freqmin    | Minimum frequency for whitening.  |
@@ -23,7 +23,7 @@ A structure for fourier transforms (FFT) of ambient noise data.
 | :cc_step    | Spacing between correlation windows in seconds. |
 | :whitened   | Whitening applied.
 | :time_norm  | Apply one-bit whitening with "one_bit". |
-| :resp       | Instrument response; two-column matrix, format [zeros poles] |
+| :resp       | Instrument response object, format [zeros poles] |
 | :misc       | Dictionary for non-critical information. |
 | :notes      | Timestamped notes; includes automatically-logged acquisition and |
 |             | processing information. |
@@ -34,7 +34,7 @@ A structure for fourier transforms (FFT) of ambient noise data.
 mutable struct FFTData
   name::String                                # name [Net.Sta.Loc.Chan]
   id::String                                  # id [Y-mm-dd] this is date of fft
-  loc::Array{Float64,1}                       # loc
+  loc::GeoLoc                                 # loc
   fs::Float64                                 # sampling rate [Hz]
   gain::Float64                               # gain
   freqmin::Float64                            # minumum frequency [Hz]
@@ -43,7 +43,7 @@ mutable struct FFTData
   cc_step::Int                                # step between windows [s]
   whitened::Bool                              # whitening applied
   time_norm::Union{Bool,String}               # time normaliation
-  resp  ::Array{Complex{Float64},2}           # response poles/zeros
+  resp::PZResp                         # response poles/zeros
   misc::Dict{String,Any}                      # misc
   notes::Array{String,1}                      # notes
   t::Array{Float64,1}                         # time
@@ -52,7 +52,7 @@ mutable struct FFTData
   function FFTData(
       name     ::String,
       id       ::String,
-      loc      ::Array{Float64,1},
+      loc      ::GeoLoc,
       fs       ::Float64,
       gain     ::Float64,
       freqmin  ::Float64,
@@ -61,7 +61,7 @@ mutable struct FFTData
       cc_step  ::Int,
       whitened ::Bool,
       time_norm::Union{Bool,String},
-      resp     ::Array{Complex{Float64},2},
+      resp     ::PZResp,
       misc     ::Dict{String,Any},
       notes    ::Array{String,1},
       t        ::Array{Float64,1},
@@ -76,7 +76,7 @@ end
 FFTData(;
           name     ::String                    = "",
           id       ::String                    = "",
-          loc      ::Array{Float64,1}          = Array{Float64,1}(undef, 0),
+          loc      ::GeoLoc                    = GeoLoc(),
           fs       ::Float64                   = zero(Float64),
           gain     ::Float64                   = one(Float64),
           freqmin  ::Float64                   = zero(Float64),
@@ -85,14 +85,14 @@ FFTData(;
           cc_step  ::Int                       = zero(Int),
           whitened ::Bool                      = false,
           time_norm::Union{Bool,String}        = false,
-          resp     ::Array{Complex{Float64},2} = Array{Complex{Float64},2}(undef, 0, 2),
+          resp     ::PZResp                    = PZResp(),
           misc     ::Dict{String,Any}          = Dict{String,Any}(),
           notes    ::Array{String,1}           = Array{String,1}(undef, 0),
-          t        ::Array{Float64,1}            = Array{Float64,1}(undef, 0),
+          t        ::Array{Float64,1}          = Array{Float64,1}(undef, 0),
           fft      ::Array{<:Union{Complex{Float32},Complex{Float64}},2} =
                      Array{Complex{Float32},2}(undef, 0, 2)
           ) = FFTData(name, id, loc, fs, gain, freqmin, freqmax, cc_len, cc_step,
-                     whiten, time_norm, resp, misc, notes, t, fft)
+                     whitened, time_norm, resp, misc, notes, t, fft)
 
 FFTData(C::SeisChannel,freqmin::Float64, freqmax::Float64,cc_len::Int,
         cc_step::Int, whitened::Bool,time_norm::Union{Bool,String},
