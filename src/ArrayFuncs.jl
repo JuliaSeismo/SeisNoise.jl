@@ -1,5 +1,5 @@
 export detrend, detrend!, demean, demean!, bandpass, bandpass!, bandstop, bandstop!,
-       lowpass, lowpass!, highpass, highpass!
+       lowpass, lowpass!, highpass, highpass!, phase!, phase
 import Statistics.mean
 import LinearAlgebra.pinv
 using DSP
@@ -133,6 +133,24 @@ taper(A::AbstractArray{<:Union{Float32,Float64},2}, fs::Float64;
        taper!(U,fs,max_percentage=max_percentage,max_length=max_length);return U)
 
 """
+    phase!(A::AbstractArray)
+
+Extract instantaneous phase from signal A.
+
+For time series `A`, its analytic representation ``S = A + H(A)``, where
+``H(A)`` is the Hilbert transform of `A`. The instantaneous phase ``e^{iθ}``
+of `A` is given by dividing ``S`` by its modulus: ``e^{iθ} = \\frac{S}{|S|}``
+For more information on Phase Cross-Correlation, see:
+[Ventosa et al., 2019](https://pubs.geoscienceworld.org/ssa/srl/article-standard/570273/towards-the-processing-of-large-data-volumes-with).
+"""
+function phase!(A::AbstractArray)
+    A .= angle.(hilbert(A))
+    return nothing
+end
+phase(A::AbstractArray) = (U = deepcopy(A);phase!(U);return U)
+
+
+"""
    bandpass!(A,freqmin,freqmax,fs,corners=4,zerophase=false)
 
 Butterworth-Bandpass Filter.
@@ -182,7 +200,7 @@ function bandpass!(A::AbstractArray{<:Union{Float32,Float64},1},
 end
 bandpass(A::AbstractArray{<:Union{Float32,Float64},1},freqmin::Float64,
          freqmax::Float64, fs::Float64; corners::Int=4,zerophase::Bool=false) =
-         (U = deepcopy(A);bandpass!(A,freqmin,freqmax, fs, corners=corners,
+         (U = deepcopy(A);bandpass!(U,freqmin,freqmax, fs, corners=corners,
          zerophase=zerophase);return U)
 
 function bandpass!(A::AbstractArray{<:Union{Float32,Float64},2},
@@ -223,7 +241,7 @@ function bandpass!(A::AbstractArray{<:Union{Float32,Float64},2},
 end
 bandpass(A::AbstractArray{<:Union{Float32,Float64},2},freqmin::Float64,
          freqmax::Float64, fs::Float64; corners::Int=4,zerophase::Bool=false) =
-         (U = deepcopy(A);bandpass!(A,freqmin,freqmax,fs,corners=corners,
+         (U = deepcopy(A);bandpass!(U,freqmin,freqmax,fs,corners=corners,
          zerophase=zerophase);return U)
 
 

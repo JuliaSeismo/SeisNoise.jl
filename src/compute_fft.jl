@@ -116,9 +116,11 @@ function process_fft(A::AbstractArray,freqmin::Float64, freqmax::Float64,
                          zerophase=zerophase)
     demean!(A)
 
-    # apply one-bit normalization
+    # apply time-domain normalization or extract instantaneous phase
     if time_norm == "one_bit"
         A .= sign.(A)
+    elseif time_norm == "phase"
+        phase!(A)
     end
 
     # take fft along first dimension
