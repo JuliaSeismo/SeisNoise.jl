@@ -116,19 +116,29 @@ function process_fft(A::AbstractArray,freqmin::Float64, freqmax::Float64,
                          zerophase=zerophase)
     demean!(A)
 
-    # apply time-domain normalization or extract instantaneous phase
-    if time_norm == "one_bit"
-        A .= sign.(A)
-    elseif time_norm == "phase"
-        phase!(A)
+    if eltype(A) != Float32
+        A = Float32.(A)
     end
 
-    # take fft along first dimension
-    if to_whiten
+    if to_whiten && time_norm == false
+        M,N = size(A)
         FFT = whiten(A,freqmin, freqmax, fs)
+    elseif to_whiten && time_norm != false
+        M,N = size(A)
+        FFT = whiten(A,freqmin, freqmax, fs)
+        A = irfft(FFT,M,1)
+        # apply time-domain normalization or extract instantaneous phase
+        if time_norm == "one_bit"
+            A .= sign.(A)
+        elseif time_norm == "phase"
+            phase!(A)
+        end
+        FFT = rfft(A,1)
     else
-        if eltype(A) != Float32
-            A = Float32.(A)
+        if time_norm == "one_bit"
+            A .= sign.(A)
+        elseif time_norm == "phase"
+            phase!(A)
         end
         FFT = rfft(A,1)
     end
@@ -212,16 +222,6 @@ function whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float6
         end
     end
     return fftraw
-end
-
-
-"""
-    remove_resp(args)
-
-remove instrument response - will require reading stationXML and extracting poles
-and zeros
-"""
-function remove_resp(args)
 end
 
 """

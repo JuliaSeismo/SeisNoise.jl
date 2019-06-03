@@ -1,14 +1,14 @@
-export snr, smooth, smooth!, nextpow2, abs_max, standardize, mad, savitsky_golay,
+export snr, smooth, smooth!, nextpow2, abs_max!, standardize!, mad, savitsky_golay,
      running_mean, pws
 
 """
-    snr(A,sampling_rate)
+    snr(A,fs)
 
-Signal to noise ratio of cross-correlations in matrix `A` with `sampling_rate'.
+Signal to noise ratio of cross-correlations in matrix `A` with `fs'.
 
 Follows method of Clarke et. al, 2011. Measures SNR at each point.
 """
-function snr(A::AbstractArray,sampling_rate::Real)
+function snr(A::AbstractArray,fs::Real)
     t,N = size(A)
     A_mean = mean(A,dims=2)
 
@@ -17,6 +17,7 @@ function snr(A::AbstractArray,sampling_rate::Real)
     sigma = sqrt.(sigma./ (N-1))
     return sigma
 end
+snr(C::CorrData) = snr(C.corr,C.fs)
 
 """
     smooth(x,half_win=3)
@@ -63,22 +64,26 @@ function nextpow2(x::Real)
 end
 
 """
-    abs_max(A)
+    abs_max!(A)
 
 Returns array `A` divided by its absolute maximum value.
 """
-function abs_max(A::AbstractArray)
-    A ./ maximum(abs.(A),dims=1)
+function abs_max!(A::AbstractArray)
+    A .= A ./ maximum(abs.(A),dims=1)
+    return nothing
 end
+abs_max!(C::CorrData) = abs_max!(C.corr)
 
 """
-    standardize(A)
+    standardize!(A)
 
 Demean and standardize array `A` to unit std.
 """
-function standardize(A::AbstractArray)
-    (A .- mean(A,dims=1)) ./ std(A,dims=1)
+function standardize!(A::AbstractArray)
+    A .= (A .- mean(A,dims=1)) ./ std(A,dims=1)
+    return nothing
 end
+standardize!(C::CorrData) = standardize!(C.corr)
 
 """
     mad(A)
@@ -87,9 +92,9 @@ Median Absolute Deviation of array `A`.
 MAD = median(|Xi- median(A)|)
 """
 function mad(A::AbstractArray)
-    median(abs.(A .- median(A,dims=1)),dims=1)
-
+    return median(abs.(A .- median(A,dims=1)),dims=1)
 end
+mad(C::CorrData) = mad(C.corr)
 
 """
     savitsky_golay(x, window, polyOrder, [deriv])
@@ -142,7 +147,7 @@ function running_mean(x::AbstractArray,N::Int)
 end
 
 """
-    pws(A,sampling_rate,[power],[timegate])
+    pws(A,fs,power,timegate)
 
 Performs phase-weighted stack on array `A` of time series.
 
@@ -156,7 +161,7 @@ g(t) = 1/N sum j = 1:N s_j(t) * | 1/N sum k = 1:N exp[i * phi_k(t)]|^v
 where N is number of traces used, v is sharpness of phase-weighted stack
 
 """
-function pws(A::AbstractArray, sampling_rate::Real=20; power::Int=2, timegate::Int=5)
+function pws(A::AbstractArray, fs::Float64; power::Int=2, timegate::Int=5)
     M,N = size(A)
     analytic = A .+ im .* hilbert(A)
     phase = angle.(analytic)
@@ -164,7 +169,7 @@ function pws(A::AbstractArray, sampling_rate::Real=20; power::Int=2, timegate::I
     phase_stack = abs.(phase_stack).^2
 
     # smoothing
-    timegate_samples = Int(timegate * sampling_rate)
+    timegate_samples = Int(timegate * fs)
     phase_stack = running_mean(phase_stack,timegate_samples)
     weighted = A * phase_stack
     return weighted

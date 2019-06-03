@@ -1,4 +1,5 @@
 import Base:in, +, -, *, ==, convert, isempty, isequal, length, push!, sizeof
+import SeisIO: GeoLoc, PZResp
 export CorrData
 
 const corrfields = [:id, :name, :loc, :comp, :rotated, :corr_type, :fs, :gain,

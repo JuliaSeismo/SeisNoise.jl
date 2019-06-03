@@ -1,7 +1,7 @@
 # cross-correlation module
 export clean_up!, clean_up, correlate, compute_cc, next_fast_len, save_corr, load_fft
-export correlate_parallel, generate_pairs
-import Statistics: mean
+export load_corr, correlate_parallel, generate_pairs
+
 """
     clean_up!(A,freqmin,freqmax,fs)
 
@@ -26,8 +26,12 @@ clean_up(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
                  (U = deepcopy(A); clean_up!(U,freqmin,freqmax, fs,
                   corners=corners, zerophase=zerophase); return U)
 
+clean_up!(C::CorrData,freqmin::Float64,freqmax::Float64; corners::Int=4,
+          zerophase::Bool=true) = clean_up!(C.corr,freqmin,freqmax,C.fs,
+          corners=corners,zerophase=zerophase)
+
 """
-    correlate(fft1, fft2, N, maxlag, corr_type='cross-correlate')
+    correlate(fft1, fft2, N, maxlag, corr_type='cross-correlation')
 
 Cross-correlation of two ffts.
 
@@ -41,12 +45,12 @@ function correlate(fft1::AbstractArray, fft2::AbstractArray, N::Int,
     corrF = fft1 .* conj(fft2)
     if corr_type == "deconv"
         corrF ./= (smooth(abs.(fft2).^2, half_win=smoothing_half_win) .+
-                   0.01 .* mean(smooth(abs.(fft2).^2, half_win=smoothing_half_win),dims=2))
+                   0.01 .* mean(smooth(abs.(fft2).^2, half_win=smoothing_half_win),dims=1))
     elseif corr_type == "coherence"
         corrF ./= smooth(abs.(fft1),half_win=smoothing_half_win) .+
-                   0.01 .* mean(smooth(abs.(fft1), half_win=smoothing_half_win),dims=2)
+                   0.01 .* mean(smooth(abs.(fft1), half_win=smoothing_half_win),dims=1)
         corrF ./= smooth(abs.(fft2),half_win=smoothing_half_win) .+
-                   0.01 .* mean(smooth(abs.(fft2), half_win=smoothing_half_win),dims=2)
+                   0.01 .* mean(smooth(abs.(fft2), half_win=smoothing_half_win),dims=1)
     end
 
     # take inverse fft
@@ -135,6 +139,19 @@ function save_corr(C::CorrData, CORROUT::String)
         file[C.comp][C.id] = C
     end
     close(file)
+end
+
+"""
+
+  load_corr(filename,chan,day)
+
+Loads CorrData for channel `chan` on day `day` from JLD2 file `filename`.
+"""
+function load_corr(filename::String,chan::String,day::String)
+    file = jldopen(filename,"a+")
+    C = file[chan][day]
+    close(file)
+    return C
 end
 
 function correlate_parallel(P::InputParams)
