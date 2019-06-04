@@ -1,9 +1,9 @@
-import Base:in, +, -, *, ==, convert, isempty, isequal, length, push!, sizeof
+import Base:in, +, -, *, ==, convert, isempty, isequal, length, push!, sizeof, append!
 import SeisIO: GeoLoc, PZResp
 export FFTData
 
 const fftfields = [:id, :name, :loc, :fs, :gain, :freqmin, :freqmax, :cc_step,
-                   :whitened, :time_norm, :resp,:notes, :misc, :t, :fft]
+                   :whitened, :time_norm, :resp]
 
 """
    FFTData
@@ -101,12 +101,32 @@ FFTData(C::SeisChannel,freqmin::Float64, freqmax::Float64,cc_len::Int,
        ) = FFTData(C.name, C.id, C.loc, C.fs, C.gain, freqmin, freqmax, cc_len,
                    cc_step, whitened, time_norm, C.resp, C.misc, C.notes, t, fft)
 
-in(s::String, F::FFTData) = S.id==s
+in(s::String, F::FFTData) = F.id==s
 
-isempty(F::FFTData) = minimum([isempty(getfield(F,f)) for f in datafields])
+isempty(F::FFTData) = min(F.name=="",F.id == "",isempty(F.loc),
+                          F.fs == zero(typeof(F.fs)),
+                          F.gain == one(typeof(F.gain)),
+                          F.freqmin == zero(typeof(F.freqmin)),
+                          F.freqmax == zero(typeof(F.freqmax)),
+                          F.cc_len == zero(typeof(F.cc_len)),
+                          F.cc_step == zero(typeof(F.cc_step)),
+                          F.whitened == false,
+                          F.time_norm == false,
+                          isempty(F.resp), isempty(F.misc),isempty(F.notes),
+                          isempty(F.t),isempty(F.fft))
 
-isequal(F::FFTData, U::FFTData) = minimum([hash(getfield(S,i))==hash(getfield(U,i)) for i in fftfields]::Array{Bool,1})
-==(F::FFTData, U::FFTData) = isequal(S,U)::Bool
+isequal(F::FFTData, U::FFTData) = minimum([hash(getfield(F,i))==hash(getfield(U,i)) for i in fftfields]::Array{Bool,1})
+==(F::FFTData, U::FFTData) = isequal(F,U)::Bool
+
+append!(F::FFTData, U::FFTData)  = (if F == U;
+  setfield!(F, :t, vcat(getfield(F,:t), getfield(U,:t)));
+  setfield!(F, :fft, hcat(getfield(F,:fft), getfield(U,:fft)))
+  elseif isempty(F);
+  [setfield!(F, i, getfield(U,i)) for i in fftfields];
+  [setfield!(F, i, getfield(U,i)) for i in [:t,:fft]];
+  end;
+  return F)
++(F::FFTData, U::FFTData) = (T = deepcopy(F); return append!(T, U))
 
 function sizeof(F::FFTData)
 s = sum([sizeof(getfield(F,f)) for f in fftfields])

@@ -25,9 +25,7 @@ function show(io::IO, F::FFTData)
       t = typeof(targ)
       fstr = uppercase(String(f))
       print(io, lpad(fstr, show_os-2), ": ")
-      if t == Array{String,1}
-        SeisIO.show_str(io, targ, w, N)
-      elseif f == :notes || f == :misc
+      if f == :notes || f == :misc
         SeisIO.show_str(io, String[string(length(targ), " entries")], w, N)
       elseif (t <: AbstractFloat || t <: InstrumentPosition || t<: InstrumentResponse)
         println(io, repr("text/plain", targ, context=:compact=>true))
@@ -35,7 +33,7 @@ function show(io::IO, F::FFTData)
         if length(F.t) > 0
           SeisIO.show_str(io, String[timestamp(F.t[1]), " (", string(length(F.t)), " FFTs)"], w, N)
         else
-          SeisIO.show_str(io, String[repr("text/plain", targ[i], context=:compact=>true) for i = 1:M], w, N)
+          SeisIO.show_str(io, String[repr("text/plain", targ, context=:compact=>true)], w, N)
         end
       elseif f == :fft
         SeisIO.show_str(io, String[summary(targ)], w, N)
@@ -63,9 +61,7 @@ function show(io::IO, C::CorrData)
       t = typeof(targ)
       fstr = uppercase(String(f))
       print(io, lpad(fstr, show_os-2), ": ")
-      if t == Array{String,1}
-        SeisIO.show_str(io, targ, w, N)
-      elseif f == :notes || f == :misc
+      if f == :notes || f == :misc
         SeisIO.show_str(io, String[string(length(targ), " entries")], w, N)
       elseif (t <: AbstractFloat || t <: InstrumentPosition || t<: InstrumentResponse)
         println(io, repr("text/plain", targ, context=:compact=>true))
@@ -73,7 +69,7 @@ function show(io::IO, C::CorrData)
         if length(C.t) > 0
           SeisIO.show_str(io, String[timestamp(C.t[1]), " (", string(length(C.t)), " Corrs)"], w, N)
         else
-          SeisIO.show_str(io, String[repr("text/plain", targ[i], context=:compact=>true) for i = 1:M], w, N)
+          SeisIO.show_str(io, String[repr("text/plain", targ, context=:compact=>true)], w, N)
         end
       elseif f == :corr
         SeisIO.show_str(io, String[summary(targ)], w, N)

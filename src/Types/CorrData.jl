@@ -1,10 +1,10 @@
-import Base:in, +, -, *, ==, convert, isempty, isequal, length, push!, sizeof
+import Base:in, +, -, *, ==, convert, isempty, isequal, length, push!, sizeof, append!
 import SeisIO: GeoLoc, PZResp
 export CorrData
 
 const corrfields = [:id, :name, :loc, :comp, :rotated, :corr_type, :fs, :gain,
                     :freqmin, :freqmax, :cc_step, :whitened, :time_norm, :resp,
-                    :notes, :misc, :maxlag, :t, :corr]
+                    :maxlag]
 
 """
    CorrData
@@ -118,10 +118,32 @@ CorrData(F1::FFTData, F2::FFTData, comp::String, rotated::Bool, corr_type::Strin
 
 in(s::String, C::CorrData) = C.id==s
 
-isempty(C::CorrData) = minimum([isempty(getfield(C,f)) for f in corrfields])
+isempty(C::CorrData) = min(C.name=="",C.id == "",isempty(C.loc), C.comp=="",
+                          C.rotated==false,C.fs == zero(typeof(C.fs)),
+                          C.corr_type=="",
+                          C.gain == one(typeof(C.gain)),
+                          C.freqmin == zero(typeof(C.freqmin)),
+                          C.freqmax == zero(typeof(C.freqmax)),
+                          C.cc_len == zero(typeof(C.cc_len)),
+                          C.cc_step == zero(typeof(C.cc_step)),
+                          C.whitened == false,
+                          C.time_norm == false,
+                          isempty(C.resp), isempty(C.misc),isempty(C.notes),
+                          C.maxlag == zero(typeof(C.maxlag)), isempty(C.t),
+                          isempty(C.corr))
 
 isequal(C::CorrData, U::CorrData) = minimum([hash(getfield(C,i))==hash(getfield(U,i)) for i in corrfields]::Array{Bool,1})
 ==(C::CorrData, U::CorrData) = isequal(C,U)::Bool
+
+append!(C::CorrData, U::CorrData)  = (if C == U;
+  setfield!(C, :t, vcat(getfield(C,:t), getfield(U,:t)));
+  setfield!(C, :corr, hcat(getfield(C,:corr), getfield(U,:corr)))
+  elseif isempty(C)
+  [setfield!(C, i, getfield(U,i)) for i in corrfields];
+  [setfield!(C, i, getfield(U,i)) for i in [:t,:corr]];
+  end;
+  return C)
++(C::CorrData, U::CorrData) = (T = deepcopy(C); return append!(T, U))
 
 function sizeof(C::CorrData)
 s = sum([sizeof(getfield(C,f)) for f in corrfields])
