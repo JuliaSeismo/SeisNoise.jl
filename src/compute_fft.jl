@@ -1,4 +1,4 @@
-export process_raw, process_raw!, process_fft, compute_fft, whiten, save_fft
+export process_raw, process_raw!, process_fft, compute_fft, whiten
 """
     compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64, fs::Float64
                          cc_step::Int, cc_len::Int;
@@ -222,28 +222,4 @@ function whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float6
         end
     end
     return fftraw
-end
-
-"""
-    save_fft(F::FFTData, OUT::String)
-
-Save FFTData `F` to JLD2.
-"""
-function save_fft(F::FFTData, FFTOUT::String)
-    # check if FFT DIR exists
-    if isdir(FFTOUT) == false
-        mkpath(FFTOUT)
-    end
-
-    # create JLD2 file and save FFT
-    net,sta,loc,chan = split(F.name,'.')
-    filename = joinpath(FFTOUT,"$net.$sta.$chan.jld2")
-    file = jldopen(filename, "a+")
-    if !(chan in keys(file))
-        group = JLD2.Group(file, chan)
-        group[F.id] = F
-    else
-        file[chan][F.id] = F
-    end
-    close(file)
 end

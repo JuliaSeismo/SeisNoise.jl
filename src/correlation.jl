@@ -1,6 +1,5 @@
 # cross-correlation module
-export clean_up!, clean_up, correlate, compute_cc, next_fast_len, save_corr, load_fft
-export load_corr, correlate_parallel, generate_pairs
+export clean_up!, clean_up, correlate, compute_cc, correlate_parallel, generate_pairs
 
 """
     clean_up!(A,freqmin,freqmax,fs)
@@ -92,66 +91,6 @@ function compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;
     return CorrData(FFT1, FFT2, comp, rotated, corr_type,
                     maxlag, inter, corr)
 
-end
-
-"""
-    next_fast_len(N::Real)
-
-Return next fast length for fft with FFTW.
-"""
-function next_fast_len(N::Real)
-    return nextprod([2,3,5],N)
-end
-
-
-"""
-
-  load_fft(filename,chan,day)
-
-Loads FFTData for channel `chan` on day `day` from JLD2 file `filename`.
-"""
-function load_fft(filename::String,chan::String,day::String)
-    file = jldopen(filename,"a+")
-    F = file[chan][day]
-    close(file)
-    return F
-end
-
-"""
-    save_corr(C::CorrData, OUT::String)
-
-Save CorrData `C` to JLD2.
-"""
-function save_corr(C::CorrData, CORROUT::String)
-    # check if FFT DIR exists
-    if isdir(CORROUT) == false
-        mkpath(CORROUT)
-    end
-
-    # create JLD2 file and save correlation
-    net1,sta1,loc1,chan1,net2,sta2,loc1,chan2 = split(C.name,'.')
-    filename = joinpath(CORROUT,"$net1.$sta1.$chan1.$net2.$sta2.$chan2.jld2")
-    file = jldopen(filename, "a+")
-    if !(C.comp in keys(file))
-        group = JLD2.Group(file, C.comp)
-        group[C.id] = C
-    else
-        file[C.comp][C.id] = C
-    end
-    close(file)
-end
-
-"""
-
-  load_corr(filename,chan,day)
-
-Loads CorrData for channel `chan` on day `day` from JLD2 file `filename`.
-"""
-function load_corr(filename::String,chan::String,day::String)
-    file = jldopen(filename,"a+")
-    C = file[chan][day]
-    close(file)
-    return C
 end
 
 function correlate_parallel(P::InputParams)

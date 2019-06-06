@@ -11,6 +11,7 @@ include("Types/show.jl")
 include("Types/InputParams.jl")
 
 # import pre and post processing tools
+include("io.jl")
 include("ArrayFuncs.jl")
 include("tools.jl")
 include("slicing.jl")
