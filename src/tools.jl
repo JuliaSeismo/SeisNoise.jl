@@ -161,16 +161,16 @@ g(t) = 1/N sum j = 1:N s_j(t) * | 1/N sum k = 1:N exp[i * phi_k(t)]|^v
 where N is number of traces used, v is sharpness of phase-weighted stack
 
 """
-function pws(A::AbstractArray, fs::Float64; power::Int=2, timegate::Int=5)
+function pws(A::AbstractArray, fs::Float64; power::Int=2, timegate::Float64=1.)
     M,N = size(A)
     analytic = A .+ im .* hilbert(A)
     phase = angle.(analytic)
     phase_stack = mean(exp.(im.*phase),dims=2)[:,1] ./ N # reduce array dimension
-    phase_stack = abs.(phase_stack).^2
+    phase_stack = abs.(phase_stack).^power
 
     # smoothing
-    timegate_samples = Int(timegate * fs)
+    timegate_samples = convert(Int,timegate * fs)
     phase_stack = running_mean(phase_stack,timegate_samples)
-    weighted = A * phase_stack
+    weighted = mean(A .* phase_stack,dims=2)
     return weighted
 end

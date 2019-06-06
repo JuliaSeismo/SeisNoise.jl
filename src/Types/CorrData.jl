@@ -2,8 +2,8 @@ import Base:in, +, -, *, ==, convert, isempty, isequal, length, push!, sizeof, a
 import SeisIO: GeoLoc, PZResp
 export CorrData
 
-const corrfields = [:id, :name, :loc, :comp, :rotated, :corr_type, :fs, :gain,
-                    :freqmin, :freqmax, :cc_step, :whitened, :time_norm, :resp,
+const corrfields = [:name, :loc, :comp, :rotated, :corr_type, :fs, :gain,
+                    :freqmin, :freqmax, :cc_len, :cc_step, :whitened, :time_norm, :resp,
                     :maxlag]
 
 """

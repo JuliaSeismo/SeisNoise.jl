@@ -2,8 +2,8 @@ import Base:in, +, -, *, ==, convert, isempty, isequal, length, push!, sizeof, a
 import SeisIO: GeoLoc, PZResp
 export FFTData
 
-const fftfields = [:id, :name, :loc, :fs, :gain, :freqmin, :freqmax, :cc_step,
-                   :whitened, :time_norm, :resp]
+const fftfields = [:name, :loc, :fs, :gain, :freqmin, :freqmax, :cc_step,
+                   :cc_len, :whitened, :time_norm, :resp]
 
 """
    FFTData
