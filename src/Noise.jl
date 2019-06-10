@@ -19,6 +19,7 @@ include("filter.jl")
 include("downsample.jl")
 include("availability.jl")
 include("phase_shift.jl")
+include("stacking.jl")
 
 # import  routines for doin' stuff
 include("compute_fft.jl")
