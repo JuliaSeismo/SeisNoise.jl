@@ -28,7 +28,6 @@ A structure for fourier transforms (FFT) of ambient noise data.
 | :misc       | Dictionary for non-critical information. |
 | :notes      | Timestamped notes; includes automatically-logged acquisition and |
 |             | processing information. |
-| :maxlag     | Maximum lag time in seconds to keep from correlations. |
 | :t          | Starttime of each FFT. |
 | :fft        | FFTs stored in columns. |
 """

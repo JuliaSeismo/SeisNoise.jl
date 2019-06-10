@@ -26,20 +26,41 @@ end
 
 """
 
-  load_fft(filename,chan)
+  load_fft(filename,chan,day=day)
 
 Loads FFTData for channel `chan` from JLD2 file `filename`.
 If day is specified, loads data from day `day`, else
 loads data from all days of `chan`.
 """
 function load_fft(filename::String,chan::String;day::Union{String,Missing}=missing)
-    file = jldopen(filename,"a+")
+    file = jldopen(filename,"r")
     if ismissing(day)
         days = keys(file[chan])
-        F = FFTData()
-        for day in days
-            F += file[chan][day]
+        num_days  = length(days)
+
+        # get sizes of all corrs
+        sizes = Array{Int}(undef,num_days,2)
+
+        for ii = 1:num_days
+            sizes[ii,:]=collect(size(file[chan][days[ii]].fft))
         end
+
+        # create empty arrays and get indicies
+        M = sizes[1]
+        N = sum(sizes[:,2])
+        ffts = Array{eltype(file[chan][days[1]].fft)}(undef,M,N)
+        t = Array{eltype(file[chan][days[1]].t)}(undef,N)
+        starts = cumsum(vcat(1 ,sizes[:,2]))[1:end-1]
+        ends = cumsum(sizes[:,2])
+        for ii = 1:num_days
+            ffts[:,starts[ii]:ends[ii]] = file[chan][days[ii]].fft
+            t[starts[ii]:ends[ii]] = file[chan][days[ii]].t
+        end
+
+        # add data to FFTData
+        F = file[chan][days[1]]
+        F.t = t
+        F.fft = ffts
     else
         F = file[chan][day]
     end
@@ -73,20 +94,41 @@ end
 
 """
 
-  load_corr(filename,chan,day)
+  load_corr(filename,chan,day=day)
 
 Loads CorrData for channel `chan` on day `day` from JLD2 file `filename`.
 """
 function load_corr(filename::String,chan::String;
                    day::Union{String,Missing}=missing)
-    file = jldopen(filename,"a+")
-    if ismissing(day)
+    file = jldopen(filename,"r")
+    if ismissing(day) # load all files
         days = keys(file[chan])
-        C = CorrData()
-        for day in days
-            C += file[chan][day]
+        num_days  = length(days)
+
+        # get sizes of all corrs
+        sizes = Array{Int}(undef,num_days,2)
+
+        for ii = 1:num_days
+            sizes[ii,:]=collect(size(file[chan][days[ii]].corr))
         end
-    else
+
+        # create empty arrays and get indicies
+        M = sizes[1]
+        N = sum(sizes[:,2])
+        corrs = Array{eltype(file[chan][days[1]].corr)}(undef,M,N)
+        t = Array{eltype(file[chan][days[1]].t)}(undef,N)
+        starts = cumsum(vcat(1 ,sizes[:,2]))[1:end-1]
+        ends = cumsum(sizes[:,2])
+        for ii = 1:num_days
+            corrs[:,starts[ii]:ends[ii]] = file[chan][days[ii]].corr
+            t[starts[ii]:ends[ii]] = file[chan][days[ii]].t
+        end
+
+        # add data to CorrData
+        C = file[chan][days[1]]
+        C.t = t
+        C.corr = corrs
+    else # return single day
         C = file[chan][day]
     end
     close(file)
