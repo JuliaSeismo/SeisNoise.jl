@@ -241,59 +241,59 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "correlation/#Noise.clean_up!",
-    "page": "Correlation",
-    "title": "Noise.clean_up!",
-    "category": "function",
-    "text": "clean_up!(A,freqmin,freqmax,fs)\n\nDemean, detrend, taper and filter time series.\n\nArguments\n\nA::AbstractArray: Time series.\nfs::Real: Sampling rate of time series A.\nfreqmin::Real: Pass band low corner frequency.\nfreqmax::Real: Pass band high corner frequency.\n\n\n\n\n\n"
-},
-
-{
-    "location": "correlation/#Noise.correlate",
-    "page": "Correlation",
-    "title": "Noise.correlate",
-    "category": "function",
-    "text": "correlate(fft1, fft2, N, maxlag, corr_type=\'cross-correlate\')\n\nCross-correlation of two ffts.\n\n\n\n\n\n"
-},
-
-{
-    "location": "correlation/#Noise.compute_cc",
-    "page": "Correlation",
-    "title": "Noise.compute_cc",
-    "category": "function",
-    "text": "compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;\n           smoothing_half_win::Int=20,\n           corr_type::String=\"cross-correlation\" )\n\n\n\n\n\n"
-},
-
-{
-    "location": "correlation/#Noise.next_fast_len",
-    "page": "Correlation",
-    "title": "Noise.next_fast_len",
-    "category": "function",
-    "text": "next_fast_len(N::Real)\n\nReturn next fast length for fft with FFTW.\n\n\n\n\n\n"
-},
-
-{
-    "location": "correlation/#Noise.save_corr",
-    "page": "Correlation",
-    "title": "Noise.save_corr",
-    "category": "function",
-    "text": "save_corr(C::CorrData, OUT::String)\n\nSave CorrData C to JLD2.\n\n\n\n\n\n"
-},
-
-{
-    "location": "correlation/#Noise.load_fft",
-    "page": "Correlation",
-    "title": "Noise.load_fft",
-    "category": "function",
-    "text": "load_fft(filename,chan,day)\n\nLoads FFTData for channel chan on day day from JLD2 file filename.\n\n\n\n\n\n"
-},
-
-{
     "location": "correlation/#Computing-Correlations-methods-for-computing-correlations-from-FFTs.-1",
     "page": "Correlation",
     "title": "Computing Correlations - methods for computing correlations from FFTs.",
     "category": "section",
     "text": "clean_up!\ncorrelate\ncompute_cc\nnext_fast_len\nsave_corr\nload_fft"
+},
+
+{
+    "location": "postprocessing/#",
+    "page": "Velocity Change",
+    "title": "Velocity Change",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "postprocessing/#Noise.stack!",
+    "page": "Velocity Change",
+    "title": "Noise.stack!",
+    "category": "function",
+    "text": "stack!(C)\n\nStack correlation by time interval. The default is to stack by day. Using allstack == true will stack all available correlations. To use phase-weighted stack, specify the amount of phase_smoothing in seconds.\n\nArguments\n\nC::CorrData: Correlation data.\ninterval::Union{Month,Day,Hour,Second}: Interval over which to stack C.\nallstack::Bool: If true, stack all data.\nphase_smoothing::Float64: Enables phase-weighted stacking. phase_smoothing                             is the time window in seconds for phase smoothing                             in the phase-weighted stack.\n\n\n\n\n\n"
+},
+
+{
+    "location": "postprocessing/#Noise.mwcs",
+    "page": "Velocity Change",
+    "title": "Noise.mwcs",
+    "category": "function",
+    "text": "mwcs(ref, cur, fmin, fmax, fs, tmin, windowlength, windowstep,        smoothinghalfwin)\n\nChange in velocity measurement using the Moving Window Cross-Spectrum technique.\n\nThe current correlation cur is compared to the reference correlation ref. Both time series are sliced in several overlapping windows. Each slice is mean-adjusted and cosine-tapered (85% taper) before being Fourier- transformed to the frequency domain. F_cur(ν) and F_ref(ν) are the first halves of the Hermitian symmetric Fourier-transformed segments. The cross-spectrum `X(ν) is defined as X(ν) = F_ref(ν) F_cur^*(ν) in which ^* denotes the complex conjugation. X(ν) is then smoothed by convolution with a Hanning window. The similarity of the two time-series is assessed using the cross-coherency between energy densities in the frequency domain: C(ν) = fracoverlineX(ν))sqrtoverlineF_ref(ν)^2 overlineF_cur(ν)^2 in which the over-line here represents the smoothing of the energy spectra for F_ref and F_cur and of the spectrum of X. The mean coherence for the segment is defined as the mean of C(ν) in the frequency range of interest. The time-delay between the two cross correlations is found in the unwrapped phase, ϕ(ν), of the cross spectrum and is linearly proportional to frequency: ϕ_j = m ν_j m = 2 π δ t The time shift for each window between two signals is the slope m of a weighted linear regression of the samples within the frequency band of interest. The weights are those introduced by [Clarke2011], which incorporate both the cross-spectral amplitude and cross-coherence, unlike [Poupinet1984]. The errors are estimated using the weights (thus the coherence) and the squared misfit to the modelled slope: e_m = sqrtsum_j(fracw_j ν_jsum_iw_i ν_i^2)^2σ_ϕ^2 where w are weights, ν are cross-coherences and σ_ϕ^2 is the squared misfit of the data to the modelled slope and is calculated as σ_ϕ^2 = fracsum_j(ϕ_j - m ν_j)^2N-1 The output of this process is a table containing, for each moving window: the central time lag, the measured delay, its error and the mean coherence of the segment.\n\nArguments\n\nref::AbstractArray: Reference correlation.\ncur::AbstractArray: Current correlation.\nfmin:Float64: minimum frequency in the correlation [Hz]\nfmax:Float64: maximum frequency in the correlation [Hz]\nfs:Float64: Sampling rate of ref and cur [Hz]\ntmin:Float64: The leftmost time lag [s]\nwindow_len:Float64: The moving window length [s]\nwindow_step:Float64: The step to jump for the moving window [s]\nsmoothing_half_win:Int: Defines the half length of the smoothing hanning                           window.\n\nReturns\n\ntime_axis:Array{Float64,1}: Central time of each moving window [s]\ndt:Array{Float64,1}: dt for each moving window\nerr:Array{Float64,1}: Errors for each moving window\nmcoh:Array{Float64,1}: Mean coherence for each moving window\n\nThis code is a Julia translation of the Python code from MSNoise.\n\n\n\n\n\n"
+},
+
+{
+    "location": "postprocessing/#Noise.mwcs_dvv",
+    "page": "Velocity Change",
+    "title": "Noise.mwcs_dvv",
+    "category": "function",
+    "text": "mwcs_dvv(time_axis,dt,err,coh,dtt_lag,dist,dtt_v,dtt_minlag,dtt_width,\n         dtt_sides,min_coh, max_err, max_dt)\n\nRegresses dv/v from dt/t measurements.\n\nSolves dt = a + bt, where b = dv/v, a = instrumental drift, dt = time lag at time t. Solves with a weighted linear regression with weights equal to 1/error**2.\n\nArguments\n\ntime_axis:Array{Float64,1}: Central time of each moving window [s]\ndt:Array{Float64,1}: dt for each moving window\nerr:Array{Float64,1}: Errors for each moving window\ncoh:Array{Float64,1}: Mean coherence for each moving window\ndist:Float64: Distance between stations [km]\ndtt_lag:String: Type of time lag \'dynamic\' or \'static\'. When dtt_lag   is set to \"dynamic\", the inter-station distance is used to determine   the minimum time lag\ndtt_v:Float64: Velocity for minumum time lag. The velocity is determined by   the user so that the minlag doesn\'t include the ballistic waves.   If ballistic waves are visible with a velocity of 2 km/s, one could   configure dtt_v=1.0. If stations are located 15 km apart, the minimum   lag time will be set to 15 s.\nminlag:Float64: Statically set minimum lag [s]\ndtt_width:Float64: Width of the lag window used [s] i.e., if   dttwidth = 30, and minlag = 15, window = 15s - 45s\ndtt_sides:String: Sides of cross-correlation function to use. Either   \'Both\' or \'left\'.\nmin_coh:Float64: Minimum allowed coherency between reference and current                    correlation\nmax_err:Float64: Maximum allowed error in dt/t regression\nmax_dt:Float64: Maximum allowed dt from MWCS [s]\n\nReturns\n\nm::Float64: dt/t for current correlation\nem::Float64: Error for calulatoin of m\na::Float64: Intercept for regression calculation\nea::Float64: Error on intercept\nm0::Float64: dt/t for current correlation with no intercept\nem0::Float64: Error for calulatoin of m0\n\n\n\n\n\n"
+},
+
+{
+    "location": "postprocessing/#Noise.stretching",
+    "page": "Velocity Change",
+    "title": "Noise.stretching",
+    "category": "function",
+    "text": "stretching(ref,cur,t,window,fmin,fmax;dvmin,dvmax,ntrials)\n\nThis function compares the Reference waveform to stretched/compressed current waveforms to get the relative seismic velocity variation (and associated error). It also computes the correlation coefficient between the Reference waveform and the current waveform.\n\nArguments\n\nref::AbstractArray: Reference correlation.\ncur::AbstractArray: Current correlation.\nt::AbstractArray: time vector, common to both ref and cur.\nwindow:AbstractArray: vector of the indices of the cur and ref windows                         on which you want to do the measurements\nfmin:Float64: minimum frequency in the correlation [Hz]\nfmax:Float64: maximum frequency in the correlation [Hz]\ndvmin:Float64: minimum bound for the velocity variation; e.g. dvmin=-0.03                  for -3% of relative velocity change\ndvmax:Float64: maximum bound for the velocity variation; e.g. dvmin=0.03                 for 3% of relative velocity change\nntrial:  number of stretching coefficient between dvmin and dvmax, no need to be higher than 100\n\nReturns\n\ndv:AFloat64: Relative Velocity Change dv/v (in %)\ncc:Float64: Correlation coefficient between the reference waveform and the                     best stretched/compressed current waveform\ncdp:Float64: Correlation coefficient between the reference waveform and the                initial current waveform\nϵ:Array{Float64,1}: Vector of Epsilon values (ϵ =-dt/t = dv/v)\nerr:Float64: Errors in the dv/v measurements based on Weaver et al., 2011\nC:Array{Float64,1}: Vector of the correlation coefficient between the                       reference waveform and every stretched/compressed                       current waveforms\n\nThis code is a Julia translation of the Python code from Viens et al., 2018.\n\n\n\n\n\n"
+},
+
+{
+    "location": "postprocessing/#Post-Processing-methods-for-working-with-correlation-data.-1",
+    "page": "Velocity Change",
+    "title": "Post-Processing - methods for working with correlation data.",
+    "category": "section",
+    "text": "stack!\nmwcs\nmwcs_dvv\nstretching"
 },
 
 {
@@ -317,7 +317,7 @@ var documenterSearchIndex = {"docs": [
     "page": "FFTData",
     "title": "Noise.FFTData",
     "category": "type",
-    "text": "FFTData\n\nA structure for fourier transforms (FFT) of ambient noise data.\n\nFields: FFTData\n\nField Description\n:name Freeform channel names\n:id Channel ids. use NET.STA.LOC.CHAN format when possible.\n:loc Location (position) vector; freeform.\n:fs Sampling frequency in Hz.\n:gain Scalar gain; divide data by the gain to convert to units\n:freqmin Minimum frequency for whitening.\n:freqmax Maximum frequency for whitening.\n:cc_len Length of each correlation in seconds.\n:cc_step Spacing between correlation windows in seconds.\n:whitened Whitening applied.\n:time_norm Apply one-bit whitening with \"one_bit\".\n:resp Instrument response; two-column matrix, format [zeros poles]\n:misc Dictionary for non-critical information.\n:notes Timestamped notes; includes automatically-logged acquisition and\n processing information.\n:maxlag Maximum lag time in seconds to keep from correlations.\n:t Starttime of each FFT.\n:fft FFTs stored in columns.\n\n\n\n\n\n"
+    "text": "FFTData\n\nA structure for fourier transforms (FFT) of ambient noise data.\n\nFields: FFTData\n\nField Description\n:name Freeform channel names\n:id Channel ids. use NET.STA.LOC.CHAN format when possible.\n:loc Location (position) object\n:fs Sampling frequency in Hz.\n:gain Scalar gain; divide data by the gain to convert to units\n:freqmin Minimum frequency for whitening.\n:freqmax Maximum frequency for whitening.\n:cc_len Length of each correlation in seconds.\n:cc_step Spacing between correlation windows in seconds.\n:whitened Whitening applied.\n:time_norm Apply one-bit whitening with \"one_bit\".\n:resp Instrument response object, format [zeros poles]\n:misc Dictionary for non-critical information.\n:notes Timestamped notes; includes automatically-logged acquisition and\n processing information.\n:t Starttime of each FFT.\n:fft FFTs stored in columns.\n\n\n\n\n\n"
 },
 
 {
@@ -333,7 +333,7 @@ var documenterSearchIndex = {"docs": [
     "page": "CorrData",
     "title": "Noise.CorrData",
     "category": "type",
-    "text": "CorrData\n\nA structure for cross-correlations of ambient noise data.\n\nFields: CorrData\n\nField Description\n:name Freeform channel names\n:id Channel ids. use NET.STA.LOC.CHAN format when possible.\n:loc Location (position) vector; freeform.\n:fs Sampling frequency in Hz.\n:gain Scalar gain; divide data by the gain to convert to units\n:freqmin Minimum frequency for whitening.\n:freqmax Maximum frequency for whitening.\n:cc_len Length of each correlation in seconds.\n:cc_step Spacing between correlation windows in seconds.\n:whitened Whitening applied.\n:time_norm Apply one-bit whitening with \"one_bit\".\n:resp Instrument response; two-column matrix, format [zeros poles]\n:misc Dictionary for non-critical information.\n:notes Timestamped notes; includes automatically-logged acquisition and\n processing information.\n:maxlag Maximum lag time in seconds to keep from correlations.\n:t Starttime of each correlation.\n:corr Correlations stored in columns.\n\n\n\n\n\n"
+    "text": "CorrData\n\nA structure for cross-correlations of ambient noise data.\n\nFields: CorrData\n\nField Description\n:name Freeform channel names\n:id Channel ids. use NET.STA.LOC.CHAN format when possible.\n:loc Location (position) object.\n:fs Sampling frequency in Hz.\n:gain Scalar gain; divide data by the gain to convert to units\n:freqmin Minimum frequency for whitening.\n:freqmax Maximum frequency for whitening.\n:cc_len Length of each correlation in seconds.\n:cc_step Spacing between correlation windows in seconds.\n:whitened Whitening applied.\n:time_norm Apply one-bit whitening with \"one_bit\".\n:resp Instrument response object, format [zeros poles]\n:misc Dictionary for non-critical information.\n:notes Timestamped notes; includes automatically-logged acquisition and\n processing information.\n:maxlag Maximum lag time in seconds to keep from correlations.\n:t Starttime of each correlation.\n:corr Correlations stored in columns.\n\n\n\n\n\n"
 },
 
 {
