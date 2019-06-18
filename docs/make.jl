@@ -12,6 +12,7 @@ makedocs(
         "Filters" => "filter.md",
         "Computing FFTs" => "fft.md",
         "Correlation" => "correlation.md",
+        "Velocity Change" => "postprocessing.md",
         "Types" => Any[
          "InputParams" => "Types/inputparams.md",
          "FFTData" => "Types/fftdata.md",
