@@ -6,9 +6,12 @@ export phase_shift, phase_shift!
 Phase shift SeisChannel if starttime is not aligned with sampling rate.
 """
 function phase_shift!(C::SeisChannel)
+
+    # get time offset from sampling rate 
     t = C.t[1,2]
     dt = 1. / C.fs
-    off = mod(millisecond(u2d(t*1e-6)) * 1e-3, 1. / C.fs)
+    off = mod(millisecond(u2d(t*1e-6)) * 1e-3, dt)
+    off = round(off,digits=4)
     n = length(C.x)
 
     if dt - off <= eps(Float64)
@@ -22,11 +25,20 @@ function phase_shift!(C::SeisChannel)
             off = dt - off
         end
 
+        # phase shift data
         freq = rfftfreq(length(C.x),C.fs)
         fftdata = rfft(C.x)
         fftdata .= fftdata .* exp.(1im .* 2 .* pi .* freq .* off)
         C.x[:] = irfft(fftdata,length(C.x))
-        C.t[1,2] += off * 1e6
+
+        # reset time of signal
+        milli = mod(C.t[1,2],1000)
+        if off < 0
+            milli *= -1
+        else
+            milli = 1000 - milli
+        end
+        C.t[1,2] += (off * 1e6) + milli
     end
     return nothing
 end
