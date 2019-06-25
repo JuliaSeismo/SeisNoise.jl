@@ -21,7 +21,7 @@ Each slice is mean-adjusted and cosine-tapered (85% taper) before being Fourier-
 transformed to the frequency domain.
 ``F_{cur}(ν)`` and ``F_{ref}(ν)`` are the first halves of the
 Hermitian symmetric Fourier-transformed segments. The cross-spectrum
-```X(ν)`` is defined as
+``X(ν)`` is defined as
 ``X(ν) = F_{ref}(ν) F_{cur}^*(ν)``
 in which ``{}^*`` denotes the complex conjugation.
 ``X(ν)`` is then smoothed by convolution with a Hanning window.

@@ -1,8 +1,8 @@
 __precompile__()
 module Noise
 
-using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, Printf, SeisIO
-using  Statistics, Interpolations, GLM, Plots
+using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO
+using  Statistics, Interpolations, GLM, Plots, Distributed
 
 # import types first
 include("Types/FFTData.jl")
