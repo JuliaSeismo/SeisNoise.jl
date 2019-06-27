@@ -8,17 +8,18 @@ Noise.jl provides routines for quickly and efficiently implementing [seismic int
 
     Much of the I/O and preprocessing in Noise.jl uses the [SeisIO.jl](https://github.com/jpjones76/SeisIO.jl) package. Please read through the [SeisIO Documentation](https://seisio.readthedocs.io/en/latest/) to get familiar with seismic data processing in Julia.
 
-## Package Features
-  - Built upon [SeisIO](https://seisio.readthedocs.io/en/latest/) for easy and fast I/O.
-  - Custom types for saving Fourier Transforms of data and cross-correlations
-  - Array-based processing of raw data and cross-correlation.
-  - Coming soon: methods for $dv/v$ and dispersion measurements.
-  - Coming soon: GPU support.
+## Installation
+From the Julia command prompt:
+1. Press `]` to enter `pkg`.
+2. Type or copy: `add https://github.com/tclements/Noise.jl; build; precompile`
+3. Press backspace to exit `pkg`.
+4. Type or copy: `using Noise`
 
-## Processing
+## Using Noise.jl
 
-## Plotting
+Noise.jl was designed to be as easy to use in the REPL as on an HPC cluster. If
+you want to get started processing data, head over to the tutorial or parallel example.
+This documentation provides a reference to all the underlying function for cross-correlation.
+We encourage you to develop your own workflow using Noise's core functionality.
 
-## High-Performance Computing
-
-## Tutorial
+![plot1](assets/CI-moveout.png)

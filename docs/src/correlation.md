@@ -4,7 +4,7 @@
 clean_up!
 correlate
 compute_cc
-next_fast_len
 save_corr
-load_fft
+load_corr
+stack!
 ```

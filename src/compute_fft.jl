@@ -60,14 +60,13 @@ end
 
 Pre-process raw seismic data.
 
-Checks:
-- sample rate is fs
-- downsamples data
-- checks for gaps in data
-- phase-shifts data to begin at 00:00:00.0
+- Removes mean from each channel in `S`.
+- Detrends each channel in `S`.
+- Downsamples data to sampling rate `fs`
+- Phase-shifts data to begin at 00:00:00.0
 
 # Arguments
-- `S::SeisChannel`: SeisData structure.
+- `S::SeisData`: SeisData structure.
 - `fs::Float64`: Sampling rate to downsample `S`.
 """
 function process_raw!(S::SeisData, fs::Float64)

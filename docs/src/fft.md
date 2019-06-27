@@ -3,5 +3,6 @@
 ```@docs
 whiten
 process_fft
+compute_fft
 save_fft
 ```

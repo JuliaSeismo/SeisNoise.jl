@@ -35,9 +35,20 @@ function start_end(S::SeisData)
 end
 
 """
-    slide(C::SeisChannel, window_length::Real, cc_step::Real)
+    slide(C::SeisChannel, cc_len::Int, cc_step::Int)
 
-Generate equal length sliding windows into an array.
+Cut `C` into equal length sliding windows.
+
+# Arguments
+- `C::SeisChannel`: SeisChannel.
+- `cc_len::Int`: Cross-correlation window length [s].
+- `cc_step::Int`: Step between cross-correlation windows [s].
+
+# Returns
+- `A::Array`: Array of sliding windows
+- `starts::Array`: Array of start times of each window, in Unix time. E.g to convert
+        Unix time to date time, use u2d(starts[1]) = 2018-08-12T00:00:00
+- `ends::Array`: Array of end times of each window, in Unix time.
 """
 function slide(C::SeisChannel, cc_len::Int, cc_step::Int)
   window_samples = Int(cc_len * C.fs)
@@ -60,7 +71,7 @@ end
 """
     nearest_start_end(C::SeisChannel, cc_len::Int, cc_step::Int)
 
-Return best possible start, end times for data in `C` given the c
+Return best possible start, end times for data in `C` given the `cc_step` and `cc_len`.
 """
 function nearest_start_end(C::SeisChannel, cc_len::Int, cc_step::Int)
   su,eu = SeisIO.t_win(C.t,C.fs) * μs
@@ -71,9 +82,9 @@ function nearest_start_end(C::SeisChannel, cc_len::Int, cc_step::Int)
 end
 
 """
-    nearest_start_end(D::DateTime, cc_len::Int, cc_step::Int)
+    nearest_start_end(S::DateTime,E::DateTime, cc_len::Int, cc_step::Int)
 
-Return best possible start, end times for given starttime `D`
+Return best possible start, end times for given starttime `S` and endtime `E`.
 """
 function nearest_start_end(S::DateTime, E::DateTime, fs::Float64, cc_len::Int, cc_step::Int)
   ideal_start = DateTime(Date(S)) # midnight of same day
