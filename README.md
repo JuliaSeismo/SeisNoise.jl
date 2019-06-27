@@ -42,4 +42,4 @@ Noise.plot(C)
 ```
 will produce this figure:
 
-![plot1](/docs/src/assets.png)
+![plot1](/docs/src/assets/xcorr-example.png)
