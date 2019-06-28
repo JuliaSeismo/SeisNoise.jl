@@ -16,7 +16,7 @@ Here is an example workflow:
 Data can be downloaded using `SeisIO`'s `get_data` function.
 
 ```julia
-julia> using SeisIO, Noise
+julia> using SeisIO, SeisNoise
 julia> S = get_data("IRIS","TA.V04C..BHZ",s="2006-02-01",t="2006-02-02")
 SeisData with 1 channels (1 shown)
     ID: TA.V04C..BHZ                       

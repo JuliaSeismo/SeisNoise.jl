@@ -1,12 +1,12 @@
 `FFTData` - Objects for holding Fourier transforms (FFTs)
 
-`Noise` is designed around array-based cross-correlation. `Noise` uses a custom
+`SeisNoise` is designed around array-based cross-correlation. `SeisNoise` uses a custom
 structure `FFTData` for holding Fourier transforms of ambient noise. To create
 an empty `FFTData` object, use the `FFTData()` function. `FFTData` are created
 with the `compute_fft` function.
 
 ```julia
-julia> using Noise
+julia> using SeisNoise
 julia> FFTData()
 FFTData with 0 ffts
       NAME: …

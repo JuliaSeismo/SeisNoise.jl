@@ -1,11 +1,11 @@
 `CorrData` - Objects for ambient noise cross-correlations.
 
-`Noise` uses a custom structure `CorrData` for holding cross-correlations. To create
+`SeisNoise` uses a custom structure `CorrData` for holding cross-correlations. To create
 an empty `CorrData` object, use the `CorrData()` function. `CorrData` are created
 with the `compute_cc` function.
 
 ```julia
-julia> using Noise
+julia> using SeisNoise
 julia> CorrData()
 CorrData with 0 Corrs
       NAME: …
@@ -91,7 +91,7 @@ julia> C.corr
 ```
 !!! note
 
-      By convention in Julia, data are stored *column-wise*. Here, `C` contains 188 individual correlations. 
+      By convention in Julia, data are stored *column-wise*. Here, `C` contains 188 individual correlations.
 
 ```@docs
 CorrData
