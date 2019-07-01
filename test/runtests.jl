@@ -1,2 +1,2 @@
-using Noise
+using SeisNoise
 using Test
