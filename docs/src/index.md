@@ -11,7 +11,7 @@ SeisNoise.jl provides routines for quickly and efficiently implementing [seismic
 ## Installation
 From the Julia command prompt:
 1. Press `]` to enter `pkg`.
-2. Type or copy: `add https://github.com/tclements/SeisNoise.jl; build; precompile`
+2. Type or copy: `add SeisNoise`
 3. Press backspace to exit `pkg`.
 4. Type or copy: `using SeisNoise`
 
