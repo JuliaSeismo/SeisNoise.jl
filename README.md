@@ -8,7 +8,7 @@ SeisNoise.jl is designed for fast and easy ambient noise cross-correlation in Ju
 ## Installation
 From the Julia command prompt:
 1. Press `]` to enter `pkg`.
-2. Type or copy: `add SeisNoise.jl`
+2. Type or copy: `add SeisNoise`
 3. Press backspace to exit `pkg`.
 4. Type or copy: `using SeisNoise`
 
