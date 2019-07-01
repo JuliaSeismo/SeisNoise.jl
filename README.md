@@ -1,16 +1,16 @@
-# Noise.jl
-Noise.jl is designed for fast and easy ambient noise cross-correlation in Julia.
+# SeisNoise.jl
+SeisNoise.jl is designed for fast and easy ambient noise cross-correlation in Julia.
 
- [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://tclements.github.io/Noise.jl/latest) [![Build Status](https://travis-ci.org/tclements/Noise.jl.svg?branch=master)](https://travis-ci.org/tclements/Noise.jl) [![Coverage Status](https://coveralls.io/repos/github/tclements/Noise.jl/badge.svg?branch=master)](https://coveralls.io/github/tclements/Noise.jl?branch=master)
+ [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://tclements.github.io/SeisNoise.jl/latest) [![Build Status](https://travis-ci.org/tclements/SeisNoise.jl.svg?branch=master)](https://travis-ci.org/tclements/SeisNoise.jl) [![Coverage Status](https://coveralls.io/repos/github/tclements/SeisNoise.jl/badge.svg?branch=master)](https://coveralls.io/github/tclements/SeisNoise.jl?branch=master)
 
  ![Noise.jl Logo](/docs/src/assets/logo.png)
 
 ## Installation
 From the Julia command prompt:
 1. Press `]` to enter `pkg`.
-2. Type or copy: `add https://github.com/tclements/Noise.jl; build; precompile`
+2. Type or copy: `add https://github.com/tclements/SeisNoise.jl; build; precompile`
 3. Press backspace to exit `pkg`.
-4. Type or copy: `using Noise`
+4. Type or copy: `using SeisNoise`
 
 ## Package Features
   - Built upon [SeisIO](https://seisio.readthedocs.io/en/latest/) for easy and fast I/O.
@@ -20,11 +20,11 @@ From the Julia command prompt:
   - Coming soon: GPU support and dispersion analysis.
 
 ## Basic Cross-Correlation
-Once you have installed the package you can type `using Noise` to start
+Once you have installed the package you can type `using SeisNoise` to start
 cross-correlating. For example
 
 ```Julia
-using Noise, SeisIO
+using SeisNoise, SeisIO
 fs = 40. # sampling frequency in Hz
 freqmin,freqmax = 0.1,0.2 # minimum and maximum frequencies in Hz
 cc_step, cc_len = 450, 1800 # corrleation step and length in S
@@ -38,7 +38,7 @@ FFT2 = compute_fft(S2,freqmin, freqmax, fs, cc_step, cc_len,
 C = compute_cc(FFT1,FFT2,maxlag,corr_type="coherence")
 clean_up!(C,freqmin,freqmax)
 abs_max!(C)
-Noise.plot(C)
+SeisNoise.plot(C)
 ```
 will produce this figure:
 

@@ -1,9 +1,9 @@
 push!(LOAD_PATH,"../src/")
-using Documenter, Noise
+using Documenter, SeisNoise
 
 makedocs(
-    modules = [Noise],
-    sitename = "Noise.jl",
+    modules = [SeisNoise],
+    sitename = "SeisNoise.jl",
     # Uncomment below for local build
     # format = Documenter.HTML(prettyurls = false),
     authors = "Tim Clements",
@@ -22,7 +22,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/tclements/Noise.jl.git",
+    repo = "github.com/tclements/SeisNoise.jl.git",
     target = "build",
     deps   = nothing,
     make   = nothing,
