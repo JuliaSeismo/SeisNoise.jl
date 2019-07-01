@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installation",
     "category": "section",
-    "text": "From the Julia command prompt:Press ] to enter pkg.\nType or copy: add https://github.com/tclements/SeisNoise.jl; build; precompile\nPress backspace to exit pkg.\nType or copy: using SeisNoise"
+    "text": "From the Julia command prompt:Press ] to enter pkg.\nType or copy: add SeisNoise\nPress backspace to exit pkg.\nType or copy: using SeisNoise"
 },
 
 {
