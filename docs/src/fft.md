@@ -17,6 +17,7 @@ a speedup of about a factor of 3. A typical workflow for computing `fft`'s can i
 - Spectral whitening (removing spectral amplitude information)
 - One-bit normalization
 - Phase normalization
+- Real Fourier Transform
 
 ## Computing FFTs
 
@@ -80,7 +81,7 @@ julia> save_fft(F,OUTDIR)
 
 `FFTData` are stored in groups by channel (e.g. BHZ or HHZ), then by date
 (in yyyy-mm-dd format) in JLD2. By default, JLD2 files are saved to
-/PATH/TO/OUTDIR/NET.STA,CHAN.jld2. 
+/PATH/TO/OUTDIR/NET.STA.CHAN.jld2.
 
 ```julia
 file = jldopen("~/TEST/FFT/TA.V04C.BHZ.jld2","r")

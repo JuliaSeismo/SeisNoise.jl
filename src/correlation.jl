@@ -38,8 +38,8 @@ Cross-correlate ambient noise data in the frequency domain.
 Cross-correlation can be done using one of three options:
 
 - Cross-correlation: ``C_{AB}(ω) = u_A(ω) u^∗_B(ω)``
-- Coherence: ``C_{AB}(ω) = \frac{u_A(ω) u^∗_B(ω)}{|u_A(ω)| |u^_B(ω)|}``
-- Deconvolution: ``C_{AB}(ω) = \frac{u_A(ω) u^∗_B(ω)}{|u^_B(ω)|^2}``
+- Coherence: ``C_{AB}(ω) = \frac{u_A(ω) u^∗_B(ω)}{∣ u_A(\omega) ∣ \, ∣ u_B(\omega) ∣}``
+- Deconvolution: ``C_{AB}(\omega) = \frac{u_A(\omega) u^∗_B(\omega)}{\mid u_B(\omega) {\mid}^2}``
 
 # Arguments
 - `FFT1::AbstractArray`: Complex Array of fourier transform of ambient noise data.
@@ -88,8 +88,8 @@ Cross-correlate ambient noise data in the frequency domain.
 Cross-correlation can be done using one of three options:
 
 - Cross-correlation: ``C_{AB}(ω) = u_A(ω) u^∗_B(ω)``
-- Coherence: ``C_{AB}(ω) = \frac{u_A(ω) u^∗_B(ω)}{|u_A(ω)| |u^_B(ω)|}``
-- Deconvolution: ``C_{AB}(ω) = \frac{u_A(ω) u^∗_B(ω)}{|u^_B(ω)|^2}``
+- Coherence: ``C_{AB}(ω) = \frac{u_A(ω) u^∗_B(ω)}{∣ u_A(\omega) ∣ \, ∣ u_B(\omega) ∣}``
+- Deconvolution: ``C_{AB}(\omega) = \frac{u_A(\omega) u^∗_B(\omega)}{\mid u_B(\omega) {\mid}^2}``
 
 # Arguments
 - `fft1::FFTData`: FFTData object of fft'd ambient noise data.
