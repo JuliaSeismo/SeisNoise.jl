@@ -102,12 +102,12 @@ function mwcs(ref::AbstractArray,cur::AbstractArray,fmin::Float64,
     end
 
     # preprocess
-    Noise.demean!(cci)
-    Noise.detrend!(cci)
-    Noise.taper!(cci,fs,max_percentage=0.425)
-    Noise.demean!(cri)
-    Noise.detrend!(cri)
-    Noise.taper!(cri,fs,max_percentage=0.425)
+    SeisNoise.demean!(cci)
+    SeisNoise.detrend!(cci)
+    SeisNoise.taper!(cci,fs,max_percentage=0.425)
+    SeisNoise.demean!(cri)
+    SeisNoise.detrend!(cri)
+    SeisNoise.taper!(cri,fs,max_percentage=0.425)
 
     # take fourier transform with padding
     fcur = rfft([cci;zeros(eltype(cci),padd-size(cci)[1],N)],1)
@@ -163,6 +163,8 @@ function mwcs(ref::AbstractArray,cur::AbstractArray,fmin::Float64,
         sx2 = sum(w[:,ii] .* v.^2)
         err[ii] = sqrt(e * s2x2 / sx2^2)
     end
+    dt ./= 2π
+    err ./= 2π
     return time_axis, dt, err, mcoh
 end
 
