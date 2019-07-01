@@ -7,6 +7,7 @@ Save FFTData `F` to JLD2.
 """
 function save_fft(F::FFTData, FFTOUT::String)
     # check if FFT DIR exists
+    FFTOUT = expanduser(FFTOUT)
     if isdir(FFTOUT) == false
         mkpath(FFTOUT)
     end
@@ -75,6 +76,7 @@ Save CorrData `C` to JLD2.
 """
 function save_corr(C::CorrData, CORROUT::String)
     # check if FFT DIR exists
+    CORROUT = expanduser(CORROUT)
     if isdir(CORROUT) == false
         mkpath(CORROUT)
     end
