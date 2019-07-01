@@ -1,5 +1,5 @@
 __precompile__()
-module Noise
+module SeisNoise
 
 using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO
 using  Statistics, Interpolations, GLM, Plots, Distributed
