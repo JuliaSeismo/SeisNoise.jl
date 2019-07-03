@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Computing FFTs",
     "title": "Computing FFTs - methods for computing FFTs raw noise data.",
     "category": "section",
-    "text": "All correlation in SeisNoise.jl is done in the frequency domain, which can be represented by:C_AB(ω) = u_A(ω) u^_B(ω)Where u_A(ω) is the Fourier transform of ambient noise time series A, u^*_B(ω) is the complex conjugate of the Fourier transform of ambient noise time series B, and C_AB(ω) is the cross-correlation of A and B in the frequency domain. For time and memory efficiency, the real Fourier transform (rfft) is used as opposed to the regular Fourier transform (fft). This gives a speedup of about a factor of 3. A typical workflow for computing fft\'s can include:Spectral whitening (removing spectral amplitude information)\nOne-bit normalization\nPhase normalization"
+    "text": "All correlation in SeisNoise.jl is done in the frequency domain, which can be represented by:C_AB(ω) = u_A(ω) u^_B(ω)Where u_A(ω) is the Fourier transform of ambient noise time series A, u^*_B(ω) is the complex conjugate of the Fourier transform of ambient noise time series B, and C_AB(ω) is the cross-correlation of A and B in the frequency domain. For time and memory efficiency, the real Fourier transform (rfft) is used as opposed to the regular Fourier transform (fft). This gives a speedup of about a factor of 3. A typical workflow for computing fft\'s can include:Spectral whitening (removing spectral amplitude information)\nOne-bit normalization\nPhase normalization\nReal Fourier Transform"
 },
 
 {
@@ -309,7 +309,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Computing FFTs",
     "title": "Saving/Loading FFTs",
     "category": "section",
-    "text": "FFTData objects can be saved to disk in the native Julia JLD2 format using the save_fft function.julia> OUTDIR = \"~/TEST/FFT/\"\njulia> save_fft(F,OUTDIR)FFTData are stored in groups by channel (e.g. BHZ or HHZ), then by date (in yyyy-mm-dd format) in JLD2. By default, JLD2 files are saved to /PATH/TO/OUTDIR/NET.STA,CHAN.jld2. file = jldopen(\"~/TEST/FFT/TA.V04C.BHZ.jld2\",\"r\")\nJLDFile ~TEST/FFT/TA.V04C.BHZ.jld2 (read-only)\n └─📂 BHZ\n    └─🔢 2006-02-01To read an FFTData on disk, use the load_fft function:julia> F = load_fft(\"~/TEST/FFT/TA.V04C.BHZ.jld2\",\"BHZ\")\nFFTData with 36 ffts\n      NAME: \"TA.V04C..BHZ\"                     \n        ID: \"2006-02-01\"                       \n       LOC: 0.0 N, 0.0 E, 0.0 m\n        FS: 20.0\n      GAIN: 1.0\n   FREQMIN: 0.05\n   FREQMAX: 5.0\n    CC_LEN: 100                                \n   CC_STEP: 100                                \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: c = 0.0, 0 zeros, 0 poles\n      MISC: 0 entries                          \n     NOTES: 2 entries                          \n         T: 2006-02-01T00:00:00.000            …\n       FFT: 1001×36 Array{Complex{Float32},2}Note that it is necessary to specify the channel when using load_fft.whiten\nprocess_fft\ncompute_fft\nsave_fft\nload_fft"
+    "text": "FFTData objects can be saved to disk in the native Julia JLD2 format using the save_fft function.julia> OUTDIR = \"~/TEST/FFT/\"\njulia> save_fft(F,OUTDIR)FFTData are stored in groups by channel (e.g. BHZ or HHZ), then by date (in yyyy-mm-dd format) in JLD2. By default, JLD2 files are saved to /PATH/TO/OUTDIR/NET.STA.CHAN.jld2.file = jldopen(\"~/TEST/FFT/TA.V04C.BHZ.jld2\",\"r\")\nJLDFile ~TEST/FFT/TA.V04C.BHZ.jld2 (read-only)\n └─📂 BHZ\n    └─🔢 2006-02-01To read an FFTData on disk, use the load_fft function:julia> F = load_fft(\"~/TEST/FFT/TA.V04C.BHZ.jld2\",\"BHZ\")\nFFTData with 36 ffts\n      NAME: \"TA.V04C..BHZ\"                     \n        ID: \"2006-02-01\"                       \n       LOC: 0.0 N, 0.0 E, 0.0 m\n        FS: 20.0\n      GAIN: 1.0\n   FREQMIN: 0.05\n   FREQMAX: 5.0\n    CC_LEN: 100                                \n   CC_STEP: 100                                \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: c = 0.0, 0 zeros, 0 poles\n      MISC: 0 entries                          \n     NOTES: 2 entries                          \n         T: 2006-02-01T00:00:00.000            …\n       FFT: 1001×36 Array{Complex{Float32},2}Note that it is necessary to specify the channel when using load_fft.whiten\nprocess_fft\ncompute_fft\nsave_fft\nload_fft"
 },
 
 {
@@ -318,6 +318,22 @@ var documenterSearchIndex = {"docs": [
     "title": "Correlation",
     "category": "page",
     "text": ""
+},
+
+{
+    "location": "correlation/#Computing-Correlations-methods-for-computing-correlations-from-FFTs.-1",
+    "page": "Correlation",
+    "title": "Computing Correlations - methods for computing correlations from FFTs.",
+    "category": "section",
+    "text": "Cross-correlation in the frequency domain is element-wise multiplication between u_A(ω), the Fourier transform of ambient noise time series A, and u^*_B(ω), the complex conjugate of the Fourier transform of ambient noise time series B. Options for cross-correlation in SeisNoise.jl includecross-correlation:C_AB(ω) = u_A(ω) u^_B(ω)cross-coherency:C_AB(ω) = fracu_A(ω) u^_B(ω) u_A(omega)    u_B(omega) and deconvolution:C_AB(omega) = fracu_A(omega) u^_B(omega)mid u_B(omega) mid^2The cross-correlation in the time domain is just the inverse real Fourier transform of C_AB(ω):C(τ)_AB = mathfrakF^-1 left(C_AB(ω)right)where τ is the lag time."
+},
+
+{
+    "location": "correlation/#Computing-Correlations-1",
+    "page": "Correlation",
+    "title": "Computing Correlations",
+    "category": "section",
+    "text": "The compute_cc function provides the typical workflow for computing correlations in SeisNoise.jl. The necessary inputs to compute_cc are the maximum lag time, max_lag, in seconds to save, e.g. 200 seconds, the type of correlation( e.g. cross-correlate, coherence, or deconv), and the number of points to smooth the spectrum of u_A(ω) or u_B(ω) if using the coherence or deconvolution.using SeisNoise, SeisIO\njulia> fs = 40. # sampling frequency in Hz\njulia> freqmin,freqmax = 0.1,0.2 # minimum and maximum frequencies in Hz\njulia> cc_step, cc_len = 450, 1800 # corrleation step and length in S\njulia> maxlag = 80. # maximum lag time in correlation\njulia> S1 = get_data(\"IRIS\",\"TA.V04C..BHZ\",s=\"2006-02-01\",t=\"2006-02-02\")\njulia> S2 = get_data(\"IRIS\",\"TA.V05C..BHZ\",s=\"2006-02-01\",t=\"2006-02-02\")\njulia> FFT1 = compute_fft(S1,freqmin, freqmax, fs, cc_step, cc_len,\n                  time_norm=false,to_whiten=false)\njulia> FFT2 = compute_fft(S2,freqmin, freqmax, fs, cc_step, cc_len,\n                  time_norm=false,to_whiten=false)\njulia> C = compute_cc(FFT1,FFT2,maxlag,corr_type=\"coherence\")\nCorrData with 188 Corrs\n      NAME: \"TA.V04C..BHZ.TA.V05C..BHZ\"        \n        ID: \"2006-02-01\"                       \n       LOC: 0.0 N, 0.0 E, 0.0 m\n      COMP: \"ZZ\"                               \n   ROTATED: false                              \n CORR_TYPE: \"coherence\"                        \n        FS: 40.0\n      GAIN: 1.0\n   FREQMIN: 0.1\n   FREQMAX: 0.2\n    CC_LEN: 1800                               \n   CC_STEP: 450                                \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: c = 0.0, 0 zeros, 0 poles\n      MISC: 0 entries                          \n     NOTES: 2 entries                          \n    MAXLAG: 80.0\n         T: 2006-02-01T00:07:30.000            …\n      CORR: 6401×188 Array{Float32,2}"
 },
 
 {
@@ -333,7 +349,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Correlation",
     "title": "SeisNoise.correlate",
     "category": "function",
-    "text": "correlate(FFT1, FFT2, N, maxlag, smoothing_half_win=20,\n          corr_type=\'cross-correlation\')\n\nCross-correlate ambient noise data in the frequency domain.\n\nCross-correlation can be done using one of three options:\n\nCross-correlation: C_AB(ω) = u_A(ω) u^_B(ω)\nCoherence: C_AB(ω) = racu_A(ω) u^_B(ω)u_A(ω) u^_B(ω)\nDeconvolution: C_AB(ω) = racu_A(ω) u^_B(ω)u^_B(ω)^2\n\nArguments\n\nFFT1::AbstractArray: Complex Array of fourier transform of ambient noise data.\nFFT2::AbstractArray: Complex Array of fourier transform of ambient noise data.\nN::Int: Number of input data, equal to cc_len * fs.\nmaxlag::Float64: Maximum lag time (in seconds) in cross-correlation to save,                    e.g. maxlag = 20. will save lag times = -20.:20. s.\nsmoothing_half_win::Int: Number of points to smooth spectrum of                   cross-correlations if using deconvolution or coherence.\ncorr_type::String: Type of correlation: cross-correlation, coherence or                      deconv.\n\n\n\n\n\n"
+    "text": "correlate(FFT1, FFT2, N, maxlag, smoothing_half_win=20,\n          corr_type=\'cross-correlation\')\n\nCross-correlate ambient noise data in the frequency domain.\n\nCross-correlation can be done using one of three options:\n\nCross-correlation: C_AB(ω) = u_A(ω) u^_B(ω)\nCoherence: C_AB(ω) = racu_A(ω) u^_B(ω) u_A(ω)    u_B(ω) \nDeconvolution: C_AB(ω) = racu_A(ω) u^_B(ω) u_B(ω) ^2\n\nArguments\n\nFFT1::AbstractArray: Complex Array of fourier transform of ambient noise data.\nFFT2::AbstractArray: Complex Array of fourier transform of ambient noise data.\nN::Int: Number of input data, equal to cc_len * fs.\nmaxlag::Float64: Maximum lag time (in seconds) in cross-correlation to save,                    e.g. maxlag = 20. will save lag times = -20.:20. s.\nsmoothing_half_win::Int: Number of points to smooth spectrum of                   cross-correlations if using deconvolution or coherence.\ncorr_type::String: Type of correlation: cross-correlation, coherence or                      deconv.\n\n\n\n\n\n"
 },
 
 {
@@ -341,7 +357,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Correlation",
     "title": "SeisNoise.compute_cc",
     "category": "function",
-    "text": "compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;\n           smoothing_half_win::Int=20,\n           corr_type::String=\"cross-correlation\")\n\nCross-correlate ambient noise data in the frequency domain.\n\nCross-correlation can be done using one of three options:\n\nCross-correlation: C_AB(ω) = u_A(ω) u^_B(ω)\nCoherence: C_AB(ω) = racu_A(ω) u^_B(ω)u_A(ω) u^_B(ω)\nDeconvolution: C_AB(ω) = racu_A(ω) u^_B(ω)u^_B(ω)^2\n\nArguments\n\nfft1::FFTData: FFTData object of fft\'d ambient noise data.\nfft2::FFTData: FFTData object of fft\'d ambient noise data.\nmaxlag::Float64: Maximum lag time (in seconds) in cross-correlation to save,                    e.g. maxlag = 20. will save lag times = -20.:20. s.\nsmoothing_half_win::Int: Number of points to smooth spectrum of                   cross-correlations if using deconvolution or coherence.\ncorr_type::String: Type of correlation: cross-correlation, coherence or                      deconv.\n\n\n\n\n\n"
+    "text": "compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;\n           smoothing_half_win::Int=20,\n           corr_type::String=\"cross-correlation\")\n\nCross-correlate ambient noise data in the frequency domain.\n\nCross-correlation can be done using one of three options:\n\nCross-correlation: C_AB(ω) = u_A(ω) u^_B(ω)\nCoherence: C_AB(ω) = racu_A(ω) u^_B(ω) u_A(ω)    u_B(ω) \nDeconvolution: C_AB(ω) = racu_A(ω) u^_B(ω) u_B(ω) ^2\n\nArguments\n\nfft1::FFTData: FFTData object of fft\'d ambient noise data.\nfft2::FFTData: FFTData object of fft\'d ambient noise data.\nmaxlag::Float64: Maximum lag time (in seconds) in cross-correlation to save,                    e.g. maxlag = 20. will save lag times = -20.:20. s.\nsmoothing_half_win::Int: Number of points to smooth spectrum of                   cross-correlations if using deconvolution or coherence.\ncorr_type::String: Type of correlation: cross-correlation, coherence or                      deconv.\n\n\n\n\n\n"
 },
 
 {
@@ -369,11 +385,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "correlation/#Computing-Correlations-methods-for-computing-correlations-from-FFTs.-1",
+    "location": "correlation/#Saving/Loading-Correlations-1",
     "page": "Correlation",
-    "title": "Computing Correlations - methods for computing correlations from FFTs.",
+    "title": "Saving/Loading Correlations",
     "category": "section",
-    "text": "clean_up!\ncorrelate\ncompute_cc\nsave_corr\nload_corr\nstack!"
+    "text": "CorrData objects can be saved to disk in the native Julia JLD2 format using the save_corr function.julia> OUTDIR = \"~/TEST/CORR/\"\njulia> save_corr(C,OUTDIR)CorrData are stored in groups by component (e.g. ZZ or RZ), then by date (in yyyy-mm-dd format) in JLD2. By default, JLD2 files are saved to /PATH/TO/OUTDIR/NET1.STA1.CHAN1.NET2.STA2.CHAN2.jld2.file = jldopen(\"~/TEST/CORR/TA.V04C.BHZ.TA.V05C.BHZ.jld2\",\"r\")\nJLDFile ~/TEST/CORR/TA.V04C.BHZ.TA.V05C.BHZ.jld2 (read-only)\n └─📂 ZZ\n    └─🔢 2006-02-01To read an CorrData on disk, use the load_corr function:julia> C = load_corr(\"~/TEST/CORR/TA.V04C.BHZ.TA.V05C.BHZ.jld2\",\"ZZ\")\nCorrData with 188 Corrs\n      NAME: \"TA.V04C..BHZ.TA.V05C..BHZ\"        \n        ID: \"2006-02-01\"                       \n       LOC: 0.0 N, 0.0 E, 0.0 m\n      COMP: \"ZZ\"                               \n   ROTATED: false                              \n CORR_TYPE: \"coherence\"                        \n        FS: 40.0\n      GAIN: 1.0\n   FREQMIN: 0.1\n   FREQMAX: 0.2\n    CC_LEN: 1800                               \n   CC_STEP: 450                                \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: c = 0.0, 0 zeros, 0 poles\n      MISC: 0 entries                          \n     NOTES: 2 entries                          \n    MAXLAG: 80.0\n         T: 2006-02-01T00:07:30.000            …\n      CORR: 6401×188 Array{Float32,2}  clean_up!\ncorrelate\ncompute_cc\nsave_corr\nload_corr\nstack!"
 },
 
 {
