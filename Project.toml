@@ -3,9 +3,6 @@ uuid = "8cc7c3c0-6b5d-11e9-39fe-c9cd0236e08b"
 authors = ["timclements <thclements@g.harvard.edu>"]
 version = "0.1.0"
 
-[compat]
-julia = "1"
-
 [deps]
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
@@ -13,6 +10,7 @@ Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 GLM = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
+Geodesics = "6aaf26a4-c633-11e8-35ae-8904cb805353"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
@@ -21,3 +19,6 @@ Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 SeisIO = "b372bb87-02dd-52bb-bcf6-c30dd83fd342"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+julia = "1"
