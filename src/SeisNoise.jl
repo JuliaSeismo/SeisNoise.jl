@@ -25,6 +25,7 @@ include("stacking.jl")
 # import  routines for doin' stuff
 include("compute_fft.jl")
 include("correlation.jl")
+include("rotation.jl")
 include("VelocityChange/MWCS.jl")
 include("VelocityChange/Stretching.jl")
 include("Plotting/plotting.jl")
