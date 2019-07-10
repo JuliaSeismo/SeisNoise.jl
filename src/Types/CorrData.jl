@@ -4,7 +4,7 @@ export CorrData
 
 const corrfields = [:name, :loc, :comp, :rotated, :corr_type, :fs, :gain,
                     :freqmin, :freqmax, :cc_len, :cc_step, :whitened, :time_norm, :resp,
-                    :maxlag]
+                    :maxlag, :dist, :azi, :baz]
 
 """
    CorrData
@@ -14,9 +14,9 @@ A structure for cross-correlations of ambient noise data.
 ## Fields: CorrData
 | **Field** | **Description** |
 |:------------|:-------------|
-| :name       | Freeform channel names |
+| :name       | Freeform channel name in NET1.STA1.LOC1.CHAN1.NET2.STA2.LOC2.CHAN2 form |
 | :id         | Channel ids. use NET.STA.LOC.CHAN format when possible. |
-| :loc        | Location (position) object. |
+| :loc        | Location (position) object for station 1. |
 | :fs         | Sampling frequency in Hz. |
 | :gain       | Scalar gain; divide data by the gain to convert to units  |
 | :freqmin    | Minimum frequency for whitening.  |
@@ -29,6 +29,9 @@ A structure for cross-correlations of ambient noise data.
 | :misc       | Dictionary for non-critical information. |
 | :notes      | Timestamped notes; includes automatically-logged acquisition and |
 |             | processing information. |
+| :dist       | Distance between station 1 and station 2 in Km. |
+| :azi        | Azimuth from station 1 and station 2 in degrees. |
+| :baz        | Back azimuth between station 1 and station 2 in degrees. |
 | :maxlag     | Maximum lag time in seconds to keep from correlations. |
 | :t          | Starttime of each correlation. |
 | :corr       | Correlations stored in columns. |
@@ -51,6 +54,9 @@ mutable struct CorrData
   resp::PZResp                                # response poles/zeros
   misc::Dict{String,Any}                      # misc
   notes::Array{String,1}                      # notes
+  dist::Float64                               # distance between stations [km]
+  azi::Float64                                # azimuth between stations [degrees]
+  baz::Float64                                # back azimuth between stations [degrees]
   maxlag::Float64                             # maximum lag time [s]
   t::Array{Float64,1}                         # time
   corr::Array{<:Union{Float32,Float64},2}     # corr data
@@ -73,6 +79,9 @@ mutable struct CorrData
       resp     ::PZResp,
       misc     ::Dict{String,Any},
       notes    ::Array{String,1},
+      dist     ::Float64,
+      azi      ::Float64,
+      baz      ::Float64,
       maxlag   ::Float64,
       t        ::Array{Float64,1},
       corr     ::Array{<:Union{Float32,Float64},2}
@@ -80,7 +89,7 @@ mutable struct CorrData
 
       return new(name, id, loc, comp, rotated, corr_type, fs, gain, freqmin,
                  freqmax, cc_len, cc_step, whitened, time_norm, resp, misc,
-                 notes, maxlag, t, corr)
+                 notes, dist, azi, baz, maxlag, t, corr)
     end
 end
 
@@ -102,19 +111,23 @@ CorrData(;
           resp     ::PZResp                    = PZResp(),
           misc     ::Dict{String,Any}          = Dict{String,Any}(),
           notes    ::Array{String,1}           = Array{String,1}(undef, 0),
+          dist     ::Float64                   = zero(Float64),
+          azi      ::Float64                   = zero(Float64),
+          baz      ::Float64                   = zero(Float64),
           maxlag   ::Float64                   = zero(Float64),
           t        ::Array{Float64,1}          = Array{Float64,1}(undef, 0),
           corr     ::Array{<:Union{Float32,Float64},2} = Array{Float32,2}(undef, 0, 2)
           ) = CorrData(name, id, loc, comp, rotated, corr_type, fs, gain,
                       freqmin, freqmax, cc_len, cc_step, whitened, time_norm,
-                      resp, misc, notes, maxlag, t, corr)
+                      resp, misc, notes, dist, azi, baz, maxlag, t, corr)
 
 CorrData(F1::FFTData, F2::FFTData, comp::String, rotated::Bool, corr_type::String,
         maxlag::Float64, t::Array{Float64,1}, corr::Array{<:Union{Float32,Float64},2}
        ) = CorrData(F1.name * '.' * F2.name, F1.id, F1.loc, comp, rotated,
                   corr_type, F1.fs, F1.gain, F1.freqmin, F1.freqmax, F1.cc_len,
                   F1.cc_step, F1.whitened, F1.time_norm, F1.resp, F1.misc,
-                  F1.notes, maxlag, t, corr)
+                  F1.notes, get_dist(F1,F2), get_azi(F1,F2), get_baz(F1,F2),
+                  maxlag, t, corr)
 
 in(s::String, C::CorrData) = C.id==s
 
