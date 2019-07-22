@@ -1,25 +1,6 @@
 export detrend, detrend!, demean, demean!, bandpass, bandpass!, bandstop, bandstop!,
        lowpass, lowpass!, highpass, highpass!, phase!, phase
-import Statistics.mean
-import LinearAlgebra.pinv
-using DSP
 # Signal processing functions for arrays (rather than SeisData or SeisChannel)
-
-"""
-    lstsq(A,X)
-
-Least-squares regression of array `A` using the pseudo-inverse.
-
-Solves the equation `A X = B` by computing a vector `X` that
-    minimizes the Euclidean 2-norm `|| B - A X ||^2`.
-
-# Arguments
-- `A::AbstractArray`: Coefficient matrix.
-- `X::AbstractArray`: Dependent variable.
-"""
-function lstsq(A::AbstractArray,X::AbstractArray)
-    coeff = pinv(A' * A) * A' * X
-end
 
 """
     detrend!(X::AbstractArray{<:Union{Float32,Float64},1})
