@@ -60,12 +60,10 @@ function correlate(FFT1::AbstractArray, FFT2::AbstractArray, N::Int,
     corrF = conj(FFT1) .* FFT2
     if corr_type == "deconv"
         corrF ./= (smooth(abs.(FFT2).^2, half_win=smoothing_half_win) .+
-                   0.01 .* mean(smooth(abs.(FFT2).^2, half_win=smoothing_half_win),dims=1))
+                   0.01 .* mean(abs.(FFT2).^2,dims=1))
     elseif corr_type == "coherence"
-        corrF ./= smooth(abs.(FFT1),half_win=smoothing_half_win) .+
-                   0.01 .* mean(smooth(abs.(FFT1), half_win=smoothing_half_win),dims=1)
-        corrF ./= smooth(abs.(FFT2),half_win=smoothing_half_win) .+
-                   0.01 .* mean(smooth(abs.(FFT2), half_win=smoothing_half_win),dims=1)
+        corrF ./= smooth(abs.(FFT1),half_win=smoothing_half_win)
+        corrF ./= smooth(abs.(FFT2),half_win=smoothing_half_win)
     end
 
     # take inverse fft
