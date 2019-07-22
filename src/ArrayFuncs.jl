@@ -30,8 +30,8 @@ function detrend!(X::AbstractArray{<:Union{Float32,Float64},1})
     N = length(X)
     A = ones(N,2)
     A[:,1] = Array(1:N) ./ N
-    coeff = lstsq(A,X)
-    X[:] = X .- A *coeff
+    coeff = A \ X
+    X[:] .= X .- A *coeff
     return nothing
 end
 detrend(A::AbstractArray{<:Union{Float32,Float64},1}) = (U = deepcopy(A);
@@ -46,9 +46,13 @@ function detrend!(X::AbstractArray{<:Union{Float32,Float64},2})
     M,N = size(X)
     A = ones(M,2)
     A[:,1] = Array(1:M) ./ M
+
+    # solve least-squares through qr decomposition
+    Q,R = qr(A)
+    rq = inv(factorize(R)) * Q'
     for ii = 1:N
-        coeff = lstsq(A,X[:,ii])
-        X[:,ii] = X[:,ii] .- A *coeff
+        coeff = rq * X[:,ii]
+        X[:,ii] .-=  A *coeff
     end
     return nothing
 end
