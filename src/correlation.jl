@@ -57,7 +57,7 @@ function correlate(FFT1::AbstractArray, FFT2::AbstractArray, N::Int,
                    smoothing_half_win::Int=20,
                    corr_type::String="cross-correlation")
 
-    corrF = FFT1 .* conj(FFT2)
+    corrF = conj(FFT1) .* FFT2
     if corr_type == "deconv"
         corrF ./= (smooth(abs.(FFT2).^2, half_win=smoothing_half_win) .+
                    0.01 .* mean(smooth(abs.(FFT2).^2, half_win=smoothing_half_win),dims=1))
