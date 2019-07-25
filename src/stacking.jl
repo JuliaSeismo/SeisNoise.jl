@@ -1,4 +1,4 @@
-export stack, stack!
+export stack, stack!, remove_nan, remove_nan!, shorten, shorten!
 """
 
   stack!(C)
@@ -52,3 +52,42 @@ stack(C::CorrData; interval::Union{Month,Day,Hour,Second}=Day(1),
       allstack::Bool=false,phase_smoothing::Float64=0.) = (U = deepcopy(C);
       stack!(U,interval=interval,allstack=allstack,
              phase_smoothing=phase_smoothing);return U)
+
+"""
+
+  remove_nan!(C)
+
+Remove correlations with Nan from CorrData `C`.
+"""
+function remove_nan!(C::CorrData)
+      ind = []
+      for ii = 1:length(C.t)
+            if !any(isnan,C.corr[:,ii])
+                  append!(ind,ii)
+            end
+      end
+      C.corr = C.corr[:,ind]
+      C.t = C.t[ind]
+      return nothing
+end
+remove_nan(C::CorrData) = (U = deepcopy(C);remove_nan!(U);return U)
+
+"""
+
+  shorten!(C)
+
+Clip CorrData `C` from lags τ = 0 to abs(maxlag).
+"""
+function shorten!(C::CorrData, maxlag::Float64)
+      if maxlag >= C.maxlag || maxlag <= 0.
+            return C
+      end
+
+      # get timearray
+      lags = -C.maxlag:1/C.fs:C.maxlag
+      ind = findall(x -> abs(x) <= maxlag, lags)
+      C.maxlag = maxlag
+      C.corr = C.corr[ind,:]
+      return nothing
+end
+shorten(C::CorrData,maxlag::Float64) = (U = deepcopy(C); shorten!(U,maxlag);return U)
