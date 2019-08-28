@@ -1,5 +1,5 @@
 export snr, smooth, smooth!, nextpow2, abs_max!, standardize!, mad, savitsky_golay,
-     running_mean, pws
+     running_mean, pws, std_threshold
 
 """
     snr(A,fs)
@@ -173,4 +173,23 @@ function pws(A::AbstractArray, fs::Float64; power::Int=2, timegate::Float64=1.)
     phase_stack = running_mean(phase_stack,timegate_samples)
     weighted = mean(A .* phase_stack,dims=2)
     return weighted
+end
+
+"""
+
+  std_threshold(A,thresh)
+
+Returns indices of cols of `A` where max(abs.A[:,col]))/std(A[:,col]) < `max_std`.
+"""
+function std_threshold(A::AbstractArray, max_std::Float64)
+    stds = std(A,dims=1)[1,:]
+    maxs = maximum(abs.(A),dims=1)[1,:]
+    threshs = maxs ./ stds
+    ind = []
+    for ii = 1:length(threshs)
+        if threshs[ii] < max_std
+            append!(ind,ii)
+        end
+    end
+    return ind
 end

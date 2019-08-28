@@ -2,7 +2,7 @@ __precompile__()
 module SeisNoise
 
 using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO
-using  Statistics, Interpolations, GLM, Plots, Distributed
+using  Statistics, Interpolations, GLM, Plots, Distributed, LightXML
 
 # import types first
 include("Types/FFTData.jl")
