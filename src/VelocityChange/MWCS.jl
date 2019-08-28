@@ -222,8 +222,8 @@ function mwcs_dvv(time_axis::AbstractArray, dt::AbstractArray,
         lmlag = -dtt_minlag
         rmlag = dtt_minlag
     else
-        lmlag = - dist / dist_v
-        rmlag = dist / dist_v
+        lmlag = - dist / dtt_v
+        rmlag = dist / dtt_v
     end
 
     lMlag = lmlag - dtt_width
