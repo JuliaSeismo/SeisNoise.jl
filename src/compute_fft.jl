@@ -36,7 +36,7 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
               with max std = $max_std.")
     end
     A = A[:,ind]
-    start = starts[ind]
+    starts = starts[ind]
     FFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,
                       to_whiten=to_whiten)
     return F = FFTData(S[1].id, Dates.format(u2d(starts[1]),"Y-mm-dd"),
