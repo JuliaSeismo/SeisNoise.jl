@@ -1,7 +1,7 @@
 name = "SeisNoise"
 uuid = "8cc7c3c0-6b5d-11e9-39fe-c9cd0236e08b"
 authors = ["timclements <thclements@g.harvard.edu>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
