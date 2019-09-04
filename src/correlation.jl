@@ -193,10 +193,14 @@ Correlates `FFT1` and `FFT2`.
 
 """
 function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Float64,
-                smoothing_half_win::Int,corr_type::String,OUTDIR::String)
+                smoothing_half_win::Int,corr_type::String,OUTDIR::String,
+                interval::Union{Nothing,Month,Day,Hour,Second}=nothing)
     println("Correlation $(FFT1.name), $(FFT2.name)")
     C = compute_cc(FFT1,FFT2,maxlag,
                    smoothing_half_win=smoothing_half_win,corr_type=corr_type)
+    if !isnothing(interval)
+        stack!(C,interval=interval)
+    end
     save_corr(C,OUTDIR)
     return nothing
 end
