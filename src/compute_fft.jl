@@ -317,12 +317,7 @@ function remove_response!(S::SeisData, stationXML::String, freqmin::Float64,
         setindex!(S.loc,LOC,ii)
         setindex!(S.gain,GAIN,ii)
         setindex!(S.units,UNITS,ii)
-        translate_resp!(S,RESP,C=ii,wl=wl)
-
-        # note instrument response removal
-        notestr = string("translate_resp!, wl = ", wl,
-                         ", stationXML = ", stationXML)
-        note!(S,ii,notestr)
+        translate_resp!(S,RESP,chans=ii,wl=wl)
     end
     return nothing
 end
@@ -333,7 +328,7 @@ remove_response(S::SeisData, stationXML::String, freqmin::Float64,
                              wl=wl); return U)
 
 """
-  read_stationXML!(stationXML)
+  read_stationXML(stationXML)
 
 Reads instrument response from stationXML file.
 
