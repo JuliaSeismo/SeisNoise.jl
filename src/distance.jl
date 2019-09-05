@@ -247,8 +247,8 @@ function get_dist(loc1::GeoLoc, loc2::GeoLoc)
     if isempty(loc1) | isempty(loc2)
         dist =  zero(Float64)
     else
-        dist =  Geodesics.surface_distance(loc1.lon,loc1.lat,loc2.lon,loc2.lat,
-                               Geodesics.EARTH_R_MAJOR_WGS84/1000)
+        dist =  surface_distance(loc1.lon,loc1.lat,loc2.lon,loc2.lat,
+                               EARTH_R_MAJOR_WGS84/1000)
     end
     return dist
 end
@@ -279,7 +279,7 @@ function get_azi(loc1::GeoLoc, loc2::GeoLoc)
     if isempty(loc1) | isempty(loc2)
         azi =  zero(Float64)
     else
-        azi = Geodesics.azimuth(loc1.lon,loc1.lat,loc2.lon,loc2.lat)
+        azi = azimuth(loc1.lon,loc1.lat,loc2.lon,loc2.lat)
     end
     return azi
 end
@@ -310,8 +310,8 @@ function get_baz(loc1::GeoLoc, loc2::GeoLoc)
     if isempty(loc1) | isempty(loc2)
         baz =  zero(Float64)
     else
-        baz = Geodesics.inverse(deg2rad.((loc1.lon,loc1.lat,loc2.lon,loc2.lat))...,
-                          Geodesics.EARTH_R_MAJOR_WGS84, Geodesics.F_WGS84)[3]
+        baz = inverse(deg2rad.((loc1.lon,loc1.lat,loc2.lon,loc2.lat))...,
+                          EARTH_R_MAJOR_WGS84, F_WGS84)[3]
         baz = rad2deg(baz)
     end
     return baz
@@ -344,8 +344,8 @@ function get_loc(loc1::GeoLoc, azi::Float64, dist::Float64)
     if isempty(loc1)
         loc2 = GeoLoc()
     else
-        lon2,lat2,baz2 = Geodesics.forward(deg2rad.((loc1.lon, loc1.lat,azi))...,
-                         dist*1000, Geodesics.EARTH_R_MAJOR_WGS84, Geodesics.F_WGS84)
+        lon2,lat2,baz2 = forward(deg2rad.((loc1.lon, loc1.lat,azi))...,
+                         dist*1000, EARTH_R_MAJOR_WGS84, F_WGS84)
         lon2, lat2, baz2 = rad2deg.((lon2, lat2, baz2))
         loc2 = GeoLoc("",lat2,lon2, zero(Float64), zero(Float64), zero(Float64),
                       loc1.inc)
