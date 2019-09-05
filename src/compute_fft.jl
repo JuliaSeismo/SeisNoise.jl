@@ -95,7 +95,7 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
         whitemin = freqmin
     end
     if isnothing(whitemax)
-        whitemax = freqmin
+        whitemax = freqmax
     end
     FFT = process_fft(A, whitemin, whitemax, fs, time_norm=time_norm,
                       to_whiten=to_whiten)
