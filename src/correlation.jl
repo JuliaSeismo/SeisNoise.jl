@@ -175,7 +175,7 @@ end
 
 function corrmap(A::Array{FFTData,1},maxlag::Float64, smoothing_half_win::Int,
                  corr_type::String,OUTDIR::String,
-                 interval::Union{Nothing,Month,Day,Hour,Second}=nothing)
+                 interval::Union{Month,Day,Hour,Second})
         N = size(A,1)
 
         # copy the current FFT and correlate against all remaining
@@ -219,7 +219,7 @@ end
 
 function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Float64,
                 smoothing_half_win::Int,corr_type::String,OUTDIR::String,
-                interval::Union{Nothing,Month,Day,Hour,Second}=nothing)
+                interval::Union{Month,Day,Hour,Second})
     println("Correlation $(FFT1.name), $(FFT2.name)")
     C = compute_cc(FFT1,FFT2,maxlag,
                    smoothing_half_win=smoothing_half_win,corr_type=corr_type)
