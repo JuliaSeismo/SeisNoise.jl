@@ -213,7 +213,9 @@ function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Float64,
     println("Correlation $(FFT1.name), $(FFT2.name)")
     C = compute_cc(FFT1,FFT2,maxlag,
                    smoothing_half_win=smoothing_half_win,corr_type=corr_type)
-    save_corr(C,OUTDIR)
+    if !isnothing(C)
+        save_corr(C,OUTDIR)
+    end
     return nothing
 end
 
@@ -223,7 +225,9 @@ function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Float64,
     println("Correlation $(FFT1.name), $(FFT2.name)")
     C = compute_cc(FFT1,FFT2,maxlag,
                    smoothing_half_win=smoothing_half_win,corr_type=corr_type)
-    stack!(C,interval=interval)
-    save_corr(C,OUTDIR)
+    if !isnothing(C)
+        stack!(C,interval=interval)
+        save_corr(C,OUTDIR)
+    end
     return nothing
 end
