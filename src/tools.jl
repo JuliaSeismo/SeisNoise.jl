@@ -1,5 +1,5 @@
 export snr, smooth, smooth!, nextpow2, abs_max!, standardize!, mad, savitsky_golay,
-     running_mean, pws, std_threshold
+     movingaverage, pws, std_threshold
 
 """
     snr(A,fs)
@@ -20,39 +20,45 @@ end
 snr(C::CorrData) = snr(C.corr,C.fs)
 
 """
-    smooth(x,half_win=3)
+    smooth(A, half_win)
 
-Smooth Array `A` with half-window `half_win` (defaults to 3).
+Smooth array `A` with half-window `half_win` (defaults to 3).
 """
-function smooth!(A::AbstractArray; half_win::Int=3, dims::Int=1)
-    # only use odd numbers
-    if half_win % 2 != 1
-        half_win += oneunit(half_win)
-    end
-    window_len = 2 * half_win + 1
-
-    # get type of input Array
-    T = eltype(A)
-
+function smooth!(A::AbstractArray, half_win::Int=3)
     if ndims(A) == 1
-        A = reshape(A,size(A)...,1) # if 1D array, reshape to (length(A),1)
+        return movingaverage(A,half_win)
     end
 
-    # extending the data at beginning and at the end
-    # to apply the window at the borders
-    X = vcat(A[window_len:-1:2,:],A,A[end-1:-1:end-window_len+1,:])
+    Nrows, Ncols = size(A)
 
-    # convolve with boxcar
-    w = rect(window_len)
-    w ./= sum(w)
-    w = T.(w)
-    for ii = 1:size(X,2)
-        A[:,ii] .= conv(X[:,ii],w)[window_len+half_win:end-window_len-half_win+1]
+    for ii = 1:Ncols
+        A[:,ii] .= movingaverage(A[:,ii],half_win)
     end
     return nothing
 end
-smooth(A::AbstractArray;half_win::Int=3, dims::Int=1) =
-      (U = deepcopy(A);smooth!(U,half_win=half_win,dims=dims);return U)
+smooth(A::AbstractArray,half_win::Int=3) =
+      (U = deepcopy(A);smooth!(U,half_win);return U)
+
+"""
+  movingaverage(A,half_win)
+
+Smooth array `A` with moving average of half-window `half-win` (defaults to 3.)
+"""
+function movingaverage(A::AbstractArray, half_win::Int=3)
+    prepend!(A,A[1:half_win])
+    append!(A,A[end-half_win:end])
+    N = length(A)
+    B = zeros(eltype(A),N)
+    window_len = 2 * half_win + 1
+    s = sum(A[1:window_len])
+    B[half_win+1] = s
+    for ii = half_win+2:N-half_win
+        s = s - A[ii-half_win] + A[ii+half_win]
+        B[ii] = s
+    end
+    B ./= window_len
+    return B[half_win+1:end-half_win-1]
+end
 
 """
     nextpow2(x)
@@ -131,22 +137,6 @@ function savitsky_golay(x::Vector, N::Int, polyOrder::Int; deriv::Int=0)
 end
 
 """
-    running_mean(x,N)
-
-Returns array `x` smoothed by running mean of `N` points.
-If N is even, reduces N by 1.
-"""
-function running_mean(x::AbstractArray,N::Int)
-    if N % 2 == 0
-        N -= 1
-    end
-    halfWindow = div(N,2)
-    paddedx = vcat(x[1]*ones(halfWindow), x, x[end]*ones(halfWindow))
-    y = conv(paddedx,ones(N) / N)
-    return  y[2*halfWindow+1:end-2*halfWindow]
-end
-
-"""
     pws(A,fs,power,timegate)
 
 Performs phase-weighted stack on array `A` of time series.
@@ -169,7 +159,7 @@ function pws(A::AbstractArray, fs::Float64; power::Int=2, timegate::Float64=1.)
     phase_stack = abs.(phase_stack).^power
 
     # smoothing
-    timegate_samples = convert(Int,timegate * fs)
+    timegate_samples = convert(Int,timegate * fs * 0.5)
     phase_stack = running_mean(phase_stack,timegate_samples)
     weighted = mean(A .* phase_stack,dims=2)
     return weighted
