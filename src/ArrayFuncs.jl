@@ -8,9 +8,10 @@ export detrend, detrend!, demean, demean!, bandpass, bandpass!, bandstop, bandst
 Remove linear trend from array `X` using least-squares regression.
 """
 function detrend!(X::AbstractArray{<:Union{Float32,Float64},1})
+    T = eltype(X)
     N = length(X)
-    A = ones(N,2)
-    A[:,1] = Array(1:N) ./ N
+    A = ones(T,N,2)
+    A[:,1] .= range(T(1/N),T(1),length=N)
     coeff = A \ X
     X[:] .= X .- A *coeff
     return nothing
