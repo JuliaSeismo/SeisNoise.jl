@@ -121,9 +121,8 @@ Pre-process raw seismic data.
 """
 function process_raw!(S::SeisData, fs::Float64)
     for ii = 1:S.n
-        demean!(S[ii].x)        # remove mean from channel
+        SeisIO.detrend!(S[ii])         # remove mean & trend from channel
         if fs ∉ S.fs
-            detrend!(S[ii].x)       # remove linear trend from channel
             taper!(S[ii].x,S[ii].fs)         # taper channel ends
             lowpass!(S[ii].x,fs/2,S[ii].fs)    # lowpass filter before downsampling
             S[ii] = downsample(S[ii],fs) # downsample to lower fs
