@@ -21,12 +21,13 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
                      cc_step::Int, cc_len::Int;
                      time_norm::Union{Bool,String}=false,
                      to_whiten::Bool=false,
-                     max_std::Float64=5.)
+                     max_std::Float64=5.,
+                     ϕshift::Bool=true)
 
     # sync!(S,s=starttime,t=endtime)
     merge!(S)
     ungap!(S)
-    process_raw!(S,fs)  # demean, detrend, taper, lowpass, downsample
+    process_raw!(S,fs,ϕshift=ϕshift)  # demean, detrend, taper, lowpass, downsample
     starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
     sync!(S,s=starttime,t=endtime)
     A, starts, ends = slide(S[1], cc_len, cc_step)
@@ -70,12 +71,13 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
                      time_norm::Union{Bool,String}=false,
                      to_whiten::Bool=false, max_std::Float64=5.,
                      whitemin::Union{Nothing,Float64}=nothing,
-                     whitemax::Union{Nothing,Float64}=nothing)
+                     whitemax::Union{Nothing,Float64}=nothing,
+                     ϕshift::Bool=true)
 
     # sync!(S,s=starttime,t=endtime)
     merge!(S)
     ungap!(S)
-    process_raw!(S,fs)  # demean, detrend, taper, lowpass, downsample
+    process_raw!(S,fs,ϕshift=ϕshift)  # demean, detrend, taper, lowpass, downsample
     starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
     sync!(S,s=starttime,t=endtime) # sync start and end times
     remove_response!(S,stationXML,freqmin,freqmax) # remove inst response
@@ -119,20 +121,20 @@ Pre-process raw seismic data.
 - `S::SeisData`: SeisData structure.
 - `fs::Float64`: Sampling rate to downsample `S`.
 """
-function process_raw!(S::SeisData, fs::Float64)
+function process_raw!(S::SeisData, fs::Float64; ϕshift::Bool=true)
     for ii = 1:S.n
         SeisIO.detrend!(S[ii])         # remove mean & trend from channel
         if fs ∉ S.fs
-            taper!(S[ii].x,S[ii].fs)         # taper channel ends
+            SeisNoise.taper!(S[ii].x,S[ii].fs)         # taper channel ends
             lowpass!(S[ii].x,fs/2,S[ii].fs)    # lowpass filter before downsampling
             S[ii] = downsample(S[ii],fs) # downsample to lower fs
         end
-        phase_shift!(S[ii]) # timing offset from sampling period
+        phase_shift!(S[ii], ϕshift=ϕshift) # timing offset from sampling period
     end
     return nothing
 end
-process_raw(S::SeisData, fs::Float64) = (U = deepcopy(S);
-            process_raw!(U,fs); return U)
+process_raw(S::SeisData, fs::Float64; ϕshift::Bool=true) = (U = deepcopy(S);
+            process_raw!(U,fs,ϕshift=ϕshift); return U)
 
 """
     process_fft(A::AbstractArray,freqmin::Float64,freqmax::Float64,fs::Float64;
