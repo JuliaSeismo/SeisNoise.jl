@@ -1,4 +1,4 @@
-export process_raw, process_raw!, process_fft, compute_fft, whiten, remove_response!, read_stationXML
+export process_raw, process_raw!, process_fft, compute_fft, whiten, remove_response!, remove_response
 """
     compute_fft(S, freqmin, freqmax, fs, cc_step, cc_len;
                 time_norm=false, to_whiten=false, max_std=5.)
@@ -297,7 +297,8 @@ function remove_response!(S::SeisData, stationXML::String, freqmin::Float64,
         error("$stationXML does not exist. Instrument response not removed.")
     end
 
-    R = read_stationXML(stationXML)
+    s,e = string.(start_end(S[1]))
+    R = read_sxml(stationXML,s=s,t=e)
     # loop through responses
     Rid = R.id
     Sid = S.id
@@ -327,22 +328,3 @@ remove_response(S::SeisData, stationXML::String, freqmin::Float64,
                           wl::Float32=eps(Float32)) = (U = deepcopy(S);
             remove_response!(U,stationXML,freqmin,freqmax,np=np,t_max=t_max,
                              wl=wl); return U)
-
-"""
-  read_stationXML(stationXML)
-
-Reads instrument response from stationXML file.
-
-Returns a SeisData object with an instrument response for each channel in
-the stationXML file.
-
-# Arguments
-- `stationXML::String`: Path to stationXML file, e.g. "/path/to/file.xml"
-
-"""
-function read_stationXML(stationXML::String)
-    io = open(stationXML, "r")
-    xsta = read(io, String)
-    close(io)
-    return SeisIO.FDSN_sta_xml(xsta)
-end
