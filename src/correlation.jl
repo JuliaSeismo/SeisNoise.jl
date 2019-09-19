@@ -154,7 +154,8 @@ end
 
 function corrmap(A::Array{FFTData,1},maxlag::Float64, smoothing_half_win::Int,
                  corr_type::String,OUTDIR::String,
-                 interval::Union{Month,Day,Hour,Second})
+                 interval::Union{Month,Day,Hour,Second};
+                 water_level::Union{Nothing,AbstractFloat}=nothing)
         N = size(A,1)
 
         if corr_type == "coherence"
