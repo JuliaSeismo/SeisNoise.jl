@@ -55,7 +55,7 @@ cross-correlating.
 """
 function correlate(FFT1::AbstractArray, FFT2::AbstractArray, N::Int, maxlag::Int)
 
-    corrF = corrkernel(FFT1,FFT2)
+    corrF = conj.(FFT1) .* FFT2
 
     # take inverse fft
     corrT = irfft(corrF,N,1)
@@ -65,29 +65,6 @@ function correlate(FFT1::AbstractArray, FFT2::AbstractArray, N::Int, maxlag::Int
     t = range(-Int(N/2) + 1, stop=Int(N/2) - 1)
     ind = findall(abs.(t) .<= maxlag)
     corrT = corrT[ind,:]
-end
-
-"""
-
-  corrkernel(FFT1,FFT2)
-
-Kernel for cross-corelation in the frequency domain.
-
-For internal use only. Will segfault if FFT1 and FFT2 do not have similar shapes.
-
-# Arguments
-- `FFT1::AbstractArray`: Complex Array of fourier transform of ambient noise data.
-- `FFT2::AbstractArray`: Complex Array of fourier transform of ambient noise data.
-"""
-function corrkernel(FFT1::AbstractArray,FFT2::AbstractArray)
-    Nrows,Ncols = size(FFT1)
-    corrF = Array{eltype(FFT1)}(undef,Nrows,Ncols)
-    @inbounds for ii = 1:Ncols
-        @inbounds for jj = 1:Nrows
-            corrF[jj,ii] = conj(FFT1[jj,ii]) * FFT2[jj,ii]
-        end
-    end
-    return corrF
 end
 
 """
