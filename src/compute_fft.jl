@@ -55,7 +55,7 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
         return nothing
     elseif size(A,2) != length(stdind)
         A = A[:,stdind]
-        start = starts[stdind]
+        starts = starts[stdind]
         ends = ends[stdind]
     end
 
@@ -126,7 +126,7 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
         return nothing
     elseif size(A,2) != length(stdind)
         A = A[:,stdind]
-        start = starts[stdind]
+        starts = starts[stdind]
         ends = ends[stdind]
     end
 
