@@ -21,9 +21,8 @@ DateTime resolving time only to milliseconds!
 function phase_shift!(C::SeisChannel; ϕshift::Bool=true)
 
     # get time offset from sampling rate
-    t = round(C.t[1,2],sigdigits=13)
-    dt = 1. / C.fs
-    off = mod(millisecond(u2d(t*1e-6)) * 1e-3, dt)
+    dt = Float32(1. / C.fs)
+    off = mod(mod(C.t[1,2],1000000)*Float32(1e-6),dt)
     n = length(C.x)
 
     if dt - off <= eps(eltype(off))
