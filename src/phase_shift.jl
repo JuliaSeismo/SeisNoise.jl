@@ -11,9 +11,6 @@ and should be at 2016-07-04T00:00:00.01. The waveform will be phase shifted by
 2 milliseconds in the frequency domain. If ϕshift = false, will only correct
 starttime of channel.
 
-This function will not work properly for sampling rates >= 1000 Hz due to Julia
-DateTime resolving time only to milliseconds!
-
 # Arguments
 - `C::SeisChannel`: SeisChannel.
 - `ϕshift::Bool`: Boolean to allow/disable phase-shifting.

@@ -28,16 +28,37 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
     merge!(S)
     ungap!(S)
     process_raw!(S,fs,ϕshift=ϕshift)  # demean, detrend, taper, lowpass, downsample
+
+    # subset by time
     starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
+    # check if waveform length is < cc_len
+    if Int(floor((endtime - starttime).value / 1000)) < cc_len
+        return nothing
+    end
+
     sync!(S,s=starttime,t=endtime)
     A, starts, ends = slide(S[1], cc_len, cc_step)
-    ind = std_threshold(A,max_std)
-    if length(ind) == 0
-        error("No windows remaining for day $(Dates.format(u2d(starts[1]),"Y-mm-dd"))
-              with max std = $max_std.")
+
+    # remove nonzero columns
+    zeroind = nonzero(A)
+    if length(zeroind) == 0
+        return nothing
+    elseif size(A,2) != length(zeroind)
+        A = A[:,zeroind]
+        starts = starts[zeroind]
+        ends = ends[zeroind]
     end
-    A = A[:,ind]
-    starts = starts[ind]
+
+    # amplitude threshold indices
+    stdind = std_threshold(A,max_std)
+    if length(stdind) == 0
+        return nothing
+    elseif size(A,2) != length(stdind)
+        A = A[:,stdind]
+        start = starts[stdind]
+        ends = ends[stdind]
+    end
+
     FFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,
                       to_whiten=to_whiten)
     return F = FFTData(S[1].id, Dates.format(u2d(starts[1]),"Y-mm-dd"),
@@ -78,19 +99,36 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
     merge!(S)
     ungap!(S)
     process_raw!(S,fs,ϕshift=ϕshift)  # demean, detrend, taper, lowpass, downsample
+
+    # subset by time
     starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
+    # check if waveform length is < cc_len
+    if Int(floor((endtime - starttime).value / 1000)) < cc_len
+        return nothing
+    end
     sync!(S,s=starttime,t=endtime) # sync start and end times
     remove_response!(S,stationXML,freqmin,freqmax) # remove inst response
     A, starts, ends = slide(S[1], cc_len, cc_step) # cut waveform into windows
 
-    # amplitude threshold indices
-    ind = std_threshold(A,max_std)
-    if length(ind) == 0
-        error("No windows remaining for day $(Dates.format(u2d(starts[1]),"Y-mm-dd"))
-              with max std = $max_std.")
+    # remove nonzero columns
+    zeroind = nonzero(A)
+    if length(zeroind) == 0
+        return nothing
+    elseif size(A,2) != length(zeroind)
+        A = A[:,zeroind]
+        starts = starts[zeroind]
+        ends = ends[zeroind]
     end
-    A = A[:,ind]
-    starts = starts[ind]
+
+    # amplitude threshold indices
+    stdind = std_threshold(A,max_std)
+    if length(stdind) == 0
+        return nothing
+    elseif size(A,2) != length(stdind)
+        A = A[:,stdind]
+        start = starts[stdind]
+        ends = ends[stdind]
+    end
 
     # check whitening frequencies
     if isnothing(whitemin)
@@ -328,3 +366,23 @@ remove_response(S::SeisData, stationXML::String, freqmin::Float64,
                           wl::Float32=eps(Float32)) = (U = deepcopy(S);
             remove_response!(U,stationXML,freqmin,freqmax,np=np,t_max=t_max,
                              wl=wl); return U)
+
+"""
+nonzero(A)
+
+Find indices of all nonzero columns in array `A`.
+"""
+function nonzero(A::AbstractArray)
+    Nrows, Ncols = size(A)
+    ind = Int64[]
+    sizehint!(ind,Ncols)
+    for ii = 1:Ncols
+        for jj = 1:Nrows
+            if !iszero(A[jj,ii])
+                append!(ind,ii)
+                break
+            end
+        end
+    end
+    return ind
+end
