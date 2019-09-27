@@ -25,20 +25,21 @@ cross-correlating. For example
 
 ```Julia
 using SeisNoise, SeisIO
-fs = 40. # sampling frequency in Hz
+fs = 10. # sampling frequency in Hz
 freqmin,freqmax = 0.1,0.2 # minimum and maximum frequencies in Hz
 cc_step, cc_len = 450, 1800 # corrleation step and length in S
-maxlag = 80. # maximum lag time in correlation
-S1 = get_data("IRIS","TA.V04C..BHZ",s="2006-02-01",t="2006-02-02")
-S2 = get_data("IRIS","TA.V05C..BHZ",s="2006-02-01",t="2006-02-02")
-FFT1 = compute_fft(S1,freqmin, freqmax, fs, cc_step, cc_len,
-                  time_norm=false,to_whiten=false)
-FFT2 = compute_fft(S2,freqmin, freqmax, fs, cc_step, cc_len,
-                  time_norm=false,to_whiten=false)
+maxlag = 60. # maximum lag time in correlation
+smoothing_half_win = 3
+S1 = get_data("FDSN","CI.SDD..BHZ",src="SCEDC",s="2019-02-03",t="2019-02-04")
+S2 = get_data("FDSN","CI.PER..BHZ",src="SCEDC",s="2019-02-03",t="2019-02-04")
+FFT1 = compute_fft(S1,freqmin, freqmax, fs, cc_step, cc_len)
+FFT2 = compute_fft(S2,freqmin, freqmax, fs, cc_step, cc_len)
+coherence!(FFT1,smoothing_half_win)
+coherence!(FFT2,smoothing_half_win)
 C = compute_cc(FFT1,FFT2,maxlag,corr_type="coherence")
 clean_up!(C,freqmin,freqmax)
 abs_max!(C)
-SeisNoise.plot(C)
+corrplot(C)
 ```
 will produce this figure:
 
