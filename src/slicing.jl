@@ -60,7 +60,7 @@ function slide(C::SeisChannel, cc_len::Int, cc_step::Int)
   ends = ends[1:ind]
 
   # fill array with overlapping windows
-  A = Array{Float64,2}(undef, window_samples,length(starts))
+  A = Array{eltype(C.x),2}(undef, window_samples,length(starts))
   s = convert.(Int,round.((hcat(starts,ends) .- su) .* C.fs .+ 1.))
   for ii = 1:length(starts)
     A[:,ii] = C.x[s[ii,1]:s[ii,2]]
