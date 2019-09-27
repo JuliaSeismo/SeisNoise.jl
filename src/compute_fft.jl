@@ -165,7 +165,8 @@ function process_raw!(S::SeisData, fs::Float64; ϕshift::Bool=true)
         if fs ∉ S.fs
             SeisNoise.taper!(S[ii].x,S[ii].fs)         # taper channel ends
             lowpass!(S[ii].x,fs/2,S[ii].fs)    # lowpass filter before downsampling
-            S[ii] = downsample(S[ii],fs) # downsample to lower fs
+            resample!(S[ii],fs) # downsample to lower fs
+            S.fs[ii] = fs
         end
         phase_shift!(S[ii], ϕshift=ϕshift) # timing offset from sampling period
     end
