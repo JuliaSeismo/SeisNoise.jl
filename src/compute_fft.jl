@@ -204,10 +204,6 @@ function process_fft(A::AbstractArray,freqmin::Float64, freqmax::Float64,
                          zerophase=zerophase)
     demean!(A)
 
-    if eltype(A) != Float32
-        A = Float32.(A)
-    end
-
     if to_whiten && time_norm == false
         M,N = size(A)
         FFT = whiten(A,freqmin, freqmax, fs)
@@ -252,12 +248,10 @@ function whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float6
     if ndims(A) == 1
         A = reshape(A,size(A)...,1) # if 1D array, reshape to (length(A),1)
     end
+    T = eltype(A)
 
     # get size and convert to Float32
     M,N = size(A)
-    if eltype(A) != Float32
-        A = Float32.(A)
-    end
 
     # get whitening frequencies
     freqvec = rfftfreq(M,fs)
@@ -280,13 +274,13 @@ function whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float6
     # left zero cut-off
      for jj = 1:N
          for ii = 1:low
-            fftraw[ii,jj] = 0. + 0.0im
+            fftraw[ii,jj] = T(0. + 0.0im)
         end
     end
     # left tapering
      for jj = 1:N
          for ii = low+1:left
-            fftraw[ii,jj] = cos(pi / 2 + pi / 2* (ii-low-1) / pad).^2 * exp(
+            fftraw[ii,jj] = cos(T(pi) / 2 + T(pi) / 2 * (ii-low-1) / pad).^2 * exp(
             im * angle(fftraw[ii,jj]))
         end
     end
@@ -299,14 +293,14 @@ function whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float6
     # right tapering
      for jj = 1:N
          for ii = right+1:high
-            fftraw[ii,jj] = cos(pi/2 * (ii-right) / pad).^2 * exp(
+            fftraw[ii,jj] = cos(T(pi)/2 * (ii-right) / pad).^2 * exp(
             im * angle(fftraw[ii,jj]))
         end
     end
     # right zero cut-off
      for jj = 1:N
          for ii = high+1:size(fftraw,1)
-            fftraw[ii,jj] = 0. + 0.0im
+            fftraw[ii,jj] = T(0. + 0.0im)
         end
     end
     return fftraw
