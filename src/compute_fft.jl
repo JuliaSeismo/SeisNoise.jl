@@ -1,149 +1,5 @@
-export process_raw, process_raw!, process_fft, compute_fft, whiten, remove_response!, remove_response
-"""
-    compute_fft(S, freqmin, freqmax, fs, cc_step, cc_len;
-                time_norm=false, to_whiten=false, max_std=5.)
-
-
-Computes windowed fft of ambient noise data.
-
-# Arguments
-- `S::SeisData`: SeisData structure.
-- `freqmin::Float64`: minimum frequency for filtering/whitening.
-- `freqmax::Float64`: maximum frequency for filtering/whitening.
-- `fs::Float64`: Sampling rate to downsample `S`.
-- `cc_step::Int`: time, in seconds, between successive cross-correlation windows.
-- `cc_len::Int`: length of noise data window, in seconds, to cross-correlate.
-- `time_norm::Union{Bool,String}`: time domain normalization to perform.
-- `to_whiten::Bool`: Apply whitening in frequency domain.
-- `max_std::Float64=5.`: Number of standard deviations above mean to reject windowed data.
-"""
-function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
-                     cc_step::Int, cc_len::Int;
-                     time_norm::Union{Bool,String}=false,
-                     to_whiten::Bool=false,
-                     max_std::Float64=5.,
-                     ϕshift::Bool=true)
-
-    # sync!(S,s=starttime,t=endtime)
-    merge!(S)
-    ungap!(S)
-    process_raw!(S,fs,ϕshift=ϕshift)  # demean, detrend, taper, lowpass, downsample
-
-    # subset by time
-    starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
-    # check if waveform length is < cc_len
-    if Int(floor((endtime - starttime).value / 1000)) < cc_len
-        return nothing
-    end
-
-    sync!(S,s=starttime,t=endtime)
-    A, starts, ends = slide(S[1], cc_len, cc_step)
-
-    # remove nonzero columns
-    zeroind = nonzero(A)
-    if length(zeroind) == 0
-        return nothing
-    elseif size(A,2) != length(zeroind)
-        A = A[:,zeroind]
-        starts = starts[zeroind]
-        ends = ends[zeroind]
-    end
-
-    # amplitude threshold indices
-    stdind = std_threshold(A,max_std)
-    if length(stdind) == 0
-        return nothing
-    elseif size(A,2) != length(stdind)
-        A = A[:,stdind]
-        starts = starts[stdind]
-        ends = ends[stdind]
-    end
-
-    FFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,
-                      to_whiten=to_whiten)
-    return F = FFTData(S[1].id, Dates.format(u2d(starts[1]),"Y-mm-dd"),
-                       S[1].loc, S[1].fs, S[1].gain, freqmin, freqmax,
-                       cc_len, cc_step, to_whiten, time_norm, S[1].resp,
-                       S[1].misc, S[1].notes, starts, FFT)
-end
-
-"""
-    compute_fft(S, freqmin, freqmax, fs, cc_step, cc_len, stationXML,
-                time_norm=false,to_whiten=false, max_std=5.)
-
-
-Computes windowed fft of ambient noise data.
-
-Removes instrument response from `S` using response from `stationXML`.
-
-# Arguments
-- `S::SeisData`: SeisData structure.
-- `freqmin::Float64`: minimum frequency for instrument response pre-filter.
-- `freqmax::Float64`: maximum frequency for instrument response pre-filter.
-- `fs::Float64`: Sampling rate to downsample `S`.
-- `cc_step::Int`: time, in seconds, between successive cross-correlation windows.
-- `cc_len::Int`: length of noise data window, in seconds, to cross-correlate.
-- `time_norm::Union{Bool,String}=false`: time domain normalization to perform.
-- `to_whiten::Bool=false`: Apply whitening in frequency domain.
-- `max_std::Float64`: Number of standard deviations above mean to reject windowed data.
-"""
-function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
-                     cc_step::Int, cc_len::Int, stationXML::String;
-                     time_norm::Union{Bool,String}=false,
-                     to_whiten::Bool=false, max_std::Float64=5.,
-                     whitemin::Union{Nothing,Float64}=nothing,
-                     whitemax::Union{Nothing,Float64}=nothing,
-                     ϕshift::Bool=true)
-
-    # sync!(S,s=starttime,t=endtime)
-    merge!(S)
-    ungap!(S)
-    process_raw!(S,fs,ϕshift=ϕshift)  # demean, detrend, taper, lowpass, downsample
-
-    # subset by time
-    starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
-    # check if waveform length is < cc_len
-    if Int(floor((endtime - starttime).value / 1000)) < cc_len
-        return nothing
-    end
-    sync!(S,s=starttime,t=endtime) # sync start and end times
-    remove_response!(S,stationXML,freqmin,freqmax) # remove inst response
-    A, starts, ends = slide(S[1], cc_len, cc_step) # cut waveform into windows
-
-    # remove nonzero columns
-    zeroind = nonzero(A)
-    if length(zeroind) == 0
-        return nothing
-    elseif size(A,2) != length(zeroind)
-        A = A[:,zeroind]
-        starts = starts[zeroind]
-        ends = ends[zeroind]
-    end
-
-    # amplitude threshold indices
-    stdind = std_threshold(A,max_std)
-    if length(stdind) == 0
-        return nothing
-    elseif size(A,2) != length(stdind)
-        A = A[:,stdind]
-        starts = starts[stdind]
-        ends = ends[stdind]
-    end
-
-    # check whitening frequencies
-    if isnothing(whitemin)
-        whitemin = freqmin
-    end
-    if isnothing(whitemax)
-        whitemax = freqmax
-    end
-    FFT = process_fft(A, whitemin, whitemax, fs, time_norm=time_norm,
-                      to_whiten=to_whiten)
-    return F = FFTData(S[1].id, Dates.format(u2d(starts[1]),"Y-mm-dd"),
-                       S[1].loc, S[1].fs, S[1].gain, freqmin, freqmax,
-                       cc_len, cc_step, to_whiten, time_norm, S[1].resp,
-                       S[1].misc, S[1].notes, starts, FFT)
-end
+export process_raw, process_raw!, process_fft, compute_fft
+export onebit!, onebit, remove_response!, remove_response, amplitude!, amplitude
 
 """
     process_raw!(S,fs)
@@ -160,151 +16,81 @@ Pre-process raw seismic data.
 - `fs::Float64`: Sampling rate to downsample `S`.
 """
 function process_raw!(S::SeisData, fs::Float64; ϕshift::Bool=true)
+    merge!(S)
+    ungap!(S)
+
     for ii = 1:S.n
         SeisIO.detrend!(S[ii])         # remove mean & trend from channel
         if fs ∉ S.fs
             SeisNoise.taper!(S[ii].x,S[ii].fs)         # taper channel ends
             lowpass!(S[ii].x,fs/2,S[ii].fs)    # lowpass filter before downsampling
         end
-        resample!(S,fs=fs) # downsample to lower fs
+        resample!(S,chans=ii,fs=fs) # downsample to lower fs
         phase_shift!(S[ii], ϕshift=ϕshift) # timing offset from sampling period
     end
     return nothing
 end
-process_raw(S::SeisData, fs::Float64; ϕshift::Bool=true) = (U = deepcopy(S);
-            process_raw!(U,fs,ϕshift=ϕshift); return U)
+process_raw(S::SeisData, fs::Float64;
+           ϕshift::Bool=true) = (U = deepcopy(S);
+           process_raw!(U,fs, ϕshift=ϕshift); return U)
 
 """
-    process_fft(A::AbstractArray,freqmin::Float64,freqmax::Float64,fs::Float64;
-                time_norm=false,to_whiten=false,corners=corners,
-                zerophase=zerophase)
+
+  compute_fft(R)
+
+Computes windowed rfft of ambient noise data. Returns FFTData structure.
 
 # Arguments
-- `A::AbstractArray`: Array with time domain data.
-- `fs::Float64`: Sampling rate of data in `A`.
-- `freqmin::Float64`: minimum frequency for whitening.
-- `freqmax::Float64`: maximum frequency for whitening.
-- `time_norm::Union{Bool,String}`: time domain normalization to perform.
-- `to_whiten::Bool`: Apply whitening in frequency domain.
-- `corners::Int`: Number of corners in Butterworth filter.
-- `zerophase::Bool`: If true, apply Butterworth filter twice for zero phase
-                     change in output signal.
+- `R::RawData`: RawData structure
 """
-function process_fft(A::AbstractArray,freqmin::Float64, freqmax::Float64,
-                     fs::Float64; time_norm::Union{Bool,String}=false,
-                     to_whiten::Bool=false,
-                     corners::Int=4,
-                     zerophase::Bool=true)
-
-    # pre-process each window
-    demean!(A)
-    detrend!(A)
-    taper!(A,fs)
-    bandpass!(A,freqmin,freqmax,fs,corners=corners,
-                         zerophase=zerophase)
-    demean!(A)
-
-    if to_whiten && time_norm == false
-        M,N = size(A)
-        FFT = whiten(A,freqmin, freqmax, fs)
-    elseif to_whiten && time_norm != false
-        M,N = size(A)
-        FFT = whiten(A,freqmin, freqmax, fs)
-        A = irfft(FFT,M,1)
-        # apply time-domain normalization or extract instantaneous phase
-        if time_norm == "one_bit"
-            A .= sign.(A)
-        elseif time_norm == "phase"
-            phase!(A)
-        end
-        FFT = rfft(A,1)
-    else
-        if time_norm == "one_bit"
-            A .= sign.(A)
-        elseif time_norm == "phase"
-            phase!(A)
-        end
-        FFT = rfft(A,1)
-    end
-    return FFT
+function compute_fft(R::RawData)
+    FFT = rfft(R.x,1)
+    return FFTData(R.id, Dates.format(u2d(R.t[1]),"Y-mm-dd"),
+                       R.loc, R.fs, R.gain, R.freqmin, R.freqmax,
+                       R.cc_len, R.cc_step, false, R.time_norm, R.resp,
+                       R.misc, R.notes, R.t, FFT)
 end
 
 """
-    whiten(A, freqmin, freqmax, fs, pad=100)
+  amplitude!(R)
 
-Whiten spectrum of time series `A` between frequencies `freqmin` and `freqmax`.
-Uses real fft to speed up computation.
-Returns the whitened (single-sided) fft of the time series.
-
-# Arguments
-- `A::AbstractArray`: Time series.
-- `fs::Real`: Sampling rate of time series `A`.
-- `freqmin::Real`: Pass band low corner frequency.
-- `freqmax::Real`: Pass band high corner frequency.
-- `pad::Int`: Number of tapering points outside whitening band.
+Filter raw data based on amplitude.
 """
-function whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64;
-                pad::Int=50)
-    if ndims(A) == 1
-        A = reshape(A,size(A)...,1) # if 1D array, reshape to (length(A),1)
-    end
-    T = eltype(A)
-
-    # get size and convert to Float32
-    M,N = size(A)
-
-    # get whitening frequencies
-    freqvec = rfftfreq(M,fs)
-    left = findfirst(x -> x >= freqmin, freqvec)
-    right = findlast(x -> x <= freqmax, freqvec)
-    low, high = left - pad, right + pad
-
-    if low <= 1
-        low = 1
-        left = low + pad
+function amplitude!(R::RawData; max_std::Float64=10.)
+    # remove nonzero columns
+    zeroind = nonzero(R.x)
+    if length(zeroind) == 0
+        R = nothing
+    elseif size(R.x,2) != length(zeroind)
+        R.x = R.x[:,zeroind]
+        starts = starts[zeroind]
     end
 
-    if high > length(freqvec)
-        high = length(freqvec)- 1
-        right = high - pad
+    # amplitude threshold indices
+    stdind = std_threshold(R.x,max_std)
+    if length(stdind) == 0
+        R = nothing
+    elseif size(R.x,2) != length(stdind)
+        R.x = R.x[:,stdind]
+        starts = starts[stdind]
+        ends = ends[stdind]
     end
-
-    # take fft and whiten
-    fftraw = rfft(A,1)
-    # left zero cut-off
-     for jj = 1:N
-         for ii = 1:low
-            fftraw[ii,jj] = T(0. + 0.0im)
-        end
-    end
-    # left tapering
-     for jj = 1:N
-         for ii = low+1:left
-            fftraw[ii,jj] = cos(T(pi) / 2 + T(pi) / 2 * (ii-low-1) / pad).^2 * exp(
-            im * angle(fftraw[ii,jj]))
-        end
-    end
-    # pass band
-     for jj = 1:N
-         for ii = left:right
-            fftraw[ii,jj] = exp(im * angle(fftraw[ii,jj]))
-        end
-    end
-    # right tapering
-     for jj = 1:N
-         for ii = right+1:high
-            fftraw[ii,jj] = cos(T(pi)/2 * (ii-right) / pad).^2 * exp(
-            im * angle(fftraw[ii,jj]))
-        end
-    end
-    # right zero cut-off
-     for jj = 1:N
-         for ii = high+1:size(fftraw,1)
-            fftraw[ii,jj] = T(0. + 0.0im)
-        end
-    end
-    return fftraw
+    return nothing
 end
+amplitude(R::RawData; max_std::Float64=10.) = (U = deepcopy(R);amplitude!(U,
+          max_std=max_std); return U)
+
+"""
+
+  onebit!(R)
+
+One-bit amplitude modification of RawData `R`.
+"""
+function onebit!(R::RawData)
+    R.x .= sign.(R.x)
+    return nothing
+end
+onebit(R::RawData) = (U = deepcopy(R); sign!(U);return U)
 
 """
   remove_response!(S, stationXML, freqmin, freqmax)
