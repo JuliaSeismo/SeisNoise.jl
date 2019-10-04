@@ -215,6 +215,102 @@ function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Float64,
 end
 
 """
+    whiten(A, freqmin, freqmax, fs, pad=50)
+
+Whiten spectrum of time series `A` between frequencies `freqmin` and `freqmax`.
+Uses real fft to speed up computation.
+Returns the whitened (single-sided) fft of the time series.
+
+# Arguments
+- `A::AbstractArray`: Time series.
+- `fs::Real`: Sampling rate of time series `A`.
+- `freqmin::Real`: Pass band low corner frequency.
+- `freqmax::Real`: Pass band high corner frequency.
+- `pad::Int`: Number of tapering points outside whitening band.
+"""
+function whiten!(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64;
+                pad::Int=50)
+    T = real(eltype(A))
+
+    # get size and convert to Float32
+    Nrows,Ncols = size(A)
+
+    # get whitening frequencies
+    freqvec = rfftfreq(M,fs)
+    left = findfirst(x -> x >= freqmin, freqvec)
+    right = findlast(x -> x <= freqmax, freqvec)
+    low, high = left - pad, right + pad
+
+    if low <= 1
+        low = 1
+        left = low + pad
+    end
+
+    if high > length(freqvec)
+        high = length(freqvec)- 1
+        right = high - pad
+    end
+
+    # left zero cut-off
+    compzero = complex(T(0))
+    for jj = 1:Ncols
+         for ii = 1:low
+            A[ii,jj] = compzero
+        end
+
+    # left tapering
+         for ii = low+1:left
+            A[ii,jj] = cos(T(pi) ./ T(2) .+ T(pi) ./ T(2) .* (ii-low-1) ./ pad).^2 .* exp(
+            im .* angle(A[ii,jj]))
+        end
+
+    # pass band
+         for ii = left+1:right
+            A[ii,jj] = exp(im .* angle(A[ii,jj]))
+        end
+
+    # right tapering
+         for ii = right+1:high
+            A[ii,jj] = cos(T(pi) ./ T(2) .* (ii-right) ./ pad).^2 .* exp(
+            im .* angle(A[ii,jj]))
+        end
+
+    # right zero cut-off
+         for ii = high+1:size(A,1)
+            A[ii,jj] = compzero
+        end
+    end
+    return nothing
+end
+whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64;
+       pad::Int=50) = (U = deepcopy(A);
+                       whiten!(U,freqmin,freqmax,fs,pad=pad);
+                       return U)
+
+"""
+   whiten(F, freqmin, freqmax)
+
+Whiten spectrum of FFTData `F` between frequencies `freqmin` and `freqmax`.
+Uses real fft to speed up computation.
+Returns the whitened (single-sided) fft of the time series.
+
+# Arguments
+- `F::FFTData`: FFTData object of fft'd ambient noise data.
+- `freqmin::Real`: Pass band low corner frequency.
+- `freqmax::Real`: Pass band high corner frequency.
+- `pad::Int`: Number of tapering points outside whitening band.
+"""
+function whiten!(F::FFTData, freqmin::Float64, freqmax::Float64;pad::Int=50)
+    whiten!(F.fft, freqmin, freqmax, F.fs, pad=pad)
+    F.whitened = true
+    F.freqmin = freqmin
+    F.freqmax = freqmax
+    return nothing
+end
+whiten(F::FFTData, freqmin::Float64, freqmax::Float64;pad::Int=50) =
+      (U = deepcopy(F); whiten!(U,freqmin,freqmax,pad=pad);return U)
+
+"""
 
   coherence!(F,half_win, water_level)
 
