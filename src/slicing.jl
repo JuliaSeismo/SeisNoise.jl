@@ -65,7 +65,7 @@ function slide(C::SeisChannel, cc_len::Int, cc_step::Int)
   for ii = 1:length(starts)
     A[:,ii] .= @view(C.x[s[ii,1]:s[ii,2]])
   end
-  return A,starts,ends
+  return A,starts 
 end
 
 """
