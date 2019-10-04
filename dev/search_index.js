@@ -265,46 +265,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "fft/#SeisNoise.whiten",
-    "page": "Computing FFTs",
-    "title": "SeisNoise.whiten",
-    "category": "function",
-    "text": "whiten(A, freqmin, freqmax, fs, pad=100)\n\nWhiten spectrum of time series A between frequencies freqmin and freqmax. Uses real fft to speed up computation. Returns the whitened (single-sided) fft of the time series.\n\nArguments\n\nA::AbstractArray: Time series.\nfs::Real: Sampling rate of time series A.\nfreqmin::Real: Pass band low corner frequency.\nfreqmax::Real: Pass band high corner frequency.\npad::Int: Number of tapering points outside whitening band.\n\n\n\n\n\n"
-},
-
-{
-    "location": "fft/#SeisNoise.process_fft",
-    "page": "Computing FFTs",
-    "title": "SeisNoise.process_fft",
-    "category": "function",
-    "text": "process_fft(A::AbstractArray,freqmin::Float64,freqmax::Float64,fs::Float64;\n            time_norm=false,to_whiten=false,corners=corners,\n            zerophase=zerophase)\n\nArguments\n\nA::AbstractArray: Array with time domain data.\nfs::Float64: Sampling rate of data in A.\nfreqmin::Float64: minimum frequency for whitening.\nfreqmax::Float64: maximum frequency for whitening.\ntime_norm::Union{Bool,String}: time domain normalization to perform.\nto_whiten::Bool: Apply whitening in frequency domain.\ncorners::Int: Number of corners in Butterworth filter.\nzerophase::Bool: If true, apply Butterworth filter twice for zero phase                    change in output signal.\n\n\n\n\n\n"
-},
-
-{
-    "location": "fft/#SeisNoise.compute_fft",
-    "page": "Computing FFTs",
-    "title": "SeisNoise.compute_fft",
-    "category": "function",
-    "text": "compute_fft(S, freqmin, freqmax, fs, cc_step, cc_len;\n            time_norm=false, to_whiten=false, max_std=5.)\n\nComputes windowed fft of ambient noise data.\n\nArguments\n\nS::SeisData: SeisData structure.\nfreqmin::Float64: minimum frequency for filtering/whitening.\nfreqmax::Float64: maximum frequency for filtering/whitening.\nfs::Float64: Sampling rate to downsample S.\ncc_step::Int: time, in seconds, between successive cross-correlation windows.\ncc_len::Int: length of noise data window, in seconds, to cross-correlate.\ntime_norm::Union{Bool,String}: time domain normalization to perform.\nto_whiten::Bool: Apply whitening in frequency domain.\nmax_std::Float64=5.: Number of standard deviations above mean to reject windowed data.\n\n\n\n\n\ncompute_fft(S, freqmin, freqmax, fs, cc_step, cc_len, stationXML,\n            time_norm=false,to_whiten=false, max_std=5.)\n\nComputes windowed fft of ambient noise data.\n\nRemoves instrument response from S using response from stationXML.\n\nArguments\n\nS::SeisData: SeisData structure.\nfreqmin::Float64: minimum frequency for instrument response pre-filter.\nfreqmax::Float64: maximum frequency for instrument response pre-filter.\nfs::Float64: Sampling rate to downsample S.\ncc_step::Int: time, in seconds, between successive cross-correlation windows.\ncc_len::Int: length of noise data window, in seconds, to cross-correlate.\ntime_norm::Union{Bool,String}=false: time domain normalization to perform.\nto_whiten::Bool=false: Apply whitening in frequency domain.\nmax_std::Float64: Number of standard deviations above mean to reject windowed data.\n\n\n\n\n\n"
-},
-
-{
-    "location": "fft/#SeisNoise.save_fft",
-    "page": "Computing FFTs",
-    "title": "SeisNoise.save_fft",
-    "category": "function",
-    "text": "save_fft(F::FFTData, OUT::String)\n\nSave FFTData F to JLD2.\n\n\n\n\n\n"
-},
-
-{
-    "location": "fft/#SeisNoise.load_fft",
-    "page": "Computing FFTs",
-    "title": "SeisNoise.load_fft",
-    "category": "function",
-    "text": "load_fft(filename,chan,day=day)\n\nLoads FFTData for channel chan from JLD2 file filename. If day is specified, loads data from day day, else loads data from all days of chan.\n\n\n\n\n\n"
-},
-
-{
     "location": "fft/#Saving/Loading-FFTs-1",
     "page": "Computing FFTs",
     "title": "Saving/Loading FFTs",
