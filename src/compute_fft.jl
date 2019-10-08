@@ -166,3 +166,68 @@ function nonzero(A::AbstractArray)
     end
     return ind
 end
+
+"""
+    compute_fft(S, freqmin, freqmax, fs, cc_step, cc_len;
+                time_norm=false, to_whiten=false, max_std=5.)
+Computes windowed fft of ambient noise data.
+# Arguments
+- `S::SeisData`: SeisData structure.
+- `freqmin::Float64`: minimum frequency for filtering/whitening.
+- `freqmax::Float64`: maximum frequency for filtering/whitening.
+- `fs::Float64`: Sampling rate to downsample `S`.
+- `cc_step::Int`: time, in seconds, between successive cross-correlation windows.
+- `cc_len::Int`: length of noise data window, in seconds, to cross-correlate.
+- `time_norm::Union{Bool,String}`: time domain normalization to perform.
+- `to_whiten::Bool`: Apply whitening in frequency domain.
+- `max_std::Float64=5.`: Number of standard deviations above mean to reject windowed data.
+"""
+function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
+                     cc_step::Int, cc_len::Int;
+                     time_norm::Union{Bool,String}=false,
+                     to_whiten::Bool=false,
+                     max_std::Float64=5.,
+                     ϕshift::Bool=true)
+
+    # sync!(S,s=starttime,t=endtime)
+    merge!(S)
+    ungap!(S)
+    process_raw!(S,fs,ϕshift=ϕshift)  # demean, detrend, taper, lowpass, downsample
+
+    # subset by time
+    starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
+    # check if waveform length is < cc_len
+    if Int(floor((endtime - starttime).value / 1000)) < cc_len
+        return nothing
+    end
+
+    sync!(S,s=starttime,t=endtime)
+    A, starts, ends = slide(S[1], cc_len, cc_step)
+
+    # remove nonzero columns
+    zeroind = nonzero(A)
+    if length(zeroind) == 0
+        return nothing
+    elseif size(A,2) != length(zeroind)
+        A = A[:,zeroind]
+        starts = starts[zeroind]
+        ends = ends[zeroind]
+    end
+
+    # amplitude threshold indices
+    stdind = std_threshold(A,max_std)
+    if length(stdind) == 0
+        return nothing
+    elseif size(A,2) != length(stdind)
+        A = A[:,stdind]
+        starts = starts[stdind]
+        ends = ends[stdind]
+    end
+
+    FFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,
+                      to_whiten=to_whiten)
+    return F = FFTData(S[1].id, Dates.format(u2d(starts[1]),"Y-mm-dd"),
+                       S[1].loc, S[1].fs, S[1].gain, freqmin, freqmax,
+                       cc_len, cc_step, to_whiten, time_norm, S[1].resp,
+                       S[1].misc, S[1].notes, starts, FFT)
+end
