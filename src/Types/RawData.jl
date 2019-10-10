@@ -69,6 +69,20 @@ mutable struct RawData
                 time_norm, resp, misc, notes, t, x)
     end
 
+    function RawData(S::SeisData,cc_len::Int,cc_step::Int)
+      merge!(S)
+      # subset by time
+      starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
+        # check if waveform length is < cc_len
+      if Int(floor((endtime - starttime).value / 1000)) < cc_len
+          return nothing
+      end
+      sync!(S,s=starttime,t=endtime) # sync start and end times
+      x, starts = slide(S[1], cc_len, cc_step)
+      return new(S[1].name,S[1].id,S[1].loc,S[1].fs,S[1].gain,1/cc_len,S[1].fs/2,
+                cc_len,cc_step,false,S[1].resp,S[1].misc,S[1].notes,starts,x)
+    end
+
     function RawData(C::SeisChannel,cc_len::Int,cc_step::Int)
       # subset by time
       starttime, endtime = u2d.(nearest_start_end(C,cc_len, cc_step))
@@ -78,8 +92,7 @@ mutable struct RawData
       end
       sync!(C,s=starttime,t=endtime) # sync start and end times
       x, starts = slide(C, cc_len, cc_step)
-      C.x = [Float32(0)]
-      return new(C.name,C.id,C.loc,C.fs,C.gain,zero(Float64),zero(Float64),
+      return new(C.name,C.id,C.loc,C.fs,C.gain,1/cc_len,C.fs/2,
                 cc_len,cc_step,false,C.resp,C.misc,C.notes,starts,x)
     end
 end
