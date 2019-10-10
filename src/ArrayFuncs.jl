@@ -1,3 +1,4 @@
+import SeisIO: demean, demean!, taper, taper!,detrend, detrend!
 export detrend, detrend!, taper, taper!, demean, demean!, bandpass, bandpass!
 export bandstop, bandstop!, lowpass, lowpass!, highpass, highpass!
 export phase, phase!, hanningwindow
@@ -42,6 +43,8 @@ function detrend!(X::AbstractArray{<:Union{Float32,Float64},2})
 end
 detrend(A::AbstractArray{<:Union{Float32,Float64},2}) = (U = deepcopy(A);
         detrend!(U);return U)
+detrend!(R::RawData) = detrend!(R.x)
+detrend(R::RawData) = (U = deepcopy(R); detrend!(U.x); return U)
 
 """
     demean!(A::AbstractArray{<:Union{Float32,Float64},1})
@@ -75,6 +78,8 @@ function demean!(A::AbstractArray{<:Union{Float32,Float64},2})
 end
 demean(A::AbstractArray{<:Union{Float32,Float64},2}) = (U = deepcopy(A);
        demean!(U);return U)
+demean!(R::RawData) = demean!(R.x)
+demean(R::RawData) = (U = deepcopy(R); demean!(U.x); return U)
 
 """
    taper!(A,fs; max_percentage=0.05, max_length=20.)
@@ -121,6 +126,11 @@ end
 taper(A::AbstractArray{<:Union{Float32,Float64},2}, fs::Float64;
        max_percentage::Float64=0.05,max_length::Float64=20.) = (U = deepcopy(A);
        taper!(U,fs,max_percentage=max_percentage,max_length=max_length);return U)
+taper!(R::RawData; max_percentage::Float64=0.05,
+       max_length::Float64=20.) = taper!(R.x,R.fs,max_percentage=max_percentage,
+       max_length=max_length)
+taper(R::RawData; max_percentage::Float64=0.05,
+       max_length::Float64=20.) = (U = deepcopy(R); taper!(U.x,U.fs); return U)
 
 """
     phase!(A::AbstractArray)
@@ -138,6 +148,8 @@ function phase!(A::AbstractArray)
     return nothing
 end
 phase(A::AbstractArray) = (U = deepcopy(A);phase!(U);return U)
+phase!(R::RawData) = phase!(R.x)
+phase(R::RawData) = (U = deepcopy(R);phase!(U.x);return U)
 
 
 """
@@ -219,13 +231,14 @@ function bandpass!(A::AbstractArray{<:Union{Float32,Float64},2},
     # create filter
     responsetype = Bandpass(T(freqmin), T(freqmax); fs=fs)
     designmethod = Butterworth(T,corners)
+    filtx = digitalfilter(responsetype, designmethod)
     if zerophase
         for ii = 1:N
-            A[:,ii] .= filtfilt(digitalfilter(responsetype, designmethod), @view(A[:,ii]))
+            A[:,ii] .= filtfilt(filtx, @view(A[:,ii]))
         end
     else
         for ii = 1:N
-            A[:,ii] .= filt(digitalfilter(responsetype, designmethod), @view(A[:,ii]))
+            A[:,ii] .= filt(filtx, @view(A[:,ii]))
         end
     end
 
@@ -235,7 +248,15 @@ bandpass(A::AbstractArray{<:Union{Float32,Float64},2},freqmin::Float64,
          freqmax::Float64, fs::Float64; corners::Int=4,zerophase::Bool=false) =
          (U = deepcopy(A);bandpass!(U,freqmin,freqmax,fs,corners=corners,
          zerophase=zerophase);return U)
-
+bandpass!(R::RawData,freqmin::Float64,freqmax::Float64;
+          corners::Int=4,zerophase::Bool=false) = (bandpass!(R.x,freqmin,freqmax,
+          R.fs,corners=corners,zerophase=zerophase);setfield!(R,:freqmin,freqmin);
+          setfield!(R,:freqmax,min(freqmax,R.fs/2));return nothing)
+bandpass(R::RawData,freqmin::Float64,freqmax::Float64;
+        corners::Int=4,zerophase::Bool=false) = (U = deepcopy(R);bandpass!(U.x,
+        freqmin,freqmax,U.fs,corners=corners,zerophase=zerophase);
+        setfield!(U,:freqmin,freqmin);
+        setfield!(U,:freqmax,min(freqmax,R.fs/2));return U)
 
  """
      bandstop!(A,freqmin,freqmax,fs,corners=4,zerophase=false)
@@ -315,13 +336,14 @@ function bandstop!(A::AbstractArray{<:Union{Float32,Float64},2},
     # create filter
     responsetype = Bandstop(T(freqmin), T(freqmax); fs=fs)
     designmethod = Butterworth(T,corners)
+    filtx = digitalfilter(responsetype, designmethod)
     if zerophase
         for ii = 1:N
-            A[:,ii] .= filtfilt(digitalfilter(responsetype, designmethod), @view(A[:,ii]))
+            A[:,ii] .= filtfilt(filtx, @view(A[:,ii]))
         end
     else
         for ii = 1:N
-            A[:,ii] .= filt(digitalfilter(responsetype, designmethod), @view(A[:,ii]))
+            A[:,ii] .= filt(filtx, @view(A[:,ii]))
         end
     end
 
@@ -331,6 +353,12 @@ bandstop(A::AbstractArray{<:Union{Float32,Float64},2},freqmin::Float64,
          freqmax::Float64, fs::Float64; corners::Int=4,zerophase::Bool=false) =
          (U = deepcopy(A);bandstop!(U,freqmin,freqmax,corners=corners,
          zerophase=zerophase);return U)
+bandstop!(R::RawData,freqmin::Float64,freqmax::Float64;
+    corners::Int=4,zerophase::Bool=false) = bandstop!(R.x,freqmin,freqmax,
+    R.fs,corners=corners,zerophase=zerophase)
+bandstop(R::RawData,freqmin::Float64,freqmax::Float64;
+  corners::Int=4,zerophase::Bool=false) = (U = deepcopy(R);bandstop!(U.x,
+  freqmin,freqmax,U.fs,corners=corners,zerophase=zerophase);return U)
 
 """
 lowpass(A,freq,fs,corners=4,zerophase=false)
@@ -392,13 +420,14 @@ function lowpass!(A::AbstractArray{<:Union{Float32,Float64},2},freq::Float64,
     # create filter
     responsetype = Lowpass(T(freq); fs=fs)
     designmethod = Butterworth(T,corners)
+    filtx = digitalfilter(responsetype, designmethod)
     if zerophase
         for ii = 1:N
-            A[:,ii] .= filtfilt(digitalfilter(responsetype, designmethod), @view(A[:,ii]))
+            A[:,ii] .= filtfilt(filtx, @view(A[:,ii]))
         end
     else
         for ii = 1:N
-            A[:,ii] .= filt(digitalfilter(responsetype, designmethod), @view(A[:,ii]))
+            A[:,ii] .= filt(filtx, @view(A[:,ii]))
         end
     end
     return nothing
@@ -406,6 +435,14 @@ end
 lowpass(A::AbstractArray{<:Union{Float32,Float64},2},freq::Float64, fs::Float64;
         corners::Int=4,zerophase::Bool=false) = (U = deepcopy(A);
         lowpass!(U,freq,fs,corners=corners,zerophase=zerophase);return U)
+lowpass!(R::RawData,freq::Float64; corners::Int=4,
+         zerophase::Bool=false) = (lowpass!(R.x,freq,R.fs,corners=corners,
+         zerophase=zerophase);setfield!(R,:freqmax,min(freqmax,R.fs/2));
+         return nothing)
+lowpass(R::RawData,freq::Float64; corners::Int=4,
+         zerophase::Bool=false) = (U = deepcopy(R);lowpass!(U.x,freq,U.fs,
+         corners=corners,zerophase=zerophase);
+         setfield!(R,:freqmax,min(freqmax,R.fs/2));return U)
 
 """
     highpass(A,freq,fs,corners=4,zerophase=false)
@@ -463,13 +500,14 @@ function highpass!(A::AbstractArray{<:Union{Float32,Float64},2},freq::Float64,
     # create filter
     responsetype = Highpass(T(freq); fs=fs)
     designmethod = Butterworth(T,corners)
+    filtx = digitalfilter(responsetype, designmethod)
     if zerophase
         for ii = 1:N
-            A[:,ii] .= filtfilt(digitalfilter(responsetype, designmethod), @view(A[:,ii]))
+            A[:,ii] .= filtfilt(filtx, @view(A[:,ii]))
         end
     else
         for ii = 1:N
-            A[:,ii] .= filt(digitalfilter(responsetype, designmethod), @view(A[:,ii]))
+            A[:,ii] .= filt(filtx, @view(A[:,ii]))
         end
     end
     return nothing
@@ -477,7 +515,13 @@ end
 highpass(A::AbstractArray{<:Union{Float32,Float64},2},freq::Float64,fs::Float64;
 corners::Int=4,zerophase::Bool=false) = (U = deepcopy(A);
 highpass!(U,freq,fs,corners=corners,zerophase=zerophase);return U)
-
+highpass!(R::RawData,freq::Float64; corners::Int=4,
+         zerophase::Bool=false) = (highpass!(R.x,freq,R.fs,corners=corners,
+         zerophase=zerophase);setfield!(R,:freqmin,freqmin);return nothing)
+highpass(R::RawData,freq::Float64; corners::Int=4,
+         zerophase::Bool=false) = (U = deepcopy(R);highpass!(U.x,freq,U.fs,
+         corners=corners,zerophase=zerophase);setfield!(R,:freqmin,freqmin);
+         return U)
 
 function hanningwindow(::Type{T},n::Integer; padding::Integer=0, zerophase::Bool=false) where {T<:Real}
     if n < 0

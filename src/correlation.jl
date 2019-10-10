@@ -30,6 +30,10 @@ clean_up!(C::CorrData,freqmin::Float64,freqmax::Float64; corners::Int=4,
           zerophase::Bool=true) = clean_up!(C.corr,freqmin,freqmax,C.fs,
           corners=corners,zerophase=zerophase)
 
+clean_up!(R::RawData,freqmin::Float64,freqmax::Float64; corners::Int=4,
+          zerophase::Bool=true) = clean_up!(C.x,freqmin,freqmax,R.fs,
+          corners=corners,zerophase=true)
+
 """
     correlate(FFT1, FFT2, N, maxlag, corr_type='cross-correlation')
 
