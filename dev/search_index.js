@@ -145,17 +145,17 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "preprocessing/#SeisNoise.detrend!",
+    "location": "preprocessing/#SeisIO.detrend!",
     "page": "Pre-Processing",
-    "title": "SeisNoise.detrend!",
+    "title": "SeisIO.detrend!",
     "category": "function",
     "text": "detrend!(X::AbstractArray{<:Union{Float32,Float64},1})\n\nRemove linear trend from array X using least-squares regression.\n\n\n\n\n\ndetrend!(X::AbstractArray{<:Union{Float32,Float64},2})\n\nRemove linear trend from columns of X using least-squares regression.\n\n\n\n\n\n"
 },
 
 {
-    "location": "preprocessing/#SeisNoise.demean!",
+    "location": "preprocessing/#SeisIO.demean!",
     "page": "Pre-Processing",
-    "title": "SeisNoise.demean!",
+    "title": "SeisIO.demean!",
     "category": "function",
     "text": "demean!(A::AbstractArray{<:Union{Float32,Float64},1})\n\nRemove mean from array A.\n\n\n\n\n\ndemean!(A::AbstractArray{<:Union{Float32,Float64},2})\n\nRemove mean from columns of array A.\n\n\n\n\n\n"
 },
