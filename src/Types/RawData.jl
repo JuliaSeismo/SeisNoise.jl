@@ -115,7 +115,7 @@ RawData(;
           x      ::Array{<:Union{Float32,Float64},2} =
                      Array{Float32,2}(undef, 0, 2)
           ) = RawData(name, id, loc, fs, gain, freqmin, freqmax, cc_len, cc_step,
-                     whitened, time_norm, resp, misc, notes, t, x)
+                     time_norm, resp, misc, notes, t, x)
 
 in(s::String, R::RawData) = R.id==s
 
