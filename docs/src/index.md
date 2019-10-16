@@ -15,6 +15,8 @@ From the Julia command prompt:
 3. Press backspace to exit `pkg`.
 4. Type or copy: `using SeisNoise`
 
+That's it!
+
 ## Using SeisNoise.jl
 
 SeisNoise.jl was designed to be as easy to use in the REPL as on an HPC cluster. If

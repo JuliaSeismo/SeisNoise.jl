@@ -9,10 +9,7 @@ makedocs(
     authors = "Tim Clements",
     pages = Any[
         "Home" => "index.md",
-        "Types" => Any[
-         "FFTData" => "Types/fftdata.md",
-         "CorrData" => "Types/corrdata.md",
-        ],
+        "Types" => "types.md",
         "Pre-Processing" => "preprocessing.md",
         "Filtering" => "filter.md",
         "Computing FFTs" => "fft.md",
