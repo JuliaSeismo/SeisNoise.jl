@@ -1,6 +1,6 @@
 # cross-correlation module
 export clean_up!, clean_up, correlate, compute_cc, generate_pairs, map_cc, corrmap
-export coherence!, coherence, deconvolution!, deconvolution
+export coherence!, coherence, deconvolution!, deconvolution, whiten, whiten!
 
 """
     clean_up!(A,freqmin,freqmax,fs)
@@ -221,26 +221,26 @@ end
 """
     whiten(A, freqmin, freqmax, fs, pad=50)
 
-Whiten spectrum of time series `A` between frequencies `freqmin` and `freqmax`.
-Uses real fft to speed up computation.
-Returns the whitened (single-sided) fft of the time series.
+Whiten spectrum of rfft `A` between frequencies `freqmin` and `freqmax`.
+Returns the whitened rfft of the time series.
 
 # Arguments
 - `A::AbstractArray`: Time series.
 - `fs::Real`: Sampling rate of time series `A`.
 - `freqmin::Real`: Pass band low corner frequency.
 - `freqmax::Real`: Pass band high corner frequency.
+- `N::Int`: Number of input time domain samples for each rfft.
 - `pad::Int`: Number of tapering points outside whitening band.
 """
-function whiten!(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64;
-                pad::Int=50)
+function whiten!(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64,
+                 N::Int;pad::Int=50)
     T = real(eltype(A))
 
     # get size and convert to Float32
     Nrows,Ncols = size(A)
 
     # get whitening frequencies
-    freqvec = rfftfreq(Nrows,fs)
+    freqvec = rfftfreq(N,fs)
     left = findfirst(x -> x >= freqmin, freqvec)
     right = findlast(x -> x <= freqmax, freqvec)
     low, high = left - pad, right + pad
@@ -286,9 +286,9 @@ function whiten!(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float
     end
     return nothing
 end
-whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64;
+whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64, N::Int;
        pad::Int=50) = (U = deepcopy(A);
-                       whiten!(U,freqmin,freqmax,fs,pad=pad);
+                       whiten!(U,freqmin,freqmax,fs,N,pad=pad);
                        return U)
 
 """
@@ -305,7 +305,20 @@ Returns the whitened (single-sided) fft of the time series.
 - `pad::Int`: Number of tapering points outside whitening band.
 """
 function whiten!(F::FFTData, freqmin::Float64, freqmax::Float64;pad::Int=50)
-    whiten!(F.fft, freqmin, freqmax, F.fs, pad=pad)
+    if freqmin < F.freqmin && freqmax > F.freqmax
+        @warn "Whitening frequencies ($freqmin, $freqmax Hz) are wider than frequencies
+        in FFTData ($(F.freqmin),$(F.freqmax) Hz). Whitening in ($(F.freqmin),$(F.freqmax) Hz) band."
+    elseif freqmin < F.freqmin
+        @warn "Low whitening frequency $freqmin Hz is lower than minumum frequency
+        in FFTData ($(F.freqmin) Hz). Whitening in ($(F.freqmin),$freqmax Hz) band."
+    elseif freqmax > F.freqmax
+        @warn "High whitening frequency $freqmax Hz is higher than maximum frequency
+        in FFTData ($(F.freqmax) Hz). Whitening in ($freqmin,$(F.freqmax) Hz) band."
+    end
+
+    freqmin = max(freqmin,F.freqmin) # check for freqmin = 0
+    freqmax = min(freqmax,max(F.freqmax,1 / F.cc_len)) # check for freqmax = 0
+    whiten!(F.fft, freqmin, freqmax, F.fs,convert(Int, F.fs * F.cc_len), pad=pad)
     F.whitened = true
     F.freqmin = freqmin
     F.freqmax = freqmax
@@ -313,6 +326,30 @@ function whiten!(F::FFTData, freqmin::Float64, freqmax::Float64;pad::Int=50)
 end
 whiten(F::FFTData, freqmin::Float64, freqmax::Float64;pad::Int=50) =
       (U = deepcopy(F); whiten!(U,freqmin,freqmax,pad=pad);return U)
+
+function whiten!(R::RawData,freqmin::Float64, freqmax::Float64; pad::Int=50)
+    if freqmin < R.freqmin && freqmax > R.freqmax
+        @warn "Whitening frequencies ($freqmin, $freqmax Hz) are wider than frequencies
+        in RawData ($(R.freqmin),$(R.freqmax) Hz). Whitening in ($(R.freqmin),$(R.freqmax) Hz) band."
+    elseif freqmin < R.freqmin
+        @warn "Low whitening frequency $freqmin Hz is lower than minumum frequency
+        in RawData ($(R.freqmin) Hz). Whitening in ($(R.freqmin),$freqmax Hz) band."
+    elseif freqmax > R.freqmax
+        @warn "High whitening frequency $freqmax Hz is higher than maximum frequency
+        in FFTData ($(R.freqmax) Hz). Whitening in ($freqmin,$(R.freqmax) Hz) band."
+    end
+
+    freqmin = max(freqmin,R.freqmin) # check for freqmin = 0
+    freqmax = min(freqmax,max(R.freqmax,1 / R.cc_len)) # check for freqmax = 0
+    FFT = rfft(R.x,1)
+    whiten!(FFT,freqmin,freqmax,R.fs, convert(Int, R.fs * R.cc_len), pad=pad)
+    R.x .= irfft(FFT,convert(Int,R.cc_len * R.fs),1)
+    R.freqmin = freqmin
+    R.freqmax = freqmax
+    return nothing
+end
+whiten(R::RawData,freqmin::Float64, freqmax::Float64; pad::Int=50) =
+      (U = deepcopy(R); whiten!(U,freqmin,freqmax,pad=pad);return U)
 
 """
 
