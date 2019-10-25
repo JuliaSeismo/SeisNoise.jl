@@ -137,35 +137,6 @@ function savitsky_golay(x::Vector, N::Int, polyOrder::Int; deriv::Int=0)
 end
 
 """
-    pws(A,fs,power,timegate)
-
-Performs phase-weighted stack on array `A` of time series.
-
-Follows methods of Schimmel and Paulssen, 1997.
-If s(t) is time series data,
-S(t) = s(t) + i*H(s(t)), where H(s(t)) is Hilbert transform of s(t)
-S(t) = s(t) + i*H(s(t)) = A(t)*exp(i*phi(t)), where
-A(t) is envelope of s(t) and phi(t) is phase of s(t)
-Phase-weighted stack, g(t), is then:
-g(t) = 1/N sum j = 1:N s_j(t) * | 1/N sum k = 1:N exp[i * phi_k(t)]|^v
-where N is number of traces used, v is sharpness of phase-weighted stack
-
-"""
-function pws(A::AbstractArray, fs::Float64; power::Int=2, timegate::Float64=1.)
-    M,N = size(A)
-    analytic = A .+ im .* hilbert(A)
-    phase = angle.(analytic)
-    phase_stack = mean(exp.(im.*phase),dims=2)[:,1] ./ N # reduce array dimension
-    phase_stack = abs.(phase_stack).^power
-
-    # smoothing
-    timegate_samples = convert(Int,timegate * fs * 0.5)
-    phase_stack = running_mean(phase_stack,timegate_samples)
-    weighted = mean(A .* phase_stack,dims=2)
-    return weighted
-end
-
-"""
 
   std_threshold(A,thresh)
 

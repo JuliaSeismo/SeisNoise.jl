@@ -1,4 +1,5 @@
 export stack, stack!, remove_nan, remove_nan!, shorten, shorten!
+export pws, pws!, robuststack, robuststack!
 """
 
   stack!(C)
@@ -52,6 +53,107 @@ stack(C::CorrData; interval::Union{Month,Day,Hour,Second}=Day(1),
       allstack::Bool=false,phase_smoothing::Float64=0.) = (U = deepcopy(C);
       stack!(U,interval=interval,allstack=allstack,
              phase_smoothing=phase_smoothing);return U)
+
+"""
+
+  robuststack(A,ϵ)
+
+Performs robust stack on array `A`.
+
+Follows methods of Pavlis and Vernon, 2010.
+
+# Arguments
+- `A::AbstractArray`: Time series stored in columns.
+- `ϵ::AbstractFloat`: Threshold for convergence of robust stack.
+"""
+function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=eps(Float32)) where T <: AbstractFloat
+    N = size(A,2)
+    Bold = median(A,dims=2)
+    w = Array{T}(undef,N)
+    r = Array{T}(undef,N)
+    d2 = Array{T}(undef,N)
+
+    # do 2-norm for all columns in A
+    for ii = 1:N
+        d2[ii] = norm(A[:,ii],2)
+    end
+
+    BdotD = sum(A .* Bold,dims=1)
+
+    for ii = 1:N
+        r[ii] = norm(A[:,ii] .- (BdotD[ii] .* Bold),2)
+        w[ii] = abs(BdotD[ii]) ./ d2[ii] ./ r[ii]
+    end
+
+    Bnew = mean(A,weights(w),dims=2)
+
+    # check convergence
+    ϵN = norm(Bnew .- Bold,2) / (norm(Bnew,2) * N)
+    Bold = Bnew
+    iter = 0
+    while ϵN < ϵ
+        BdotD = sum(A .* Bold,dims=1)
+
+        for ii = 1:N
+            r[ii] = norm(A[:,ii] .- (BdotD[ii] .* Bold),2)
+            w[ii] = abs(BdotD[ii]) ./ d2[ii] ./ r[ii]
+        end
+
+        Bnew = mean(A,weights(w),dims=2)
+
+        # check convergence
+        ϵN = norm(Bnew .- Bold,2) / (norm(Bnew,2) * N)
+        Bold = Bnew
+        iter += 1
+    end
+    return Bnew
+end
+robuststack!(C::CorrData;ϵ::AbstractFloat=eps(Float32)) =
+       (C.corr = robuststack(C.corr,ϵ=ϵ); C.t = C.t[1:1]; return C)
+robuststack(C::CorrData;ϵ::AbstractFloat=eps(Float32))  =
+       (U = deepcopy(C); U.corr = robuststack(U.corr,ϵ=ϵ); U.t = U.t[1:1];
+       return U)
+
+"""
+
+  pws(A,fs,power,timegate)
+
+Performs phase-weighted stack on array `A` of time series.
+
+Follows methods of Schimmel and Paulssen, 1997.
+If s(t) is time series data,
+S(t) = s(t) + i*H(s(t)), where H(s(t)) is Hilbert transform of s(t)
+S(t) = s(t) + i*H(s(t)) = A(t)*exp(i*phi(t)), where
+A(t) is envelope of s(t) and phi(t) is phase of s(t)
+Phase-weighted stack, g(t), is then:
+g(t) = 1/N sum j = 1:N s_j(t) * | 1/N sum k = 1:N exp[i * phi_k(t)]|^v
+where N is number of traces used, v is sharpness of phase-weighted stack
+
+# Arguments
+- `A::AbstractArray`: Time series stored in columns.
+- `fs::Float64`: Sampling rate of time series (in Hz).
+- `power::Int`: Sharpness of transition from phase similarity to dissimilarity.
+- `timegate::Float64`: Phase stack smoothing window (in seconds).
+"""
+function pws(A::AbstractArray, fs::Float64; power::Int=2, timegate::Float64=1.)
+      M,N = size(A)
+      analytic = A .+ im .* hilbert(A)
+      phase = angle.(analytic)
+      phase_stack = mean(exp.(im.*phase),dims=2)[:,1] ./ N # reduce array dimension
+      phase_stack = abs.(phase_stack).^power
+
+      # smoothing
+      timegate_samples = convert(Int,timegate * fs * 0.5)
+      phase_stack = movingaverage(phase_stack,timegate_samples)
+      abs_max!(phase_stack)
+      weighted = mean(A .* phase_stack,dims=2)
+      return weighted
+end
+pws!(C::CorrData; power::Int=2, timegate::AbstractFloat=1.) = (C.corr=pws(C.corr,
+     C.fs,power=power,timegate=timegate); C.t = C.t[1:1]; return C)
+pws(C::CorrData; power::Int=2, timegate::AbstractFloat=1.) = (U = deepcopy(C);
+    U.corr=pws(U.corr,U.fs,power=power,timegate=timegate); U.t = U.t[1:1];
+    return U)
 
 """
 
