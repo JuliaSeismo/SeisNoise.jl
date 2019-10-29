@@ -346,6 +346,7 @@ function whiten!(R::RawData,freqmin::Float64, freqmax::Float64; pad::Int=50)
     R.x .= irfft(FFT,convert(Int,R.cc_len * R.fs),1)
     R.freqmin = freqmin
     R.freqmax = freqmax
+    R.whitened = true
     return nothing
 end
 whiten(R::RawData,freqmin::Float64, freqmax::Float64; pad::Int=50) =

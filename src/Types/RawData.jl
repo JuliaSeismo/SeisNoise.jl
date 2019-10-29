@@ -40,6 +40,7 @@ mutable struct RawData
   freqmax::Float64                            # maximum frequency [Hz]
   cc_len::Int                                 # window_length [s]
   cc_step::Int                                # step between windows [s]
+  whitened::Bool                              # whitening applied
   time_norm::Union{Bool,String}               # time normaliation
   resp::PZResp                                # response poles/zeros
   misc::Dict{String,Any}                      # misc
@@ -57,6 +58,7 @@ mutable struct RawData
       freqmax  ::Float64,
       cc_len   ::Int,
       cc_step  ::Int,
+      whitened ::Bool,
       time_norm::Union{Bool,String},
       resp     ::PZResp,
       misc     ::Dict{String,Any},
@@ -66,7 +68,7 @@ mutable struct RawData
       )
 
       return new(name, id, loc, fs, gain, freqmin, freqmax, cc_len, cc_step,
-                time_norm, resp, misc, notes, t, x)
+                 whitened, time_norm, resp, misc, notes, t, x)
     end
 
     function RawData(S::SeisData,cc_len::Int,cc_step::Int)
@@ -77,10 +79,11 @@ mutable struct RawData
       if Int(floor((endtime - starttime).value / 1000)) < cc_len
           return nothing
       end
-      sync!(S,s=starttime,t=endtime) # sync start and end times
-      x, starts = slide(S[1], cc_len, cc_step)
-      return new(S[1].name,S[1].id,S[1].loc,S[1].fs,S[1].gain,1/cc_len,S[1].fs/2,
-                cc_len,cc_step,false,S[1].resp,S[1].misc,S[1].notes,starts,x)
+      # sync start and end times
+      x, starts = slide(sync(S[1],s=starttime,t=endtime) , cc_len, cc_step)
+      return new(S[1].id,Dates.format(u2d(S[1].t[1,2]*1e-6),"Y-mm-dd"),S[1].loc,
+                 S[1].fs,S[1].gain,1/cc_len,S[1].fs/2,cc_len,cc_step,false,
+                 false,S[1].resp,S[1].misc,S[1].notes,starts,x)
     end
 
     function RawData(C::SeisChannel,cc_len::Int,cc_step::Int)
@@ -90,10 +93,11 @@ mutable struct RawData
       if Int(floor((endtime - starttime).value / 1000)) < cc_len
           return nothing
       end
-      sync!(C,s=starttime,t=endtime) # sync start and end times
-      x, starts = slide(C, cc_len, cc_step)
-      return new(C.name,C.id,C.loc,C.fs,C.gain,1/cc_len,C.fs/2,
-                cc_len,cc_step,false,C.resp,C.misc,C.notes,starts,x)
+      # sync start and end times
+      x, starts = slide(sync(C,s=starttime,t=endtime), cc_len, cc_step)
+      return new(C.id,Dates.format(u2d(C.t[1,2]*1e-6),"Y-mm-dd"),C.loc,C.fs,
+                 C.gain,1/cc_len,C.fs/2,cc_len,cc_step,false,false, C.resp,
+                 C.misc,C.notes,starts,x)
     end
 end
 
@@ -107,6 +111,7 @@ RawData(;
           freqmax  ::Float64                   = zero(Float64),
           cc_len   ::Int                       = zero(Int),
           cc_step  ::Int                       = zero(Int),
+          whitened ::Bool                      = false,
           time_norm::Union{Bool,String}        = false,
           resp     ::PZResp                    = PZResp(),
           misc     ::Dict{String,Any}          = Dict{String,Any}(),
@@ -115,7 +120,7 @@ RawData(;
           x      ::Array{<:Union{Float32,Float64},2} =
                      Array{Float32,2}(undef, 0, 2)
           ) = RawData(name, id, loc, fs, gain, freqmin, freqmax, cc_len, cc_step,
-                     time_norm, resp, misc, notes, t, x)
+                      whitened, time_norm, resp, misc, notes, t, x)
 
 in(s::String, R::RawData) = R.id==s
 
