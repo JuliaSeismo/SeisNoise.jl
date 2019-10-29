@@ -97,7 +97,7 @@ FFTData(;
 FFTData(C::SeisChannel,freqmin::Float64, freqmax::Float64,cc_len::Int,
         cc_step::Int, whitened::Bool,time_norm::Union{Bool,String},
         t::Array{Float64,1},fft::Array{<:Union{Complex{Float32},Complex{Float64}},2}
-       ) = FFTData(C.name, C.id, C.loc, C.fs, C.gain, freqmin, freqmax, cc_len,
+       ) = FFTData(C.id, Dates.format(u2d(C.t[1,2]*1e-6),"Y-mm-dd"), C.loc, C.fs, C.gain, freqmin, freqmax, cc_len,
                    cc_step, whitened, time_norm, C.resp, C.misc, C.notes, t, fft)
 
 in(s::String, F::FFTData) = F.id==s
