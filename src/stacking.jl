@@ -84,6 +84,7 @@ function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=eps(Float32)) where T
         r[ii] = norm(A[:,ii] .- (BdotD[ii] .* Bold),2)
         w[ii] = abs(BdotD[ii]) ./ d2[ii] ./ r[ii]
     end
+    w ./= sum(w)
 
     Bnew = mean(A,weights(w),dims=2)
 
@@ -98,6 +99,7 @@ function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=eps(Float32)) where T
             r[ii] = norm(A[:,ii] .- (BdotD[ii] .* Bold),2)
             w[ii] = abs(BdotD[ii]) ./ d2[ii] ./ r[ii]
         end
+        w ./= sum(w)
 
         Bnew = mean(A,weights(w),dims=2)
 
