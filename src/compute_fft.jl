@@ -45,10 +45,9 @@ Computes windowed rfft of ambient noise data. Returns FFTData structure.
 """
 function compute_fft(R::RawData)
     FFT = rfft(R.x,1)
-    return FFTData(R.id, Dates.format(u2d(R.t[1]),"Y-mm-dd"),
-                       R.loc, R.fs, R.gain, R.freqmin, R.freqmax,
-                       R.cc_len, R.cc_step, R.whitened, R.time_norm, R.resp,
-                       R.misc, R.notes, R.t, FFT)
+    return FFTData(R.name, R.id,R.loc, R.fs, R.gain, R.freqmin, R.freqmax,
+                   R.cc_len, R.cc_step, R.whitened, R.time_norm, R.resp,
+                   R.misc, R.notes, R.t, FFT)
 end
 
 """
