@@ -1,6 +1,7 @@
 export process_raw, process_raw!, process_fft, compute_fft
 export onebit!, onebit, remove_response!, remove_response, amplitude!, amplitude
-
+export clip, clip!, clamp, clamp!, mute!, mute
+import Base: clamp, clamp!
 """
     process_raw!(S,fs)
 
@@ -49,6 +50,59 @@ function compute_fft(R::RawData)
                    R.cc_len, R.cc_step, R.whitened, R.time_norm, R.resp,
                    R.misc, R.notes, R.t, FFT)
 end
+
+"""
+
+  mute(A,factor=factor)
+
+Set high amplitudes in array `A` to zero.
+"""
+function mute!(A::AbstractArray;factor::Int=3)
+    T = eltype(A)
+    envelope = abs.(hilbert(A))
+    levels = mean(envelope,dims=1)
+    level = factor * median(levels)
+    A[envelope .> level] .= T(0)
+    return nothing
+end
+mute(A::AbstractArray;factor::Int=3) = (U = deepcopy(A); mute!(U,factor=factor);
+     return U)
+mute!(R::RawData;factor::Int=3) = mute!(R.x,factor=factor)
+mute(R::RawData;factor::Int=3) = (U = deepcopy(R); mute!(U,factor=factor);
+     return U)
+
+"""
+  clip(A,factor)
+
+Truncate array A at `factor` times the root mean square of each column.
+
+#Arguments
+- `A::AbstractArray`: N-d time series array
+- `factor::Real`:
+- `f::Function`: Input statistical function (e.g. rms, var, std, mad)
+- `dims`: Dimension of `A` to apply clipping (defaults to 1)
+"""
+function clip!(A::AbstractArray{T,N}, factor::Real; f::Function=rms,dims=1) where {T,N}
+    if N == 1
+        high = f(A) .* factor
+        clamp!(@view(A[:]),-high,high)
+    else
+        for ii = 1:size(A,2)
+            high = f(@view(A[:,ii])) * factor
+            clamp!(@view(A[:,ii]),-high,high)
+        end
+    end
+    return nothing
+end
+clip(A::AbstractArray, factor::Real; f::Function=rms, dims=1) = (U = deepcopy(A);
+     clip!(U,factor,f=f,dims=dims);return U)
+clip!(R::RawData,factor::Real;f::Function=rms,dims=1) = clip!(R.x,factor,f=f,dims=dims)
+clip(R::RawData,factor::Real;f::Function=rms,dims=1) = (U = deepcopy(R);
+     clip!(U.x,factor,f=f,dims=dims); return U)
+clamp!(R::RawData,val::Real) = clamp!(R.x,-abs(val),abs(val))
+clamp!(R::RawData,lo::Real,hi::Real) = clamp!(R.x,lo,hi)
+clamp(R::RawData,val::Real) = (U = deepcopy(R); clamp!(U,val);return U)
+clamp(R::RawData,lo::Real,hi::Real) = (U = deepcopy(R); clamp!(U,lo,hi);return U)
 
 """
   amplitude!(R)
