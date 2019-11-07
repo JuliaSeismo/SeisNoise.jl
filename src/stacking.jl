@@ -13,18 +13,16 @@ correlations. To use phase-weighted stack, specify the amount of
 - `C::CorrData`: Correlation data.
 - `interval::Union{Month,Day,Hour,Second}`: Interval over which to stack `C`.
 - `allstack::Bool`: If `true`, stack all data.
-- `phase_smoothing::Float64`: Enables phase-weighted stacking. `phase_smoothing`
-                              is the time window in seconds for phase smoothing
-                              in the phase-weighted stack.
+- `stack_type::Function`: Type of stacking. Options are mean, pws, robuststack, etc..
 """
 function stack!(C::CorrData; interval::Union{Month,Day,Hour,Second}=Day(1),
-                allstack::Bool=false,phase_smoothing::Float64=0.)
+                allstack::Bool=false,stacktype::Function=mean)
 
     if allstack == true
-          if phase_smoothing == 0
+          if stacktype == mean
                 C.corr = mean(C.corr,dims=2)
           else # use phase-weighted stack
-                C.corr = pws(C.corr, C.fs, power=2, timegate=phase_smoothing)
+                C.corr = stacktype(C.corr)
           end
           C.t = [C.t[1]]
     else # stack by interval
@@ -35,12 +33,10 @@ function stack!(C::CorrData; interval::Union{Month,Day,Hour,Second}=Day(1),
           stack_out = Array{eltype(C.corr)}(undef,size(C.corr)[1],length(stackT))
 
           for ii = 1:length(stackT)
-                 if phase_smoothing == 0
+                 if stacktype == mean
                        stack_out[:,ii] = mean(C.corr[:,ind[ii]:ind[ii+1]-1],dims=2)
                  else
-                       stack_out[:,ii] = pws(C.corr[:,ind[ii]:ind[ii+1]-1],
-                                             C.fs, power=2,
-                                             timegate=phase_smoothing)
+                       stack_out[:,ii] = stacktype(C.corr[:,ind[ii]:ind[ii+1]-1])
                  end
           end
 
@@ -50,9 +46,9 @@ function stack!(C::CorrData; interval::Union{Month,Day,Hour,Second}=Day(1),
     return C
 end
 stack(C::CorrData; interval::Union{Month,Day,Hour,Second}=Day(1),
-      allstack::Bool=false,phase_smoothing::Float64=0.) = (U = deepcopy(C);
+      allstack::Bool=false,stacktype::Function=mean) = (U = deepcopy(C);
       stack!(U,interval=interval,allstack=allstack,
-             phase_smoothing=phase_smoothing);return U)
+             stacktype=stacktype);return U)
 
 """
 
@@ -118,7 +114,7 @@ robuststack(C::CorrData;ϵ::AbstractFloat=eps(Float32))  =
 
 """
 
-  pws(A,fs,power,timegate)
+  pws(A,power=2)
 
 Performs phase-weighted stack on array `A` of time series.
 
@@ -133,29 +129,17 @@ where N is number of traces used, v is sharpness of phase-weighted stack
 
 # Arguments
 - `A::AbstractArray`: Time series stored in columns.
-- `fs::Float64`: Sampling rate of time series (in Hz).
 - `power::Int`: Sharpness of transition from phase similarity to dissimilarity.
-- `timegate::Float64`: Phase stack smoothing window (in seconds).
 """
-function pws(A::AbstractArray, fs::Float64; power::Int=2, timegate::Float64=1.)
+function pws(A::AbstractArray; power::Int=2)
       M,N = size(A)
-      analytic = A .+ im .* hilbert(A)
-      phase = angle.(analytic)
-      phase_stack = mean(exp.(im.*phase),dims=2)[:,1] ./ N # reduce array dimension
-      phase_stack = abs.(phase_stack).^power
-
-      # smoothing
-      timegate_samples = convert(Int,timegate * fs * 0.5)
-      phase_stack = movingaverage(phase_stack,timegate_samples)
+      phase_stack = abs.(mean(exp.(im.*angle.(A .+ im .* hilbert(A))),dims=2)[:,1] ./ N).^power
       abs_max!(phase_stack)
-      weighted = mean(A .* phase_stack,dims=2)
-      return weighted
+      return mean(A .* phase_stack,dims=2)
 end
-pws!(C::CorrData; power::Int=2, timegate::AbstractFloat=1.) = (C.corr=pws(C.corr,
-     C.fs,power=power,timegate=timegate); C.t = C.t[1:1]; return C)
-pws(C::CorrData; power::Int=2, timegate::AbstractFloat=1.) = (U = deepcopy(C);
-    U.corr=pws(U.corr,U.fs,power=power,timegate=timegate); U.t = U.t[1:1];
-    return U)
+pws!(C::CorrData; power::Int=2) = (C.corr=pws(C.corr,power=power); C.t = C.t[1:1]; return nothing)
+pws(C::CorrData; power::Int=2) = (U = deepcopy(C);
+    U.corr=pws(U.corr,power=power); U.t = U.t[1:1];return U)
 
 """
 
