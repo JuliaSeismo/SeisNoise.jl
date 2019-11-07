@@ -120,9 +120,9 @@ function mwcs(ref::AbstractArray,cur::AbstractArray,fmin::Float64,
     X = fref .* conj.(fcur)
 
     if smoothing_half_win != 0
-        dcur = sqrt.(smooth(fcur2,half_win=smoothing_half_win))
-        dref = sqrt.(smooth(fref2,half_win=smoothing_half_win))
-        X = smooth(X, half_win=smoothing_half_win)
+        dcur = sqrt.(smooth(fcur2,smoothing_half_win))
+        dref = sqrt.(smooth(fref2,smoothing_half_win))
+        X = smooth(X, smoothing_half_win)
     else
         dcur = sqrt.(fcur2)
         dref = sqrt.(fref2)
