@@ -381,7 +381,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Correlation",
     "title": "SeisNoise.stack!",
     "category": "function",
-    "text": "stack!(C)\n\nStack correlation by time interval. The default is to stack by day. Using allstack == true will stack all available correlations. To use phase-weighted stack, specify the amount of phase_smoothing in seconds.\n\nArguments\n\nC::CorrData: Correlation data.\ninterval::Union{Month,Day,Hour,Second}: Interval over which to stack C.\nallstack::Bool: If true, stack all data.\nphase_smoothing::Float64: Enables phase-weighted stacking. phase_smoothing                             is the time window in seconds for phase smoothing                             in the phase-weighted stack.\n\n\n\n\n\n"
+    "text": "stack!(C)\n\nStack correlation by time interval. The default is to stack by day. Using allstack == true will stack all available correlations. To use phase-weighted stack, specify the amount of phase_smoothing in seconds.\n\nArguments\n\nC::CorrData: Correlation data.\ninterval::Union{Month,Day,Hour,Second}: Interval over which to stack C.\nallstack::Bool: If true, stack all data.\nstack_type::Function: Type of stacking. Options are mean, pws, robuststack, etc..\n\n\n\n\n\n"
 },
 
 {
