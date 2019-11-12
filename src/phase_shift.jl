@@ -35,7 +35,7 @@ function phase_shift!(C::SeisChannel; ϕshift::Bool=true)
 
         # phase shift data
         if ϕshift
-            freq = rfftfreq(length(C.x),C.fs)
+            freq = FFTW.rfftfreq(length(C.x),C.fs)
             fftdata = rfft(C.x)
             fftdata .= fftdata .* exp.(1im .* 2 .* pi .* freq .* off)
             C.x[:] = irfft(fftdata,length(C.x))
