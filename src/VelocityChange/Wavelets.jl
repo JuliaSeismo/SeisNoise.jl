@@ -1,72 +1,72 @@
-export cwt, icwt, wtdwt, dtw_dvv, wts_dvv
+export cwt, icwt, wts_dvv
 
-"""
-
-  wtdtw(ref,cur,t,window,freqmin,freqmax)
-
-dv/v with dynamic time warping method from continuous wavelet transformation.
-
-This function uses the dynamic time warping method at each frequency from the
-continuous wavelet transform to compare the Reference waveform to the current
-waveform to get the relative seismic velocity variation (and associated error).
-
-# Arguments
-- `ref::AbstractArray`: Reference correlation.
-- `cur::AbstractArray`: Current correlation.
-- `t::AbstractArray`: time vector, common to both `ref` and `cur`.
-- `window::AbstractArray`: vector of the indices of the `cur` and `ref` windows
-                          on which you want to do the measurements
-- `freqmin::Float64`: minimum frequency in the correlation [Hz]
-- `freqmax::Float64`: maximum frequency in the correlation [Hz]
-- `maxlag::Int64`: number of maxlag id to search the distance.
-- `b::Int64`: value to control in distance calculation algorithm (see Mikesell et al. 2015).
-- `direction::Int64`: direction to accumulate errors (1=forward, -1=backward, 0=double to smooth)
-- `f0::Real`: Nondimensional frequency from Torrence & Campo, 1998 eq. 1 [Hz].
-- `dj::AbstractFloat`: Spacing between discrete scales. Default value is 1/12.
-- `standardize::Bool`: Remove mean and std from wavelet spectrum or not.
-
-# Returns
-- `dvv::AbstactArray`: Relative Velocity Change dv/v (in %)
-- `err::AbstractArray`: Errors in the dv/v measurements
-
-Originally written in python by Congcong Yuan (30 Jun, 2019)
-"""
-function wtdtw(ref,cur,t,window,freqmin,freqmax;maxlag=80,b=1,direction=1,f0=6,dj=1/12,
-               standardize=true)
-
-    T = eltype(ref)
-    dt = mean(diff(t))
-    # apply cwt on two traces
-    cwt1,sj,freqs,coi = cwt(ref,dt,freqmin,freqmax, f0=f0,dj=dj)
-    cwt2,sj,freqs,coi = cwt(cur,dt,freqmin,freqmax, f0=f0,dj=dj)
-
-    # extract real values of cwt
-    rcwt1, rcwt2 = real.(cwt1), real.(cwt2)
-
-    # Use DTW method to extract dvv
-    Nfreq = length(freqs)
-    dvv = zeros(T,Nfreq)
-    err = zeros(T,Nfreq)
-
-    if standardize
-        standardize!(rcwt1)
-        standardize!(rcwt2)
-    end
-
-    for ii = 1:Nfreq
-
-        # find cone of influence
-        indcoi = findall(freqs[ii] .>= 1. ./coi)
-        indt = findall(x->x in indcoi, window)
-
-        if length(indt) == 0
-            continue
-        end
-
-        dvv[ii], err[ii] = dtw_dvv(rcwt1[window[indt],ii], rcwt2[window[indt],ii],t[window[indt]],maxlag, b, direction)
-    end
-    return dvv, err, freqs
-end
+# """
+#
+#   wtdtw(ref,cur,t,window,freqmin,freqmax)
+#
+# dv/v with dynamic time warping method from continuous wavelet transformation.
+#
+# This function uses the dynamic time warping method at each frequency from the
+# continuous wavelet transform to compare the Reference waveform to the current
+# waveform to get the relative seismic velocity variation (and associated error).
+#
+# # Arguments
+# - `ref::AbstractArray`: Reference correlation.
+# - `cur::AbstractArray`: Current correlation.
+# - `t::AbstractArray`: time vector, common to both `ref` and `cur`.
+# - `window::AbstractArray`: vector of the indices of the `cur` and `ref` windows
+#                           on which you want to do the measurements
+# - `freqmin::Float64`: minimum frequency in the correlation [Hz]
+# - `freqmax::Float64`: maximum frequency in the correlation [Hz]
+# - `maxlag::Int64`: number of maxlag id to search the distance.
+# - `b::Int64`: value to control in distance calculation algorithm (see Mikesell et al. 2015).
+# - `direction::Int64`: direction to accumulate errors (1=forward, -1=backward, 0=double to smooth)
+# - `f0::Real`: Nondimensional frequency from Torrence & Campo, 1998 eq. 1 [Hz].
+# - `dj::AbstractFloat`: Spacing between discrete scales. Default value is 1/12.
+# - `standardize::Bool`: Remove mean and std from wavelet spectrum or not.
+#
+# # Returns
+# - `dvv::AbstactArray`: Relative Velocity Change dv/v (in %)
+# - `err::AbstractArray`: Errors in the dv/v measurements
+#
+# Originally written in python by Congcong Yuan (30 Jun, 2019)
+# """
+# function wtdtw(ref,cur,t,window,freqmin,freqmax;maxlag=80,b=1,direction=1,f0=6,dj=1/12,
+#                standardize=true)
+#
+#     T = eltype(ref)
+#     dt = mean(diff(t))
+#     # apply cwt on two traces
+#     cwt1,sj,freqs,coi = cwt(ref,dt,freqmin,freqmax, f0=f0,dj=dj)
+#     cwt2,sj,freqs,coi = cwt(cur,dt,freqmin,freqmax, f0=f0,dj=dj)
+#
+#     # extract real values of cwt
+#     rcwt1, rcwt2 = real.(cwt1), real.(cwt2)
+#
+#     # Use DTW method to extract dvv
+#     Nfreq = length(freqs)
+#     dvv = zeros(T,Nfreq)
+#     err = zeros(T,Nfreq)
+#
+#     if standardize
+#         standardize!(rcwt1)
+#         standardize!(rcwt2)
+#     end
+#
+#     for ii = 1:Nfreq
+#
+#         # find cone of influence
+#         indcoi = findall(freqs[ii] .>= 1. ./coi)
+#         indt = findall(x->x in indcoi, window)
+#
+#         if length(indt) == 0
+#             continue
+#         end
+#
+#         dvv[ii], err[ii] = dtw_dvv(rcwt1[window[indt],ii], rcwt2[window[indt],ii],t[window[indt]],maxlag, b, direction)
+#     end
+#     return dvv, err, freqs
+# end
 
 """
 
@@ -135,39 +135,39 @@ function wts_dvv(ref,cur,t,window,freqmin,freqmax;f0=6,dj=1/12,
 end
 
 
-"""
-
-  dtw_dvv(ref,cur,t,maxlag,d,direction)
-
-dv/v with dynamic time warping method.
-
-This function uses the dynamic time warping method to compare the optimal stretching
-between Reference waveform to the current waveform to get the relative seismic
-velocity variation (and associated error).
-
-# Arguments
-- `ref::AbstractArray`: Reference correlation.
-- `cur::AbstractArray`: Current correlation.
-- `t::AbstractArray`: time vector, common to both `ref` and `cur`.
-- `maxlag::Int64`: number of maxlag id to search the distance.
-- `b::Int64`: value to control in distance calculation algorithm (see Mikesell et al. 2015).
-- `direction::Int64`: direction to accumulate errors (1=forward, -1=backward, 0=double to smooth)
-
-# Returns
-- `dvv::Float64`: Relative Velocity Change dv/v (in %)
-- `err::Float64`: Errors in the dv/v measurements
-
-"""
-function dtw_dvv(ref,cur,t,maxlag, b, direction)
-    dt = mean(diff(t))
-    stbarTime, stbar, dist, error = dtwdt(ref, cur, dt, maxLag=maxlag, b=b, direction=direction)
-
-    # perform linear regression
-    model = glm(@formula(Y ~0 + X),DataFrame(X=t,Y=stbarTime),Normal(),
-                IdentityLink(),wts=ones(length(t)))
-
-    return coef(model)[1], stderror(model)[1]
-end
+# """
+#
+#   dtw_dvv(ref,cur,t,maxlag,d,direction)
+#
+# dv/v with dynamic time warping method.
+#
+# This function uses the dynamic time warping method to compare the optimal stretching
+# between Reference waveform to the current waveform to get the relative seismic
+# velocity variation (and associated error).
+#
+# # Arguments
+# - `ref::AbstractArray`: Reference correlation.
+# - `cur::AbstractArray`: Current correlation.
+# - `t::AbstractArray`: time vector, common to both `ref` and `cur`.
+# - `maxlag::Int64`: number of maxlag id to search the distance.
+# - `b::Int64`: value to control in distance calculation algorithm (see Mikesell et al. 2015).
+# - `direction::Int64`: direction to accumulate errors (1=forward, -1=backward, 0=double to smooth)
+#
+# # Returns
+# - `dvv::Float64`: Relative Velocity Change dv/v (in %)
+# - `err::Float64`: Errors in the dv/v measurements
+#
+# """
+# function dtw_dvv(ref,cur,t,maxlag, b, direction)
+#     dt = mean(diff(t))
+#     stbarTime, stbar, dist, error = dtwdt(ref, cur, dt, maxLag=maxlag, b=b, direction=direction)
+#
+#     # perform linear regression
+#     model = glm(@formula(Y ~0 + X),DataFrame(X=t,Y=stbarTime),Normal(),
+#                 IdentityLink(),wts=ones(length(t)))
+#
+#     return coef(model)[1], stderror(model)[1]
+# end
 
 """
 
