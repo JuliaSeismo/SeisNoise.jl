@@ -1,5 +1,5 @@
 export stack, stack!, remove_nan, remove_nan!, shorten, shorten!
-export pws, pws!, robuststack, robuststack!
+export pws, pws!, robuststack, robuststack!, adaptive_filter!, adaptive_filter
 """
 
   stack!(C)
@@ -179,3 +179,58 @@ function shorten!(C::CorrData, maxlag::Float64)
       return nothing
 end
 shorten(C::CorrData,maxlag::Float64) = (U = deepcopy(C); shorten!(U,maxlag);return U)
+
+"""
+
+  adaptive_filter!(A)
+
+Adaptive covariance filter to enhance coherent signals.
+
+Fellows the method of Nakata et al., 2015 (Appendix B). The filtered signal
+`X` is given by `X = irfft(P*X(w))`` where `X` is the FFT'ed spectra of `A`
+and `P` is the filter. `P` is constructed by using the temporal covariance matrix.
+​
+# Arguments
+- `A::AbstractArray`: Array of daily/hourly cross-correlation functions
+- `g::Int`: Positive number to adjust the filter harshness
+"""
+function adaptive_filter!(A::AbstractArray{T}; g::Int=2) where T <: AbstractFloat
+    if ndims(A) == 1
+        return A
+    end
+
+    Nrows, Ncols = size(A)
+
+    # fft the 2D array
+    spec = rfft(A,1)
+
+    # create auto-covariance function
+    Nspec = size(spec,1)
+    S1 = zeros(complex(T),Nspec)
+    S2 = zeros(complex(T),Nspec)
+    for ii = 1:Ncols
+        for jj = 1:Nspec
+            S2[jj] += spec[jj,ii] .* conj(spec[jj,ii])
+        end
+    end
+
+    for ii = 1:Ncols
+        for jj = 1:Ncols
+            if jj != ii
+                for kk = 1:Nspec
+                    S1[kk] += spec[kk,ii] .* conj(spec[kk,jj])
+                end
+            end
+        end
+    end
+
+    # construct filter p
+    p = ((S1 .- S2) ./ (S2 .* (Ncols -1))).^g
+
+    # make ifft
+    spec .*= p
+    A .= irfft(spec,Nrows,1)
+    return nothing
+end
+adaptive_filter(A::AbstractArray,g::Int) = (U = deepcopy(A);adaptive_filter!(U,g=g);
+                return U)
