@@ -1,7 +1,7 @@
 __precompile__()
 module SeisNoise
 
-using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO
+using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO, DTWDT
 using Statistics, StatsBase, Interpolations, GLM, Plots, Distributed, LightXML
 
 # import types first
@@ -29,6 +29,7 @@ include("correlation.jl")
 include("rotation.jl")
 include("VelocityChange/MWCS.jl")
 include("VelocityChange/Stretching.jl")
+include("VelocityChange/Wavelets.jl")
 include("Plotting/plotting.jl")
 
 end # module
