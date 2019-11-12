@@ -90,7 +90,7 @@ function mwcs(ref::AbstractArray,cur::AbstractArray,fmin::Float64,
     time_axis = time_axis[1:N]
 
     # Find values in frequency range of interest
-    freq_vec = rfftfreq(padd,fs)
+    freq_vec = FFTW.rfftfreq(padd,fs)
     index_range = findall(x -> x >= fmin && x <= fmax,freq_vec)
     cci = zeros(window_length_samples,N)
     cri = zeros(window_length_samples,N)

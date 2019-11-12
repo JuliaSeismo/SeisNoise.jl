@@ -240,7 +240,7 @@ function whiten!(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float
     Nrows,Ncols = size(A)
 
     # get whitening frequencies
-    freqvec = rfftfreq(N,fs)
+    freqvec = FFTW.rfftfreq(N,fs)
     left = findfirst(x -> x >= freqmin, freqvec)
     right = findlast(x -> x <= freqmax, freqvec)
     low, high = left - pad, right + pad

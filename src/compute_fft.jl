@@ -56,6 +56,7 @@ end
   mute(A,factor=factor)
 
 Set high amplitudes in array `A` to zero.
+Uses median of envelope of `A` to find outliers. 
 """
 function mute!(A::AbstractArray;factor::Int=3)
     T = eltype(A)
