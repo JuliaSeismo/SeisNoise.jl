@@ -193,8 +193,8 @@ Note: uses the Morlet wavelet ONLY.
 
 This is a Julia translation of the cwt in pycwt https://github.com/regeirk/pycwt
 """
-function cwt(signal::AbstractArray{T},dt::AbstractFloat,freqmin::AbstractFloat,
-             freqmax::AbstractFloat;f0=6.,dj=1/12) where T
+function cwt(signal::AbstractArray{T,1},dt::AbstractFloat,freqmin::AbstractFloat,
+             freqmax::AbstractFloat;f0=6.,dj=1/12) where T <: AbstractFloat
     n0 = length(signal)
     flambda = T.((4 .* π) ./ (f0 .+ sqrt(2 .+ f0^2)))
     s0 = 2 * dt / flambda
@@ -213,7 +213,7 @@ function cwt(signal::AbstractArray{T},dt::AbstractFloat,freqmin::AbstractFloat,
     signal_ft = fft(signal,1)
     N = length(signal_ft)
     # Fourier angular frequencies
-    ftfreqs = T.(2 .* π * fftfreq(n0,1/dt))
+    ftfreqs = T.(2 .* π * FFTW.fftfreq(n0,1/dt))
 
     # Creates wavelet transform matrix as outer product of scaled transformed
     # wavelets and transformed signal according to the convolution theorem.
@@ -262,7 +262,7 @@ This is a Julia translation of the icwt in pycwt https://github.com/regeirk/pycw
 Note that the pycwt version has incorrect scaling.
 """
 function icwt(W::AbstractArray, sj::AbstractArray, dt::AbstractFloat;dj=1/12)
-    T = typeof(real(W[1]))
+    T = real(eltype(W))
     # As of Torrence and Compo (1998), eq. (11)
     iW = T(dj .* sqrt(dt) ./ 0.776 .* (pi ^ 0.25)) .* sum(real.(W) ./ (sj .^ T(0.5))',dims=2)
     return iW
@@ -288,12 +288,12 @@ This is a Julia translation of the icwt in pycwt https://github.com/regeirk/pycw
 Note that the pycwt version has incorrect scaling.
 """
 function icwt(W::AbstractArray, sj::AbstractFloat, dt::AbstractFloat;dj=1/12)
-    T = typeof(real(W[1]))
+    T = real(eltype(W))
     # As of Torrence and Compo (1998), eq. (11)
     iW = T(dj .* sqrt(dt) ./ 0.776 .* (pi ^ 0.25)) .* real.(W) ./ sj ^ T(0.5)
     return iW
 end
 
-function psi_ft(A::AbstractArray{T},f0::Real) where T
+function psi_ft(A::AbstractArray{T},f0::Real) where T <: AbstractFloat
     return exp.(T(-0.5) .* (A .- T(f0)) .^2) .* T(π ^ -0.25)
 end
