@@ -57,18 +57,16 @@ cross-correlating.
 - `corr_type::String`: Type of correlation: `cross-correlation`, `coherence` or
                        `deconv`.
 """
-function correlate(FFT1::AbstractArray, FFT2::AbstractArray, N::Int, maxlag::Int)
-
-    corrF = conj.(FFT1) .* FFT2
-
+function correlate(FFT1::AbstractArray{Complex{T}}, FFT2::AbstractArray{Complex{T}},
+                      N::Int, maxlag::Int) where T <: AbstractFloat
     # take inverse fft
-    corrT = irfft(corrF,N,1)
-    corrT = fftshift(corrT,1)
+    corrT = irfft(conj.(FFT1) .* FFT2,N,1)
 
     # return corr[-maxlag:maxlag]
-    t = range(-Int(N/2) + 1, stop=Int(N/2) - 1)
+    t = vcat(0:Int(N  / 2)-1, -Int(N  / 2):-1)
     ind = findall(abs.(t) .<= maxlag)
-    corrT = corrT[ind,:]
+    newind = fftshift(ind,1)
+    return corrT[newind,:]
 end
 
 """
