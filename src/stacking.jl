@@ -62,7 +62,8 @@ Follows methods of Pavlis and Vernon, 2010.
 - `A::AbstractArray`: Time series stored in columns.
 - `ϵ::AbstractFloat`: Threshold for convergence of robust stack.
 """
-function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=eps(Float32)) where T <: AbstractFloat
+function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=Float32(1e-6),
+                     maxiter::Int=10) where T <: AbstractFloat
     N = size(A,2)
     Bold = median(A,dims=2)
     w = Array{T}(undef,N)
@@ -88,7 +89,7 @@ function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=eps(Float32)) where T
     ϵN = norm(Bnew .- Bold,2) / (norm(Bnew,2) * N)
     Bold = Bnew
     iter = 0
-    while ϵN < ϵ
+    while (ϵN > ϵ) && (iter <= maxiter)
         BdotD = sum(A .* Bold,dims=1)
 
         for ii = 1:N
@@ -234,3 +235,24 @@ function adaptive_filter!(A::AbstractArray{T}; g::Int=2) where T <: AbstractFloa
 end
 adaptive_filter(A::AbstractArray,g::Int) = (U = deepcopy(A);adaptive_filter!(U,g=g);
                 return U)
+
+
+function newrobuststack(A::AbstractArray{T}) where T <: AbstractFloat
+    N = size(A,2)
+    Bold = median(A,dims=2)
+    w = Array{T}(undef,N)
+
+    # dot product columnwise
+    BdotD = A'Bold
+
+    for ii = 1:N
+        w[ii] = robustweight(A[:,ii],BdotD[ii],Bold)
+    end
+    w ./= sum(w)
+
+    return mean(A,weights(w),dims=2)
+end
+
+function robustweight(A::AbstractArray{T,1},b::AbstractFloat,Bold::AbstractArray) where T
+    return abs(b) ./ norm(A,2) ./ norm(A .- (b .* Bold),2)
+end
