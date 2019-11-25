@@ -97,7 +97,7 @@ waveform to get the relative seismic velocity variation (and associated error).
 Originally written in python by Congcong Yuan (30 Jun, 2019)
 """
 function wts_dvv(ref,cur,t,window,freqmin,freqmax;f0=6,dj=1/12,
-               standardize=true)
+               standardize=true,ntrial=50,dvmin=-0.03,dvmax=0.03)
 
     T = eltype(ref)
     dt = mean(diff(t))
@@ -129,7 +129,7 @@ function wts_dvv(ref,cur,t,window,freqmin,freqmax;f0=6,dj=1/12,
 
         # calculate dvv with stretching
         dvv[ii], cc,cdp, ep, err[ii],allC = stretching(icwt1, icwt2,t,window[indt],
-               freqmin,freqmax,ntrial=30,dvmin=-0.01,dvmax=0.01)
+               freqmin,freqmax,ntrial=ntrial,dvmin=dvmin,dvmax=dvmax)
     end
     return dvv, err, freqs
 end
