@@ -1,4 +1,4 @@
-export download
+export scedctransfer
 using Distributed
 @everywhere begin
 using Dates, AWSCore, AWSS3, DataFrames, CSV
@@ -92,9 +92,9 @@ end
 
 """
 
-  download(OUTDIR,date)
+  scedctransfer(OUTDIR,startdate)
 
-Download data from a single day in the SCEDC open data set.
+Transfer data from a single day in the SCEDC open data set from S3 to EC2.
 
 # Arguments
 - `OUTDIR::String`: The output directory.
@@ -114,7 +114,7 @@ Download data from a single day in the SCEDC open data set.
 - `minlongitude::Float64`: Minimum longitude in data search.
 - `maxlongitude::Float64`: Maximum longitude in data search.
 """
-function download(OUTDIR::String,
+function scedctransfer(OUTDIR::String,
                   startdate::Date;
 			  	  enddate::Union{Date,Nothing}=nothing,
                   network::Union{String,Nothing}=nothing,

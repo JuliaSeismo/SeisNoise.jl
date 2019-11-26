@@ -32,6 +32,6 @@ include("VelocityChange/MWCS.jl")
 include("VelocityChange/Stretching.jl")
 include("VelocityChange/Wavelets.jl")
 include("Plotting/plotting.jl")
-include("download.jl")
+include("transfer.jl")
 
 end # module
