@@ -34,7 +34,7 @@ function regex_helper(reg::String)
     return reg
 end
 
-function s3_file_map(filein::String,fileout::String)
+function s3_file_map(filein::String,fileout::String,aws::Dict)
     s3_get_file(aws, "scedc-pds", filein, fileout)
     println("Downloading file: $filein       \r")
 end
@@ -246,7 +246,7 @@ function scedctransfer(OUTDIR::String,
 	    # download files
 	    @eval @everywhere files2download=$files2download
 	    @eval @everywhere out_files=$out_files
-	    pmap(s3_file_map,files2download,out_files)
+	    pmap(s3_file_map,files2download,out_files,fill(aws,length(out_files)))
 	end
     println("Download Complete!        $(now())          ")
     tend = now()
