@@ -1,7 +1,4 @@
 export scedctransfer
-using Distributed
-@everywhere begin
-using Dates, AWSCore, AWSS3, DataFrames, CSV
 
 function df_subset(df::DataFrame,col::String,colsymbol::Symbol)
         col = regex_helper(col)
@@ -86,8 +83,6 @@ function scedcpath(d::Date)
     outstring = string(Year(d).value) *'/'
     outstring *= string(Year(d).value) * '_' * ('0' ^ (3 - n)) * string(days)
     return outstring
-end
-
 end
 
 """
