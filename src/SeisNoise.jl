@@ -3,6 +3,7 @@ module SeisNoise
 
 using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO
 using Statistics, StatsBase, Interpolations, GLM, Plots, Distributed, LightXML
+using Distributed, CSV, AWSCore, AWSS3
 
 # import types first
 include("Types/RawData.jl")
@@ -31,5 +32,6 @@ include("VelocityChange/MWCS.jl")
 include("VelocityChange/Stretching.jl")
 include("VelocityChange/Wavelets.jl")
 include("Plotting/plotting.jl")
+include("transfer.jl")
 
 end # module
