@@ -22,17 +22,19 @@ function clean_up!(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
     return nothing
 end
 clean_up(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
-         corners::Int=4, zerophase::Bool=false) =
+         corners::Int=4, zerophase::Bool=true) =
                  (U = deepcopy(A); clean_up!(U,freqmin,freqmax, fs,
                   corners=corners, zerophase=zerophase); return U)
 
 clean_up!(C::CorrData,freqmin::Float64,freqmax::Float64; corners::Int=4,
-          zerophase::Bool=true) = clean_up!(C.corr,freqmin,freqmax,C.fs,
-          corners=corners,zerophase=zerophase)
+          zerophase::Bool=true) = (clean_up!(C.corr,freqmin,freqmax,C.fs,
+          corners=corners,zerophase=zerophase);C.freqmin=freqmin;
+          C.freqmax=freqmax;return nothing)
 
 clean_up!(R::RawData,freqmin::Float64,freqmax::Float64; corners::Int=4,
-          zerophase::Bool=true) = clean_up!(C.x,freqmin,freqmax,R.fs,
-          corners=corners,zerophase=true)
+          zerophase::Bool=true) = (clean_up!(R.x,freqmin,freqmax,R.fs,
+          corners=corners,zerophase=true);R.freqmin=freqmin;
+          R.freqmax=freqmax;return nothing)
 
 """
     correlate(FFT1, FFT2, N, maxlag, corr_type='cross-correlation')
