@@ -1,5 +1,6 @@
 export stack, stack!, remove_nan, remove_nan!, shorten, shorten!
 export pws, pws!, robuststack, robuststack!, adaptive_filter!, adaptive_filter
+export robustpws
 """
 
   stack!(C)
@@ -52,7 +53,7 @@ stack(C::CorrData; interval::Union{Month,Day,Hour,Second}=Day(1),
 
 """
 
-  robuststack(A,ϵ)
+  robuststack(A)
 
 Performs robust stack on array `A`.
 
@@ -61,6 +62,7 @@ Follows methods of Pavlis and Vernon, 2010.
 # Arguments
 - `A::AbstractArray`: Time series stored in columns.
 - `ϵ::AbstractFloat`: Threshold for convergence of robust stack.
+- `maxiter::Int`: Maximum number of iterations to converge to robust stack.
 """
 function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=Float32(1e-6),
                      maxiter::Int=10) where T <: AbstractFloat
@@ -115,7 +117,7 @@ robuststack(C::CorrData;ϵ::AbstractFloat=eps(Float32))  =
 
 """
 
-  pws(A,power=2)
+  pws(A)
 
 Performs phase-weighted stack on array `A` of time series.
 
@@ -130,17 +132,18 @@ where N is number of traces used, v is sharpness of phase-weighted stack
 
 # Arguments
 - `A::AbstractArray`: Time series stored in columns.
-- `power::Int`: Sharpness of transition from phase similarity to dissimilarity.
+- `pow::Int`: Sharpness of transition from phase similarity to dissimilarity.
 """
-function pws(A::AbstractArray; power::Int=2)
-      M,N = size(A)
-      phase_stack = abs.(mean(exp.(im.*angle.(A .+ im .* hilbert(A))),dims=2)[:,1] ./ N).^power
-      abs_max!(phase_stack)
-      return mean(A .* phase_stack,dims=2)
+function pws(A::AbstractArray{T}; pow::AbstractFloat=2.) where T <: AbstractFloat
+    pow = T(pow)
+    Nrows,Ncols = size(A)
+    phase_stack = abs.(mean(exp.(im.*angle.(A .+ im .* hilbert(A))),dims=2)[:,1] ./ Ncols).^pow
+    abs_max!(phase_stack)
+    return mean(A .* phase_stack,dims=2)
 end
-pws!(C::CorrData; power::Int=2) = (C.corr=pws(C.corr,power=power); C.t = C.t[1:1]; return nothing)
-pws(C::CorrData; power::Int=2) = (U = deepcopy(C);
-    U.corr=pws(U.corr,power=power); U.t = U.t[1:1];return U)
+pws!(C::CorrData; pow::AbstractFloat=2.) = (C.corr=pws(C.corr,pow=pow); C.t = C.t[1:1]; return nothing)
+pws(C::CorrData; pow::AbstractFloat=2.) = (U = deepcopy(C);
+    U.corr=pws(U.corr,pow=pow); U.t = U.t[1:1];return U)
 
 """
 
@@ -183,7 +186,7 @@ shorten(C::CorrData,maxlag::Float64) = (U = deepcopy(C); shorten!(U,maxlag);retu
 
 """
 
-  adaptive_filter!(A)
+  adaptive_filter!(A,window,fs)
 
 Adaptive covariance filter to enhance coherent signals.
 
@@ -193,15 +196,61 @@ and `P` is the filter. `P` is constructed by using the temporal covariance matri
 ​
 # Arguments
 - `A::AbstractArray`: Array of daily/hourly cross-correlation functions
+- `window::AbstractFloat`: Window length to apply adaptive filter [s].
+- `fs::Float64`: Sampling rate of time series `A`.
 - `g::Int`: Positive number to adjust the filter harshness
+- `overlap::AbstractFloat`: Percent overlap between windows
 """
-function adaptive_filter!(A::AbstractArray{T}; g::Int=2) where T <: AbstractFloat
+function adaptive_filter!(A::AbstractArray{T}, window::AbstractFloat,
+                          fs::Float64; g::AbstractFloat=2., overlap::AbstractFloat=0.9) where T <: AbstractFloat
     if ndims(A) == 1
         return A
     end
 
     Nrows, Ncols = size(A)
+    window_samples = convert(Int,round(window * fs,digits=0))
+    window_step = convert(Int,round(window_samples * (1. - overlap),digits=0))
+    minind = 1:window_step:Nrows - window_samples
+    overlap_factor = T(round(1. - overlap,digits=3))
 
+    # allocate out array
+    Aout = zeros(T,size(A))
+
+    # loop through each window
+    for ii in eachindex(minind)
+        Ain = taper(A[minind[ii]:minind[ii]+window_samples-1,:],fs,
+                    max_percentage=Float64(overlap_factor/2))
+        Aout[minind[ii]:minind[ii]+window_samples-1,:] .+= ACF_kernel(@view(Ain[:,:]),g=g) .* overlap_factor
+    end
+
+    # windows at right edge
+    reverseind = Nrows:-window_step:Nrows-window_samples
+    for ii in eachindex(reverseind)
+        Ain = taper(A[reverseind[ii]-window_samples+1:reverseind[ii],:],fs,
+                    max_percentage=Float64(overlap_factor/2))
+        Aout[reverseind[ii]-window_samples+1:reverseind[ii],:] .+= ACF_kernel(@view(Ain[:,:]),g=g) .* overlap_factor
+    end
+
+    copyto!(A,Aout)
+    return nothing
+end
+
+adaptive_filter(A::AbstractArray{T}, window::AbstractFloat, fs::Float64; g::AbstractFloat=2.,
+                overlap::AbstractFloat=0.9) where T <: AbstractFloat = (U = deepcopy(A);
+                adaptive_filter!(U,window,fs,g=g,overlap=overlap);
+                return U)
+
+adaptive_filter!(C::CorrData, window::AbstractFloat; g::AbstractFloat=2.,
+                 overlap::AbstractFloat=0.9) = (adaptive_filter!(C.corr,
+                 window,C.fs,g=g,overlap=overlap); return nothing)
+adaptive_filter(C::CorrData, window::AbstractFloat; g::AbstractFloat=2.,
+                overlap::AbstractFloat=0.9) = (U = deepcopy(C);
+                adaptive_filter!(U.corr,window,U.fs,g=g,overlap=overlap);
+                return U)
+
+function ACF_kernel(A::AbstractArray{T}; g::AbstractFloat=2.) where T <: AbstractFloat
+    Nrows, Ncols = size(A)
+    g = T(g)
     # fft the 2D array
     spec = rfft(A,1)
 
@@ -230,29 +279,84 @@ function adaptive_filter!(A::AbstractArray{T}; g::Int=2) where T <: AbstractFloa
 
     # make ifft
     spec .*= p
-    A .= irfft(spec,Nrows,1)
-    return nothing
+    Aout = irfft(spec,Nrows,1)
+    return Aout
 end
-adaptive_filter(A::AbstractArray,g::Int) = (U = deepcopy(A);adaptive_filter!(U,g=g);
-                return U)
+
+"""
+
+  robustpws(A)
 
 
-function newrobuststack(A::AbstractArray{T}) where T <: AbstractFloat
+Performs combined robust and phase-weighted stack on time series `A`.
+
+Follows methods of Pavlis and Vernon, 2010 and Schimmel and Paulssen, 1997.
+This method improves stacking by using the global convergence of the robust
+stack and the phase convergence of the phase-weighted stack.
+The robust stack downweights outlier correlations, while the phase-weighted
+stack downweights outlier phases.
+
+# Arguments
+- `A::AbstractArray`: Time series stored in columns.
+- `ϵ::AbstractFloat`: Threshold for convergence of robust stack.
+- `maxiter::Int`: Maximum number of iterations to converge to robust stack.
+- `pow::Int`: Sharpness of transition from phase similarity to dissimilarity.
+"""
+function robustpws(A::AbstractArray{T};ϵ::AbstractFloat=Float32(1e-6),
+                     maxiter::Int=10,pow::AbstractFloat=2.) where T <: AbstractFloat
     N = size(A,2)
     Bold = median(A,dims=2)
     w = Array{T}(undef,N)
+    r = Array{T}(undef,N)
+    d2 = Array{T}(undef,N)
 
-    # dot product columnwise
-    BdotD = A'Bold
+    # do 2-norm for all columns in A
+    for ii = 1:N
+        d2[ii] = norm(A[:,ii],2)
+    end
+
+    BdotD = sum(A .* Bold,dims=1)
 
     for ii = 1:N
-        w[ii] = robustweight(A[:,ii],BdotD[ii],Bold)
+        r[ii] = norm(A[:,ii] .- (BdotD[ii] .* Bold),2)
+        w[ii] = abs(BdotD[ii]) ./ d2[ii] ./ r[ii]
     end
     w ./= sum(w)
 
-    return mean(A,weights(w),dims=2)
+    Bnew = mean(A,weights(w),dims=2)
+
+    # check convergence
+    ϵN = norm(Bnew .- Bold,2) / (norm(Bnew,2) * N)
+    Bold = Bnew
+    iter = 0
+    while (ϵN > ϵ) && (iter <= maxiter)
+        BdotD = sum(A .* Bold,dims=1)
+
+        for ii = 1:N
+            r[ii] = norm(A[:,ii] .- (BdotD[ii] .* Bold),2)
+            w[ii] = abs(BdotD[ii]) ./ d2[ii] ./ r[ii]
+        end
+        w ./= sum(w)
+
+        Bnew = mean(A,weights(w),dims=2)
+
+        # check convergence
+        ϵN = norm(Bnew .- Bold,2) / (norm(Bnew,2) * N)
+        Bold = Bnew
+        iter += 1
+    end
+
+    # multiply by weights
+    W = A .* w'
+
+    # return the phase weighted stack
+    return pws(W,pow=pow)
 end
 
-function robustweight(A::AbstractArray{T,1},b::AbstractFloat,Bold::AbstractArray) where T
-    return abs(b) ./ norm(A,2) ./ norm(A .- (b .* Bold),2)
-end
+robustpws!(C::CorrData; ϵ::AbstractFloat=Float32(1e-6),
+           maxiter::Int=10,pow::Int=2) = (C.corr=robustpws(C.corr,ϵ=ϵ,
+           maxiter=maxiter,pow=pow); C.t = C.t[1:1]; return nothing)
+robustpws(C::CorrData; ϵ::AbstractFloat=Float32(1e-6),
+           maxiter::Int=10,pow::Int=2) = (U = deepcopy(C);
+           U.corr=robustpws(U.corr,ϵ=ϵ,
+           maxiter=maxiter,pow=pow); U.t = U.t[1:1];return U)
