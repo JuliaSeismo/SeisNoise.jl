@@ -24,7 +24,7 @@ function process_raw!(S::SeisData, fs::Float64; ϕshift::Bool=true)
         SeisIO.detrend!(S[ii])         # remove mean & trend from channel
         if fs ∉ S.fs
             SeisNoise.taper!(S[ii].x,S[ii].fs)         # taper channel ends
-            lowpass!(S[ii].x,fs/2,S[ii].fs)    # lowpass filter before downsampling
+            lowpass!(S[ii].x,fs/2,S[ii].fs,zerophase=true)    # lowpass filter before downsampling
         end
         resample!(S,chans=ii,fs=fs) # downsample to lower fs
         phase_shift!(S[ii], ϕshift=ϕshift) # timing offset from sampling period
@@ -56,7 +56,7 @@ end
   mute(A,factor=factor)
 
 Set high amplitudes in array `A` to zero.
-Uses median of envelope of `A` to find outliers. 
+Uses median of envelope of `A` to find outliers.
 """
 function mute!(A::AbstractArray;factor::Int=3)
     T = eltype(A)
