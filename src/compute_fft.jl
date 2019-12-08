@@ -22,8 +22,8 @@ function process_raw!(S::SeisData, fs::Float64; ϕshift::Bool=true)
 
     for ii = 1:S.n
         SeisIO.detrend!(S[ii])         # remove mean & trend from channel
+        SeisNoise.taper!(S[ii].x,S[ii].fs)         # taper channel ends
         if fs ∉ S.fs
-            SeisNoise.taper!(S[ii].x,S[ii].fs)         # taper channel ends
             lowpass!(S[ii].x,fs/2,S[ii].fs,zerophase=true)    # lowpass filter before downsampling
         end
         resample!(S,chans=ii,fs=fs) # downsample to lower fs
