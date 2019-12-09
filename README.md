@@ -25,18 +25,23 @@ cross-correlating. For example
 
 ```Julia
 using SeisNoise, SeisIO
-fs = 10. # sampling frequency in Hz
-freqmin,freqmax = 0.1,0.2 # minimum and maximum frequencies in Hz
+fs = 40. # sampling frequency in Hz
+freqmin,freqmax = 0.1,0.2 # min and max frequencies 
 cc_step, cc_len = 450, 1800 # corrleation step and length in S
 maxlag = 60. # maximum lag time in correlation
-smoothing_half_win = 3
-S1 = get_data("FDSN","CI.SDD..BHZ",src="SCEDC",s="2019-02-03",t="2019-02-04")
-S2 = get_data("FDSN","CI.PER..BHZ",src="SCEDC",s="2019-02-03",t="2019-02-04")
-FFT1 = compute_fft(S1,freqmin, freqmax, fs, cc_step, cc_len)
-FFT2 = compute_fft(S2,freqmin, freqmax, fs, cc_step, cc_len)
-coherence!(FFT1,smoothing_half_win)
-coherence!(FFT2,smoothing_half_win)
-C = compute_cc(FFT1,FFT2,maxlag,corr_type="coherence")
+s = "2019-02-03"
+t = "2019-02-04"
+S1 = get_data("FDSN","CI.SDD..BHZ",src="SCEDC",s=s,t=t)
+S2 = get_data("FDSN","CI.PER..BHZ",src="SCEDC",s=s,t=t)
+process_raw!(S1,fs)
+process_raw!(S2,fs)
+R = RawData.([S1,S2],cc_len,cc_step)
+detrend!.(R)
+taper!(R)
+bandpass!.(R,freqmin,freqmax,zerophase=true)
+FFT = compute_fft.(R)
+whiten!.(FFT,freqmin,freqmax)
+C = compute_cc(FFT[1],FFT[2],maxlag)
 clean_up!(C,freqmin,freqmax)
 abs_max!(C)
 corrplot(C)
