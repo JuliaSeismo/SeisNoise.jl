@@ -64,10 +64,11 @@ Follows methods of Pavlis and Vernon, 2010.
 - `ϵ::AbstractFloat`: Threshold for convergence of robust stack.
 - `maxiter::Int`: Maximum number of iterations to converge to robust stack.
 """
-function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=Float32(1e-6),
+function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=Float32(1e-4),
                      maxiter::Int=10) where T <: AbstractFloat
     N = size(A,2)
     Bold = median(A,dims=2)
+    Bold ./= norm(Bold,2)
     w = Array{T}(undef,N)
     r = Array{T}(undef,N)
     d2 = Array{T}(undef,N)
@@ -83,12 +84,12 @@ function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=Float32(1e-6),
         r[ii] = norm(A[:,ii] .- (BdotD[ii] .* Bold),2)
         w[ii] = abs(BdotD[ii]) ./ d2[ii] ./ r[ii]
     end
-    w ./= sum(w)
 
     Bnew = mean(A,weights(w),dims=2)
+    Bnew ./= norm(Bnew,2)
 
     # check convergence
-    ϵN = norm(Bnew .- Bold,2) / (norm(Bnew,2) * N)
+    ϵN = norm(Bnew .- Bold,1) / (norm(Bnew,2) * N)
     Bold = Bnew
     iter = 0
     while (ϵN > ϵ) && (iter <= maxiter)
@@ -98,12 +99,12 @@ function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=Float32(1e-6),
             r[ii] = norm(A[:,ii] .- (BdotD[ii] .* Bold),2)
             w[ii] = abs(BdotD[ii]) ./ d2[ii] ./ r[ii]
         end
-        w ./= sum(w)
 
         Bnew = mean(A,weights(w),dims=2)
+        Bnew ./= norm(Bnew,2)
 
         # check convergence
-        ϵN = norm(Bnew .- Bold,2) / (norm(Bnew,2) * N)
+        ϵN = norm(Bnew .- Bold,1) / (norm(Bnew,2) * N)
         Bold = Bnew
         iter += 1
     end
