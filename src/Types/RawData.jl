@@ -133,17 +133,17 @@ isempty(R::RawData) = min(R.name=="",R.id == "",isempty(R.loc),
                           R.cc_step == zero(typeof(F.cc_step)),
                           F.time_norm == false,
                           isempty(R.resp), isempty(R.misc),isempty(R.notes),
-                          isempty(R.t),isempty(R.raw))
+                          isempty(R.t),isempty(R.x))
 
 isequal(R::RawData, U::RawData) = minimum([hash(getfield(R,i))==hash(getfield(U,i)) for i in rawfields]::Array{Bool,1})
-==(F::RawData, U::RawData) = isequal(R,U)::Bool
+==(R::RawData, U::RawData) = isequal(R,U)::Bool
 
 append!(R::RawData, U::RawData)  = (if R == U;
   setfield!(R, :t, vcat(getfield(R,:t), getfield(U,:t)));
-  setfield!(R, :raw, hcat(getfield(R,:raw), getfield(U,:raw)))
+  setfield!(R, :x, hcat(getfield(R,:x), getfield(U,:x)))
   elseif isempty(R);
   [setfield!(R, i, getfield(U,i)) for i in rawfields];
-  [setfield!(R, i, getfield(U,i)) for i in [:t,:raw]];
+  [setfield!(R, i, getfield(U,i)) for i in [:t,:x]];
   end;
   return R)
 +(R::RawData, U::RawData) = (T = deepcopy(R); return append!(T, U))
