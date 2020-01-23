@@ -27,7 +27,7 @@ function process_raw!(S::SeisData, fs::Float64; ϕshift::Bool=true)
             lowpass!(S[ii].x,fs/2,S[ii].fs,zerophase=true)    # lowpass filter before downsampling
         end
         resample!(S,chans=ii,fs=fs) # downsample to lower fs
-        SeisNoise.taper!(S[ii].x,S[ii].fs])
+        SeisNoise.taper!(S[ii].x,S[ii].fs)
         phase_shift!(S[ii], ϕshift=ϕshift) # timing offset from sampling period
     end
     return nothing
