@@ -70,7 +70,7 @@ end
 function indexpath(d::Date)
     days = (d - Date(Year(d))).value + 1
     n = ndigits(days)
-    outstring = "index/csv/year="
+    outstring = "continuous_waveforms/index/csv/year="
     outstring *= string(Year(d).value) * "/year_doy="
     outstring *= string(Year(d).value) * '_' * ('0' ^ (3 - n)) * string(days)
     outstring *= "/index.csv"
@@ -80,7 +80,7 @@ end
 function scedcpath(d::Date)
     days = (d - Date(Year(d))).value + 1
     n = ndigits(days)
-    outstring = string(Year(d).value) *'/'
+    outstring = "continuous_waveforms/" * string(Year(d).value) *'/'
     outstring *= string(Year(d).value) * '_' * ('0' ^ (3 - n)) * string(days)
     return outstring
 end
