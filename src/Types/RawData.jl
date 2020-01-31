@@ -125,13 +125,13 @@ RawData(;
 in(s::String, R::RawData) = R.id==s
 
 isempty(R::RawData) = min(R.name=="",R.id == "",isempty(R.loc),
-                          R.fs == zero(typeof(F.fs)),
-                          R.gain == one(typeof(F.gain)),
-                          R.freqmin == zero(typeof(F.freqmin)),
-                          R.freqmax == zero(typeof(F.freqmax)),
-                          R.cc_len == zero(typeof(F.cc_len)),
-                          R.cc_step == zero(typeof(F.cc_step)),
-                          F.time_norm == false,
+                          R.fs == zero(typeof(R.fs)),
+                          R.gain == one(typeof(R.gain)),
+                          R.freqmin == zero(typeof(R.freqmin)),
+                          R.freqmax == zero(typeof(R.freqmax)),
+                          R.cc_len == zero(typeof(R.cc_len)),
+                          R.cc_step == zero(typeof(R.cc_step)),
+                          R.time_norm == false,
                           isempty(R.resp), isempty(R.misc),isempty(R.notes),
                           isempty(R.t),isempty(R.x))
 
