@@ -71,6 +71,13 @@ function stretching(ref::AbstractArray,cur::AbstractArray,t::AbstractArray,
     dv = 100. * dtfiner[argmax(CCfiner)]
     cc = maximum(CCfiner) # Maximum correlation coefficient of the refined analysis
 
+    # due to CubicSplineInterpolation, cc can be more than 1, causing an error when computing sqrt(1-X^2).
+    if cc > 1.0
+        cc = 1.0
+    elseif cc < -1.0
+        cc = -1.0
+    end
+
     # Error computation based on Weaver, R., C. Hadziioannou, E. Larose, and M.
     # Campillo (2011), On the precision of noise-correlation interferometry,
     # Geophys. J. Int., 185(3), 1384?1392
