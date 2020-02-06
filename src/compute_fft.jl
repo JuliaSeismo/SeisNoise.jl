@@ -145,7 +145,7 @@ function onebit!(R::RawData)
     R.x .= sign.(R.x)
     return nothing
 end
-onebit(R::RawData) = (U = deepcopy(R); sign!(U);return U)
+onebit(R::RawData) = (U = deepcopy(R); onebit!(U);return U)
 
 """
   remove_response!(S, stationXML, freqmin, freqmax)
