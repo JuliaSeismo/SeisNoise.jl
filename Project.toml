@@ -26,4 +26,6 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 DataFrames = "0.20"
+FFTW = "1.2"
+SeisIO = "0.4"
 julia = "1"
