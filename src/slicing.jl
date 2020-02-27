@@ -1,4 +1,4 @@
-export start_end, slide, nearest_start_end
+export start_end, slide, nearest_start_end, slide_ind
 const μs = 1.0e-6
 const sμ = 1000000.0
 """
@@ -34,6 +34,24 @@ function start_end(S::SeisData)
   return start_times,end_times
 end
 
+function slide(A::AbstractArray, cc_len::Int, cc_step::Int, fs::AbstractFloat, t::AbstractArray)
+  window_samples = Int(cc_len * fs)
+  su,eu = SeisIO.t_win(t,fs) * μs
+  starts = Array(range(su,stop=eu,step=cc_step))
+  ends = starts .+ cc_len .- 1. / fs
+  ind = findlast(x -> x <= eu,ends)
+  starts = starts[1:ind]
+  ends = ends[1:ind]
+
+  # fill array with overlapping windows
+  out = Array{eltype(A),2}(undef, window_samples,length(starts))
+  s = convert.(Int,round.((hcat(starts,ends) .- su) .* fs .+ 1.))
+  @inbounds for ii in eachindex(starts)
+    out[:,ii] .= @view(A[s[ii,1]:s[ii,2]])
+  end
+  return out,starts
+end
+
 """
     slide(C::SeisChannel, cc_len::Int, cc_step::Int)
 
@@ -65,7 +83,7 @@ function slide(C::SeisChannel, cc_len::Int, cc_step::Int)
   for ii = 1:length(starts)
     A[:,ii] .= @view(C.x[s[ii,1]:s[ii,2]])
   end
-  return A,starts 
+  return A,starts
 end
 
 """
@@ -91,4 +109,13 @@ function nearest_start_end(S::DateTime, E::DateTime, fs::Float64, cc_len::Int, c
   starts = Array(ideal_start:Second(cc_step):endtime)
   ends = starts .+ Second(cc_len) .- Millisecond(convert(Int,1. / fs * 1e3))
   return starts[findfirst(x -> x >= S, starts)], ends[findlast(x -> x <= E,ends)]
+end
+
+function slide_ind(startslice::DateTime,endslice::DateTime,t::AbstractArray)
+  startu = d2u(startslice)
+  endu = d2u(endslice)
+  starttime = t[1,2] * 1e-6
+  startind = convert(Int,startu - starttime) + 1
+  endind = convert(Int,endu - starttime) + 1
+  return startind,endind
 end
