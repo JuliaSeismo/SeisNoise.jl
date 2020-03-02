@@ -34,21 +34,29 @@ function start_end(S::SeisData)
   return start_times,end_times
 end
 
-function slide(A::AbstractArray, cc_len::Int, cc_step::Int, fs::AbstractFloat, t::AbstractArray)
-  window_samples = Int(cc_len * fs)
-  su,eu = SeisIO.t_win(t,fs) * μs
-  starts = Array(range(su,stop=eu,step=cc_step))
-  ends = starts .+ cc_len .- 1. / fs
-  ind = findlast(x -> x <= eu,ends)
-  starts = starts[1:ind]
-  ends = ends[1:ind]
+function slide(A::AbstractArray, cc_len::Int, cc_step::Int, fs::AbstractFloat,
+               starttime::AbstractFloat,endtime::AbstractFloat)
+    N = size(A,1)
+    window_samples = Int(cc_len * fs)
+    starts = Array(range(starttime,stop=endtime,step=cc_step))
+    ends = starts .+ cc_len .- 1. / fs
+    ind = findlast(x -> x <= endtime,ends)
+    starts = starts[1:ind]
+    ends = ends[1:ind]
 
-  # fill array with overlapping windows
-  out = Array{eltype(A),2}(undef, window_samples,length(starts))
-  s = convert.(Int,round.((hcat(starts,ends) .- su) .* fs .+ 1.))
-  @inbounds for ii in eachindex(starts)
-    out[:,ii] .= @view(A[s[ii,1]:s[ii,2]])
-  end
+    # fill array with overlapping windows
+    if cc_step == cc_len && N % cc_len == 0
+        return reshape(A,window_samples,N ÷ window_samples),starts
+    elseif cc_step == cc_len # disregard data from edge
+        return reshape(A[1 : N - N % window_samples], window_samples, N ÷ window_samples),starts
+    else # need overlap between windows
+        out = Array{eltype(A),2}(undef, window_samples,length(starts))
+        s = convert.(Int,round.((hcat(starts,ends) .- starttime) .* fs .+ 1.))
+        @inbounds for ii in eachindex(starts)
+            out[:,ii] .= @view(A[s[ii,1]:s[ii,2]])
+        end
+
+    end
   return out,starts
 end
 
@@ -68,23 +76,7 @@ Cut `C` into equal length sliding windows.
         Unix time to date time, use u2d(starts[1]) = 2018-08-12T00:00:00
 - `ends::Array`: Array of end times of each window, in Unix time.
 """
-function slide(C::SeisChannel, cc_len::Int, cc_step::Int)
-  window_samples = Int(cc_len * C.fs)
-  su,eu = SeisIO.t_win(C.t,C.fs) * μs
-  starts = Array(range(su,stop=eu,step=cc_step))
-  ends = starts .+ cc_len .- 1. / C.fs
-  ind = findlast(x -> x <= eu,ends)
-  starts = starts[1:ind]
-  ends = ends[1:ind]
-
-  # fill array with overlapping windows
-  A = Array{eltype(C.x),2}(undef, window_samples,length(starts))
-  s = convert.(Int,round.((hcat(starts,ends) .- su) .* C.fs .+ 1.))
-  for ii = 1:length(starts)
-    A[:,ii] .= @view(C.x[s[ii,1]:s[ii,2]])
-  end
-  return A,starts
-end
+slide(C::SeisChannel, cc_len::Int, cc_step::Int) = slide(C.x,cc_len,cc_step,C.fs,C.t)
 
 """
     nearest_start_end(C::SeisChannel, cc_len::Int, cc_step::Int)
@@ -111,11 +103,9 @@ function nearest_start_end(S::DateTime, E::DateTime, fs::Float64, cc_len::Int, c
   return starts[findfirst(x -> x >= S, starts)], ends[findlast(x -> x <= E,ends)]
 end
 
-function slide_ind(startslice::DateTime,endslice::DateTime,t::AbstractArray)
-  startu = d2u(startslice)
-  endu = d2u(endslice)
+function slide_ind(startslice::AbstractFloat,endslice::AbstractFloat,fs::AbstractFloat,t::AbstractArray)
   starttime = t[1,2] * 1e-6
-  startind = convert(Int,startu - starttime) + 1
-  endind = convert(Int,endu - starttime) + 1
+  startind = convert(Int,round(startslice - starttime,digits=4) * fs) + 1
+  endind = convert(Int,round(endslice - starttime,digits=4) * fs) + 1
   return startind,endind
 end

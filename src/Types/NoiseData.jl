@@ -81,36 +81,39 @@ mutable struct RawData <: NoiseData
 
    function RawData(S::SeisData,cc_len::Int,cc_step::Int)
      merge!(S)
-     # subset by time
-     startslice, endslice = u2d.(nearest_start_end(S[1],cc_len, cc_step))
-       # check if waveform length is < cc_len
-     if Int(floor((endslice - startslice).value / 1000)) < cc_len
+
+     # check if waveform length is < cc_len
+     if Int(floor(length(S[1].x) / S[1].fs )) < cc_len
          return nothing
      end
 
      # phase shift data onto exaclty the sampling rate
      phase_shift!(S)
+     # subset by time
+     startslice, endslice = nearest_start_end(S[1],cc_len, cc_step)
      # get starting and ending indices
-     startind, endind = slide_ind(startslice, endslice, S[1].t)
-     x, starts = slide(S[1].x[startind:endind] , cc_len, cc_step, S[1].fs, S[1].t)
+     startind, endind = slide_ind(startslice, endslice, S[1].fs, S[1].t)
+     x, starts = slide(@view(S[1].x[startind:endind]), cc_len, cc_step, S[1].fs, startslice,endslice)
      return new(S[1].id,Dates.format(u2d(S[1].t[1,2]*1e-6),"Y-mm-dd"),S[1].loc,
                 S[1].fs,S[1].gain,1/cc_len,S[1].fs/2,cc_len,cc_step,false,
                 "",S[1].resp,S[1].misc,S[1].notes,starts,x)
    end
 
    function RawData(C::SeisChannel,cc_len::Int,cc_step::Int)
-     # subset by time
-     startslice, endslice = u2d.(nearest_start_end(C,cc_len, cc_step))
-       # check if waveform length is < cc_len
-     if Int(floor((endslice - startslice).value / 1000)) < cc_len
+     # check if waveform length is < cc_len
+     if Int(floor(length(C.x) / C.fs)) < cc_len
          return nothing
      end
 
      # phase shift data onto exaclty the sampling rate
      phase_shift!(C)
+
+     # subset by time
+     startslice, endslice = nearest_start_end(C,cc_len, cc_step)
+
      # get starting and ending indices
-     startind, endind = slide_ind(startslice, endslice, C.t)
-     x, starts = slide(C.x[startind:endind] , cc_len, cc_step, C.fs, C.t)
+     startind, endind = slide_ind(startslice, endslice, C.fs,C.t)
+     x, starts = slide(@view(C.x[startind:endind]), cc_len, cc_step, C.fs, startslice,endslice)
      return new(C.id,Dates.format(u2d(C.t[1,2]*1e-6),"Y-mm-dd"),C.loc,C.fs,
                 C.gain,1/cc_len,C.fs/2,cc_len,cc_step,false,"", C.resp,
                 C.misc,C.notes,starts,x)
