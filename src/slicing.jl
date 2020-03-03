@@ -105,7 +105,7 @@ end
 
 function slide_ind(startslice::AbstractFloat,endslice::AbstractFloat,fs::AbstractFloat,t::AbstractArray)
   starttime = t[1,2] * 1e-6
-  startind = convert(Int,round(startslice - starttime,digits=4) * fs) + 1
-  endind = convert(Int,round(endslice - starttime,digits=4) * fs) + 1
+  startind = convert(Int,round((startslice - starttime) * fs,digits=4)) + 1
+  endind = convert(Int,round((endslice - starttime) * fs,digits=4)) + 1
   return startind,endind
 end
