@@ -34,8 +34,25 @@ function start_end(S::SeisData)
   return start_times,end_times
 end
 
+"""
+    slide(A, cc_len, cc_step, fs, starttime, endtime)
+
+Cut `A` into sliding windows of length `cc_len` [s] and offset `cc_step` [s].
+
+# Arguments
+- `A::AbstractArray`: 1D time series.
+- `cc_len::Int`: Cross-correlation window length [s].
+- `cc_step::Int`: Step between cross-correlation windows [s].
+- `starttime::Float64`: Time of first sample in `A` in unix time.
+- `endtime::Float64`: Time of last sample in `A` in unix time.
+
+# Returns
+- `out::Array`: Array of sliding windows
+- `starts::Array`: Array of start times of each window, in Unix time. E.g to convert
+        Unix time to date time, use u2d(starts[1]) = 2018-08-12T00:00:00
+"""
 function slide(A::AbstractArray, cc_len::Int, cc_step::Int, fs::AbstractFloat,
-               starttime::AbstractFloat,endtime::AbstractFloat)
+               starttime::Float64,endtime::Float64)
     N = size(A,1)
     window_samples = Int(cc_len * fs)
     starts = Array(range(starttime,stop=endtime,step=cc_step))
@@ -46,9 +63,9 @@ function slide(A::AbstractArray, cc_len::Int, cc_step::Int, fs::AbstractFloat,
 
     # fill array with overlapping windows
     if cc_step == cc_len && N % cc_len == 0
-        return reshape(A,window_samples,N ÷ window_samples),starts
+        return Array(reshape(A,window_samples,N ÷ window_samples)),starts
     elseif cc_step == cc_len # disregard data from edge
-        return reshape(A[1 : N - N % window_samples], window_samples, N ÷ window_samples),starts
+        return Array(reshape(A[1 : N - N % window_samples], window_samples, N ÷ window_samples)),starts
     else # need overlap between windows
         out = Array{eltype(A),2}(undef, window_samples,length(starts))
         s = convert.(Int,round.((hcat(starts,ends) .- starttime) .* fs .+ 1.))
@@ -71,10 +88,9 @@ Cut `C` into equal length sliding windows.
 - `cc_step::Int`: Step between cross-correlation windows [s].
 
 # Returns
-- `A::Array`: Array of sliding windows
+- `out::Array`: Array of sliding windows.
 - `starts::Array`: Array of start times of each window, in Unix time. E.g to convert
         Unix time to date time, use u2d(starts[1]) = 2018-08-12T00:00:00
-- `ends::Array`: Array of end times of each window, in Unix time.
 """
 slide(C::SeisChannel, cc_len::Int, cc_step::Int) = slide(C.x,cc_len,cc_step,C.fs,C.t)
 
