@@ -1,4 +1,4 @@
-export start_end, slide, nearest_start_end
+export start_end, slide, nearest_start_end, slide_ind
 const μs = 1.0e-6
 const sμ = 1000000.0
 """
@@ -35,6 +35,49 @@ function start_end(S::SeisData)
 end
 
 """
+    slide(A, cc_len, cc_step, fs, starttime, endtime)
+
+Cut `A` into sliding windows of length `cc_len` [s] and offset `cc_step` [s].
+
+# Arguments
+- `A::AbstractArray`: 1D time series.
+- `cc_len::Int`: Cross-correlation window length [s].
+- `cc_step::Int`: Step between cross-correlation windows [s].
+- `starttime::Float64`: Time of first sample in `A` in unix time.
+- `endtime::Float64`: Time of last sample in `A` in unix time.
+
+# Returns
+- `out::Array`: Array of sliding windows
+- `starts::Array`: Array of start times of each window, in Unix time. E.g to convert
+        Unix time to date time, use u2d(starts[1]) = 2018-08-12T00:00:00
+"""
+function slide(A::AbstractArray, cc_len::Int, cc_step::Int, fs::AbstractFloat,
+               starttime::Float64,endtime::Float64)
+    N = size(A,1)
+    window_samples = Int(cc_len * fs)
+    starts = Array(range(starttime,stop=endtime,step=cc_step))
+    ends = starts .+ cc_len .- 1. / fs
+    ind = findlast(x -> x <= endtime,ends)
+    starts = starts[1:ind]
+    ends = ends[1:ind]
+
+    # fill array with overlapping windows
+    if cc_step == cc_len && N % cc_len == 0
+        return Array(reshape(A,window_samples,N ÷ window_samples)),starts
+    elseif cc_step == cc_len # disregard data from edge
+        return Array(reshape(A[1 : N - N % window_samples], window_samples, N ÷ window_samples)),starts
+    else # need overlap between windows
+        out = Array{eltype(A),2}(undef, window_samples,length(starts))
+        s = convert.(Int,round.((hcat(starts,ends) .- starttime) .* fs .+ 1.))
+        @inbounds for ii in eachindex(starts)
+            out[:,ii] .= @view(A[s[ii,1]:s[ii,2]])
+        end
+
+    end
+  return out,starts
+end
+
+"""
     slide(C::SeisChannel, cc_len::Int, cc_step::Int)
 
 Cut `C` into equal length sliding windows.
@@ -45,28 +88,11 @@ Cut `C` into equal length sliding windows.
 - `cc_step::Int`: Step between cross-correlation windows [s].
 
 # Returns
-- `A::Array`: Array of sliding windows
+- `out::Array`: Array of sliding windows.
 - `starts::Array`: Array of start times of each window, in Unix time. E.g to convert
         Unix time to date time, use u2d(starts[1]) = 2018-08-12T00:00:00
-- `ends::Array`: Array of end times of each window, in Unix time.
 """
-function slide(C::SeisChannel, cc_len::Int, cc_step::Int)
-  window_samples = Int(cc_len * C.fs)
-  su,eu = SeisIO.t_win(C.t,C.fs) * μs
-  starts = Array(range(su,stop=eu,step=cc_step))
-  ends = starts .+ cc_len .- 1. / C.fs
-  ind = findlast(x -> x <= eu,ends)
-  starts = starts[1:ind]
-  ends = ends[1:ind]
-
-  # fill array with overlapping windows
-  A = Array{eltype(C.x),2}(undef, window_samples,length(starts))
-  s = convert.(Int,round.((hcat(starts,ends) .- su) .* C.fs .+ 1.))
-  for ii = 1:length(starts)
-    A[:,ii] .= @view(C.x[s[ii,1]:s[ii,2]])
-  end
-  return A,starts 
-end
+slide(C::SeisChannel, cc_len::Int, cc_step::Int) = slide(C.x,cc_len,cc_step,C.fs,C.t)
 
 """
     nearest_start_end(C::SeisChannel, cc_len::Int, cc_step::Int)
@@ -91,4 +117,11 @@ function nearest_start_end(S::DateTime, E::DateTime, fs::Float64, cc_len::Int, c
   starts = Array(ideal_start:Second(cc_step):endtime)
   ends = starts .+ Second(cc_len) .- Millisecond(convert(Int,1. / fs * 1e3))
   return starts[findfirst(x -> x >= S, starts)], ends[findlast(x -> x <= E,ends)]
+end
+
+function slide_ind(startslice::AbstractFloat,endslice::AbstractFloat,fs::AbstractFloat,t::AbstractArray)
+  starttime = t[1,2] * 1e-6
+  startind = convert(Int,round((startslice - starttime) * fs,digits=4)) + 1
+  endind = convert(Int,round((endslice - starttime) * fs,digits=4)) + 1
+  return startind,endind
 end

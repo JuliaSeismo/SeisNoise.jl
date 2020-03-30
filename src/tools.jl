@@ -1,5 +1,5 @@
 export snr, smooth, smooth!, nextpow2, abs_max!, standardize!, mad, savitsky_golay,
-     movingaverage, pws, std_threshold
+    pws, std_threshold
 
 """
     snr(A,fs)
@@ -24,41 +24,18 @@ snr(C::CorrData) = snr(C.corr,C.fs)
 
 Smooth array `A` with half-window `half_win` (defaults to 3).
 """
-function smooth!(A::AbstractArray, half_win::Int=3)
-    if ndims(A) == 1
-        return movingaverage(A,half_win)
-    end
-
-    Nrows, Ncols = size(A)
-
-    for ii = 1:Ncols
-        A[:,ii] .= movingaverage(A[:,ii],half_win)
-    end
+function smooth!(A::AbstractArray, half_win::Int=3, dims::Int=1)
+    T = eltype(A)
+    window_len = 2 * half_win + 1
+    csumsize = tuple(collect(size(A)) .+ [i==1 for i in 1:ndims(A)]...)
+    csum = similar(A,T,csumsize)
+    csum[1,:] .= zero(T)
+    csum[2:end,:] = cumsum(A,dims=dims)
+    A[half_win+1:end-half_win,:] .= (csum[window_len+1:end,:] .- csum[1:end-window_len,:]) ./ window_len
     return nothing
 end
-smooth(A::AbstractArray,half_win::Int=3) =
-      (U = deepcopy(A);smooth!(U,half_win);return U)
-
-"""
-  movingaverage(A,half_win)
-
-Smooth array `A` with moving average of half-window `half-win` (defaults to 3.)
-"""
-function movingaverage(A::AbstractArray, half_win::Int=3)
-    prepend!(A,A[1:half_win])
-    append!(A,A[end-half_win:end])
-    N = length(A)
-    B = zeros(eltype(A),N)
-    window_len = 2 * half_win + 1
-    s = sum(A[1:window_len])
-    B[half_win+1] = s
-    for ii = half_win+2:N-half_win
-        s = s - A[ii-half_win] + A[ii+half_win]
-        B[ii] = s
-    end
-    B ./= window_len
-    return B[half_win+1:end-half_win-1]
-end
+smooth(A::AbstractArray,half_win::Int=3, dims::Int=1) =
+      (U = deepcopy(A);smooth!(U,half_win,dims);return U)
 
 """
     nextpow2(x)

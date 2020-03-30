@@ -63,7 +63,7 @@ function mute!(A::AbstractArray;factor::Int=3)
     T = eltype(A)
     envelope = abs.(hilbert(A))
     levels = mean(envelope,dims=1)
-    level = factor * median(levels)
+    level = factor .* median(levels)
     A[envelope .> level] .= T(0)
     return nothing
 end
@@ -84,7 +84,7 @@ Truncate array A at `factor` times the root mean square of each column.
 - `f::Function`: Input statistical function (e.g. rms, var, std, mad)
 - `dims`: Dimension of `A` to apply clipping (defaults to 1)
 """
-function clip!(A::AbstractArray{T,N}, factor::Real; f::Function=rms,dims=1) where {T,N}
+function clip!(A::AbstractArray{T,N}, factor::Real; f::Function=rootmeansquare,dims=1) where {T,N}
     if N == 1
         high = f(A) .* factor
         clamp!(@view(A[:]),-high,high)
@@ -285,4 +285,8 @@ function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
                        S[1].loc, S[1].fs, S[1].gain, freqmin, freqmax,
                        cc_len, cc_step, to_whiten, time_norm, S[1].resp,
                        S[1].misc, S[1].notes, starts, FFT)
+end
+
+function rootmeansquare(A::AbstractArray;dims=1)
+    return sqrt.(sum(A.^2,dims=dims))
 end

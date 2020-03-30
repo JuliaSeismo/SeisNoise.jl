@@ -14,11 +14,10 @@ Demean, detrend, taper and filter time series.
 - `freqmax::Float64`: Pass band high corner frequency in Hz.
 """
 function clean_up!(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
-                   corners::Int=4, zerophase::Bool=true)
-    demean!(A)
+                   corners::Int=4)
     detrend!(A)
     taper!(A,fs)
-    bandpass!(A,freqmin,freqmax,fs,corners=corners,zerophase=zerophase)
+    bandpass!(A,freqmin,freqmax,fs,corners=corners)
     return nothing
 end
 clean_up(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
@@ -231,7 +230,7 @@ Returns the whitened rfft of the time series.
 - `N::Int`: Number of input time domain samples for each rfft.
 - `pad::Int`: Number of tapering points outside whitening band.
 """
-function whiten!(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64,
+function whiten!(A::Array{<:Complex{<:AbstractFloat}}, freqmin::Float64, freqmax::Float64, fs::Float64,
                  N::Int;pad::Int=50)
     T = real(eltype(A))
 
@@ -241,7 +240,7 @@ function whiten!(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float
     # get whitening frequencies
     freqvec = FFTW.rfftfreq(N,fs)
     left = findfirst(x -> x >= freqmin, freqvec)
-    right = findlast(x -> x <= freqmax, freqvec)
+    right = findfirst(freqmax .<= freqvec)
     low, high = left - pad, right + pad
 
     if low <= 1
@@ -289,6 +288,43 @@ whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64, N::Int
        pad::Int=50) = (U = deepcopy(A);
                        whiten!(U,freqmin,freqmax,fs,N,pad=pad);
                        return U)
+
+function whiten!(A::AbstractGPUArray{Complex{Float32}}, freqmin::Float64,
+                 freqmax::Float64, fs::Float64,N::Int;pad::Int=50)
+   T = real(eltype(A))
+   Nrows,Ncols = size(A)
+
+   # get whitening frequencies
+   freqvec = FFTW.rfftfreq(N,fs)
+   left = findfirst(x -> x >= freqmin, freqvec)
+   right = findfirst(freqmax .<= freqvec)
+   low, high = left - pad, right + pad
+
+   if low <= 1
+       low = 1
+       left = low + pad
+   end
+
+   if high > length(freqvec)
+       high = length(freqvec)- 1
+       right = high - pad
+   end
+
+   compzero = complex(T(0))
+   padarr = similar(A,T,pad)
+   padarr .= T(1.):T(pad)
+   # left zero cut-off
+   A[1:low,:] .= compzero
+   # left tapering
+   A[low+1:left,:] .= cos.(T(pi) ./ T(2) .+ T(pi) ./ T(2) .* padarr ./ pad).^2 .* exp.(im .* CUDAnative.angle.(A[low+1:left,:]))
+   # pass band
+   A[left+1:right,:] .= exp.(im .* CUDAnative.angle.(A[left+1:right,:]))
+   # right tapering
+   A[right+1:high,:] .= cos.(T(pi) ./ T(2) .* padarr ./ pad).^2 .* exp.(im .* CUDAnative.angle.(A[right+1:high,:]))
+   # right zero cut-off
+   A[high:end,:] .= compzero
+   return nothing
+end
 
 """
    whiten(F, freqmin, freqmax)

@@ -1,14 +1,22 @@
-__precompile__()
 module SeisNoise
 
 using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO
 using Statistics, StatsBase, Interpolations, GLM, Plots, Distributed, LightXML
 using Distributed, CSV, AWSCore, AWSS3
+using CuArrays, Adapt, CUDAnative, GPUArrays
+
+# check use of cuda
+const use_cuda = Ref(false)
+if !CuArrays.functional()
+  else
+    use_cuda[] = true
+end
 
 # import types first
-include("Types/RawData.jl")
-include("Types/FFTData.jl")
-include("Types/CorrData.jl")
+# include("Types/RawData.jl")
+# include("Types/FFTData.jl")
+# include("Types/CorrData.jl")
+include("Types/NoiseData.jl")
 include("Types/show.jl")
 include("Types/InputParams.jl")
 
