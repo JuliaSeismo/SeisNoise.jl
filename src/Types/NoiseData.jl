@@ -1,5 +1,5 @@
 import Base:in, +, -, *, ==, convert, isempty, isequal, length, push!, sizeof, append!
-import SeisIO: GeoLoc, PZResp
+import SeisIO: GeoLoc, PZResp, InstrumentResponse
 export RawData, FFTData, CorrData, gpu, cpu
 
 const rawfields = [:name, :loc, :fs, :gain, :freqmin, :freqmax, :cc_step,
@@ -31,7 +31,7 @@ A structure for raw ambient noise data.
 | :cc_len     | Raw data window length in seconds. |
 | :cc_step    | Spacing between windows in seconds. |
 | :time_norm  | Apply one-bit whitening with "one_bit". |
-| :resp       | Instrument response object, format [zeros poles] |
+| :resp       | SeisIO InstrumentResponse object |
 | :misc       | Dictionary for non-critical information. |
 | :notes      | Timestamped notes; includes automatically-logged acquisition and |
 |             | processing information. |
@@ -50,7 +50,7 @@ mutable struct RawData <: NoiseData
    cc_step::Int                                # step between windows [s]
    whitened::Bool                              # whitening applied
    time_norm::String                           # time normaliation
-   resp::PZResp                                # response poles/zeros
+   resp::InstrumentResponse                    # response poles/zeros
    misc::Dict{String,Any}                      # misc
    notes::Array{String,1}                      # notes
    t::Array{Float64,1}                         # time
@@ -68,7 +68,7 @@ mutable struct RawData <: NoiseData
      cc_step  ::Int,
      whitened ::Bool,
      time_norm::String,
-     resp     ::PZResp,
+     resp     ::InstrumentResponse,
      misc     ::Dict{String,Any},
      notes    ::Array{String,1},
      t        ::Array{Float64,1},
@@ -84,7 +84,7 @@ mutable struct RawData <: NoiseData
 
      # check if waveform length is < cc_len
      if Int(floor(length(S[1].x) / S[1].fs )) < cc_len
-         return nothing
+         throw(DomainError(cc_len, "cc_len must be greater than S[1].x / S[1].fs"))
      end
 
      # phase shift data onto exaclty the sampling rate
@@ -102,7 +102,7 @@ mutable struct RawData <: NoiseData
    function RawData(C::SeisChannel,cc_len::Int,cc_step::Int)
      # check if waveform length is < cc_len
      if Int(floor(length(C.x) / C.fs)) < cc_len
-         return nothing
+         throw(DomainError(cc_len, "cc_len must be greater than C.x / C.fs."))
      end
 
      # phase shift data onto exaclty the sampling rate
@@ -132,7 +132,7 @@ RawData(;
          cc_step  ::Int                       = zero(Int),
          whitened ::Bool                      = false,
          time_norm::String                    = "",
-         resp     ::PZResp                    = PZResp(),
+         resp     ::InstrumentResponse        = PZResp(),
          misc     ::Dict{String,Any}          = Dict{String,Any}(),
          notes    ::Array{String,1}           = Array{String,1}(undef, 0),
          t        ::Array{Float64,1}          = Array{Float64,1}(undef, 0),
@@ -159,7 +159,7 @@ A structure for fourier transforms (FFT) of ambient noise data.
 | :cc_step    | Spacing between correlation windows in seconds. |
 | :whitened   | Whitening applied.
 | :time_norm  | Apply one-bit whitening with "one_bit". |
-| :resp       | Instrument response object, format [zeros poles] |
+| :resp       | SeisIO InstrumentResponse object |
 | :misc       | Dictionary for non-critical information. |
 | :notes      | Timestamped notes; includes automatically-logged acquisition and |
 |             | processing information. |
@@ -178,7 +178,7 @@ mutable struct FFTData <: NoiseData
    cc_step::Int                                # step between windows [s]
    whitened::Bool                              # whitening applied
    time_norm::String                           # time normaliation
-   resp::PZResp                                # response poles/zeros
+   resp::InstrumentResponse                    # response poles/zeros
    misc::Dict{String,Any}                      # misc
    notes::Array{String,1}                      # notes
    t::Array{Float64,1}                         # time
@@ -196,7 +196,7 @@ function FFTData(
    cc_step  ::Int,
    whitened ::Bool,
    time_norm::String,
-   resp     ::PZResp,
+   resp     ::InstrumentResponse,
    misc     ::Dict{String,Any},
    notes    ::Array{String,1},
    t        ::Array{Float64,1},
@@ -220,7 +220,7 @@ FFTData(;
        cc_step  ::Int                       = zero(Int),
        whitened ::Bool                      = false,
        time_norm::String                    = "",
-       resp     ::PZResp                    = PZResp(),
+       resp     ::InstrumentResponse        = PZResp(),
        misc     ::Dict{String,Any}          = Dict{String,Any}(),
        notes    ::Array{String,1}           = Array{String,1}(undef, 0),
        t        ::Array{Float64,1}          = Array{Float64,1}(undef, 0),
@@ -256,7 +256,7 @@ A structure for cross-correlations of ambient noise data.
 | :cc_step    | Spacing between correlation windows in seconds. |
 | :whitened   | Whitening applied.
 | :time_norm  | Apply one-bit whitening with "one_bit". |
-| :resp       | Instrument response object, format [zeros poles] |
+| :resp       | SeisIO InstrumentResponse object |
 | :misc       | Dictionary for non-critical information. |
 | :notes      | Timestamped notes; includes automatically-logged acquisition and |
 |             | processing information. |
@@ -282,7 +282,7 @@ mutable struct CorrData <: NoiseData
   cc_step::Int                                # step between windows [s]
   whitened::Bool                              # whitening applied
   time_norm::String                           # time normaliation
-  resp::PZResp                                # response poles/zeros
+  resp::InstrumentResponse                    # response poles/zeros
   misc::Dict{String,Any}                      # misc
   notes::Array{String,1}                      # notes
   dist::Float64                               # distance between stations [km]
@@ -307,7 +307,7 @@ mutable struct CorrData <: NoiseData
       cc_step  ::Int,
       whitened ::Bool,
       time_norm::String,
-      resp     ::PZResp,
+      resp     ::InstrumentResponse,
       misc     ::Dict{String,Any},
       notes    ::Array{String,1},
       dist     ::Float64,
@@ -339,7 +339,7 @@ CorrData(;
           cc_step  ::Int                       = zero(Int),
           whitened ::Bool                      = false,
           time_norm::String                    = "",
-          resp     ::PZResp                    = PZResp(),
+          resp     ::InstrumentResponse        = PZResp(),
           misc     ::Dict{String,Any}          = Dict{String,Any}(),
           notes    ::Array{String,1}           = Array{String,1}(undef, 0),
           dist     ::Float64                   = zero(Float64),
