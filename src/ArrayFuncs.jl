@@ -186,7 +186,7 @@ Computes the analytic representation of x, x_a = x + j hilbert{x}.
 
 Only works for arrays on the GPU!
 """
-function hilbert(A::GPUArray{Float32})
+function hilbert(A::AbstractGPUArray{Float32})
     Nrows = size(A,1)
     T = eltype(A)
     f = fft(A,1)

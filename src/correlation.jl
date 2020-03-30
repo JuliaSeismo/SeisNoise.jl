@@ -289,7 +289,7 @@ whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64, N::Int
                        whiten!(U,freqmin,freqmax,fs,N,pad=pad);
                        return U)
 
-function whiten!(A::GPUArray{Complex{Float32}}, freqmin::Float64,
+function whiten!(A::AbstractGPUArray{Complex{Float32}}, freqmin::Float64,
                  freqmax::Float64, fs::Float64,N::Int;pad::Int=50)
    T = real(eltype(A))
    Nrows,Ncols = size(A)

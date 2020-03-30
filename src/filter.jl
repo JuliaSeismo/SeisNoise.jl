@@ -80,7 +80,7 @@ Butterworth-Bandpass Filter.
 Filter data `A` from `freqmin` to `freqmax` using `corners` corners on the GPU.
 
 # Arguments
-- `A::GPUArray`: Data to filter
+- `A::AbstractGPUArray`: Data to filter
 - `freqmin::Float64`: Pass band low corner frequency.
 - `freqmax::Float64`: Pass band high corner frequency.
 - `fs::Float64`: Sampling rate in Hz.
@@ -89,7 +89,7 @@ Filter data `A` from `freqmin` to `freqmax` using `corners` corners on the GPU.
 This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
-function bandpass!(A::GPUArray, freqmin::Float64, freqmax::Float64,
+function bandpass!(A::AbstractGPUArray, freqmin::Float64, freqmax::Float64,
                    fs::Float64; corners::Int=4,zerophase::Bool=true)
     T = Float64
     N = size(A,1)
@@ -129,7 +129,7 @@ function bandpass!(A::GPUArray, freqmin::Float64, freqmax::Float64,
     reverse!(A,dims=1)
     return nothing
 end
-bandpass(A::GPUArray,freqmin::Float64,
+bandpass(A::AbstractGPUArray,freqmin::Float64,
          freqmax::Float64, fs::Float64; corners::Int=4) = (U = deepcopy(A);
          bandpass!(U,freqmin,freqmax, fs, corners=corners,
          zerophase=zerophase);return U)
@@ -273,7 +273,7 @@ Filter data `A` removing data between frequencies `freqmin` to `freqmax` using
 This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
-function bandstop!(A::GPUArray,freqmin::Float64,freqmax::Float64,
+function bandstop!(A::AbstractGPUArray,freqmin::Float64,freqmax::Float64,
                    fs::Float64;corners::Int=4, zerophase::Bool=true)
     T = Float64
     N = size(A,1)
@@ -317,7 +317,7 @@ function bandstop!(A::GPUArray,freqmin::Float64,freqmax::Float64,
     reverse!(A,dims=1)
     return nothing
 end
-bandstop(A::GPUArray,freqmin::Float64,
+bandstop(A::AbstractGPUArray,freqmin::Float64,
          freqmax::Float64, fs::Float64; corners::Int=4) = (U = deepcopy(A);
          bandstop!(U,freqmin,freqmax, fs, corners=corners,
          zerophase=zerophase);return U)
@@ -454,7 +454,7 @@ Filter data `A` over certain frequency `freq` using `corners` corners on the GPU
 This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
-function lowpass!(A::GPUArray,freq::Float64,
+function lowpass!(A::AbstractGPUArray,freq::Float64,
               fs::Float64; corners::Int=4,zerophase::Bool=true)
    T = Float64
    N = size(A,1)
@@ -493,7 +493,7 @@ function lowpass!(A::GPUArray,freq::Float64,
 
    return nothing
 end
-lowpass(A::GPUArray,freq::Float64, fs::Float64;
+lowpass(A::AbstractGPUArray,freq::Float64, fs::Float64;
        corners::Int=4) = (U = deepcopy(A);
        lowpass!(U,freq,fs,corners=corners,
        zerophase=zerophase);return U)
@@ -623,7 +623,7 @@ corners on the GPU.
 This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
-function highpass!(A::GPUArray,freq::Float64,
+function highpass!(A::AbstractGPUArray,freq::Float64,
                    fs::Float64; corners::Int=4, zerophase::Bool=true)
     T = Float64
     N = size(A,1)
@@ -659,7 +659,7 @@ function highpass!(A::GPUArray,freq::Float64,
     reverse!(A,dims=1)
     return nothing
 end
-highpass(A::GPUArray,freq::Float64, fs::Float64;
+highpass(A::AbstractGPUArray,freq::Float64, fs::Float64;
         corners::Int=4) = (U = deepcopy(A);
         highpass!(U,freq,fs,corners=corners,
         zerophase=zerophase);return U)
