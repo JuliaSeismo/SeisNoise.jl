@@ -17,9 +17,9 @@ From the Julia command prompt:
   - Custom types for saving Fourier Transforms of data and cross-correlations
   - Array-based processing of raw data and cross-correlation.
   - Methods for *dv/v* measurements.
-  - Coming soon: GPU support and dispersion analysis.
+  - Coming soon: Dispersion analysis.
 
-## Basic Cross-Correlation
+## SeisNoise Cross-Correlation Example
 Once you have installed the package you can type `using SeisNoise` to start
 cross-correlating. For example
 
@@ -49,3 +49,56 @@ corrplot(C)
 will produce this figure:
 
 ![plot1](/docs/src/assets/xcorr-example.png)
+
+## Cross-correlation on the GPU
+
+SeisNoise can process data and compute cross-correlations on the GPU with CUDA. The [JuliaGPU](https://github.com/JuliaGPU) suite provides a high-level interface for CUDA programming through the CuArrays.jl and CUDAnative.jl packages. CuArrays.jl provides an array type for storing data on the GPU. Data in SeisNoise structures (`R.x`, `F.fft`, and `C.corr` fields, for `RawData`, `FFTData`, and `CorrData`, respectively) can move between an `Array` on the CPU to a `CuArray` on the GPU using the `gpu` and `cpu` functions, as shown below.   
+
+> :warning: Only **Nvidia** GPUs are suported at the moment. Hold in there for AMD/OpenCL support... 
+
+```julia
+# create raw data and send to GPU 
+R = RawData(S1, cc_len, cc_step) |> gpu 
+R.x
+72000×188 CuArrays.CuArray{Float32,2,Nothing}
+
+# send data back to the CPU
+R = R |> cpu 
+R.x
+72000×188 Array{Float32,2}
+```
+
+All basic processing remains the same on the GPU. Here is a complete cross-correlation routine on the GPU: 
+
+```julia
+# send data to GPU 
+R1 = RawData(S1, cc_len, cc_step) |> gpu 
+R2 = RawData(S2, cc_len, cc_step) |> gpu
+R = [R1,R2]
+
+# preprocess on the GPU 
+detrend!.(R)
+taper!.(R)
+bandpass!.(R,freqmin,freqmax,zerophase=true)
+
+# FFT on GPU 
+FFT = compute_fft.(R)
+whiten!.(FFT,freqmin,freqmax)
+
+# compute correlation and send to cpu 
+C = compute_cc(FFT[1],FFT[2],maxlag) |> cpu 
+```
+
+### Routines Implemented on the GPU
+- Preprocessing: 
+  - `detrend`,`demean`, `taper`, `onebit`, `smooth`
+- Filtering: 
+  - `bandpass`, `bandstop`, `lowpass`, `highpass` 
+- Fourier Domain:
+  - `whiten`, `rfft`, `irfft` 
+- Cross-correlation:
+  - `correlate`, `cross-coherence`, `deconvolution` 
+- Post-processing:
+  - `stack`, `filter`s, etc..
+
+
