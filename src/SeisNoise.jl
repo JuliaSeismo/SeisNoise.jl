@@ -1,9 +1,8 @@
 module SeisNoise
 
 using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO
-using Statistics, StatsBase, Interpolations, GLM, Plots, Distributed, LightXML
-using Distributed, CSV, AWSCore, AWSS3
-using CuArrays, Adapt, CUDAnative, GPUArrays
+using Statistics, StatsBase, Plots, Distributed
+using Distributed, CuArrays, Adapt, CUDAnative, GPUArrays
 
 # check use of cuda
 const use_cuda = Ref(false)
@@ -36,10 +35,6 @@ include("stacking.jl")
 include("compute_fft.jl")
 include("correlation.jl")
 include("rotation.jl")
-include("VelocityChange/MWCS.jl")
-include("VelocityChange/Stretching.jl")
-include("VelocityChange/Wavelets.jl")
 include("Plotting/plotting.jl")
-include("transfer.jl")
 
 end # module
