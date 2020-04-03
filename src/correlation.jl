@@ -102,7 +102,7 @@ function compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;
 
     ind1 = findall(x -> x ∈ inter, FFT1.t)
     ind2 = findall(x -> x ∈ inter, FFT2.t)
-    corr = correlate(@views(FFT1.fft[:,ind1]), @views(FFT2.fft[:,ind2]), cc_len,
+    corr = correlate(@views(FFT1.fft[:,ind1]), @views(FFT2.fft[:,ind2]), FFT1.cc_len,
                      convert(Int,round(maxlag * FFT1.fs)))
     rotated = false
 
