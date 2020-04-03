@@ -81,6 +81,7 @@ mutable struct RawData <: NoiseData
 
    function RawData(S::SeisData,cc_len::Int,cc_step::Int)
      merge!(S)
+     ungap!(S)
 
      # check if waveform length is < cc_len
      if length(S[1].x) < cc_len
