@@ -83,8 +83,8 @@ mutable struct RawData <: NoiseData
      merge!(S)
 
      # check if waveform length is < cc_len
-     if Int(floor(length(S[1].x) / S[1].fs )) < cc_len
-         throw(DomainError(cc_len, "cc_len must be greater than S[1].x / S[1].fs"))
+     if length(S[1].x) < cc_len
+         throw(DomainError(cc_len, "cc_len must be less than length(S[1].x)."))
      end
 
      # phase shift data onto exaclty the sampling rate
@@ -101,8 +101,8 @@ mutable struct RawData <: NoiseData
 
    function RawData(C::SeisChannel,cc_len::Int,cc_step::Int)
      # check if waveform length is < cc_len
-     if Int(floor(length(C.x) / C.fs)) < cc_len
-         throw(DomainError(cc_len, "cc_len must be greater than C.x / C.fs."))
+     if length(C.x) < cc_len
+         throw(DomainError(cc_len, "cc_len must be less than length(C.x)."))
      end
 
      # phase shift data onto exaclty the sampling rate
