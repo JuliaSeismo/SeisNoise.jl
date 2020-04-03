@@ -28,8 +28,8 @@ A structure for raw ambient noise data.
 | :gain       | Scalar gain; divide data by the gain to convert to units  |
 | :freqmin    | Minimum frequency from instrument response.  |
 | :freqmax    | Maximum frequency from instrument response. |
-| :cc_len     | Raw data window length in seconds. |
-| :cc_step    | Spacing between windows in seconds. |
+| :cc_len     | Raw data window length in number of points. |
+| :cc_step    | Spacing between windows in number of points. |
 | :time_norm  | Apply one-bit whitening with "one_bit". |
 | :resp       | SeisIO InstrumentResponse object |
 | :misc       | Dictionary for non-critical information. |
@@ -46,8 +46,8 @@ mutable struct RawData <: NoiseData
    gain::Float64                               # gain
    freqmin::Float64                            # minumum frequency [Hz]
    freqmax::Float64                            # maximum frequency [Hz]
-   cc_len::Int                                 # window_length [s]
-   cc_step::Int                                # step between windows [s]
+   cc_len::Int                                 # window_length points
+   cc_step::Int                                # step between windows in points
    whitened::Bool                              # whitening applied
    time_norm::String                           # time normaliation
    resp::InstrumentResponse                    # response poles/zeros
@@ -155,8 +155,8 @@ A structure for fourier transforms (FFT) of ambient noise data.
 | :gain       | Scalar gain; divide data by the gain to convert to units  |
 | :freqmin    | Minimum frequency for whitening.  |
 | :freqmax    | Maximum frequency for whitening. |
-| :cc_len     | Length of each correlation in seconds. |
-| :cc_step    | Spacing between correlation windows in seconds. |
+| :cc_len     | Raw data window length in number of points. |
+| :cc_step    | Spacing between windows in number of points. |
 | :whitened   | Whitening applied.
 | :time_norm  | Apply one-bit whitening with "one_bit". |
 | :resp       | SeisIO InstrumentResponse object |
@@ -174,8 +174,8 @@ mutable struct FFTData <: NoiseData
    gain::Float64                               # gain
    freqmin::Float64                            # minumum frequency [Hz]
    freqmax::Float64                            # maximum frequency [Hz]
-   cc_len::Int                                 # window_length [s]
-   cc_step::Int                                # step between windows [s]
+   cc_len::Int                                 # window_length in points
+   cc_step::Int                                # step between windows in points
    whitened::Bool                              # whitening applied
    time_norm::String                           # time normaliation
    resp::InstrumentResponse                    # response poles/zeros
@@ -252,8 +252,8 @@ A structure for cross-correlations of ambient noise data.
 | :gain       | Scalar gain; divide data by the gain to convert to units.  |
 | :freqmin    | Minimum frequency for whitening.  |
 | :freqmax    | Maximum frequency for whitening. |
-| :cc_len     | Length of each correlation in seconds. |
-| :cc_step    | Spacing between correlation windows in seconds. |
+| :cc_len     | Raw data window length in number of points. |
+| :cc_step    | Spacing between windows in number of points. |
 | :whitened   | Whitening applied.
 | :time_norm  | Apply one-bit whitening with "one_bit". |
 | :resp       | SeisIO InstrumentResponse object |
@@ -278,8 +278,8 @@ mutable struct CorrData <: NoiseData
   gain::Float64                               # gain
   freqmin::Float64                            # minumum frequency [Hz]
   freqmax::Float64                            # maximum frequency [Hz]
-  cc_len::Int                                 # window_length [s]
-  cc_step::Int                                # step between windows [s]
+  cc_len::Int                                 # window_length in points
+  cc_step::Int                                # step between windows in points
   whitened::Bool                              # whitening applied
   time_norm::String                           # time normaliation
   resp::InstrumentResponse                    # response poles/zeros

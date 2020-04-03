@@ -52,7 +52,7 @@ cross-correlating.
 # Arguments
 - `FFT1::AbstractArray`: Complex Array of fourier transform of ambient noise data.
 - `FFT2::AbstractArray`: Complex Array of fourier transform of ambient noise data.
-- `N::Int`: Number of input data points in time domain, equal to `cc_len` * `fs`.
+- `N::Int`: Number of input data points in time domain, equal to `cc_len`.
 - `maxlag::Int`: Number of data points in cross-correlation to save,
                  e.g. `maxlag = 2000` will save lag times = -2000/fs:2000/fs s.
 - `corr_type::String`: Type of correlation: `cross-correlation`, `coherence` or
@@ -93,7 +93,6 @@ Cross-correlation can be done using one of three options:
 function compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;
                     corr_type::String="cross-correlation")
 
-    N = convert(Int,round(FFT1.cc_len * FFT1.fs)) # number of data points
     comp = FFT1.name[end] * FFT2.name[end]
     # get intersect of dates; return nothing if no intersect
     inter = intersect(FFT1.t,FFT2.t)
@@ -103,7 +102,7 @@ function compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;
 
     ind1 = findall(x -> x ∈ inter, FFT1.t)
     ind2 = findall(x -> x ∈ inter, FFT2.t)
-    corr = correlate(@views(FFT1.fft[:,ind1]), @views(FFT2.fft[:,ind2]), N,
+    corr = correlate(@views(FFT1.fft[:,ind1]), @views(FFT2.fft[:,ind2]), cc_len,
                      convert(Int,round(maxlag * FFT1.fs)))
     rotated = false
 
@@ -352,8 +351,8 @@ function whiten!(F::FFTData, freqmin::Float64, freqmax::Float64;pad::Int=50)
     end
 
     freqmin = max(freqmin,F.freqmin) # check for freqmin = 0
-    freqmax = min(freqmax,max(F.freqmax,1 / F.cc_len)) # check for freqmax = 0
-    whiten!(F.fft, freqmin, freqmax, F.fs,convert(Int, F.fs * F.cc_len), pad=pad)
+    freqmax = min(freqmax,max(F.freqmax,F.fs / F.cc_len)) # check for freqmax = 0
+    whiten!(F.fft, freqmin, freqmax, F.fs, F.cc_len, pad=pad)
     F.whitened = true
     F.freqmin = freqmin
     F.freqmax = freqmax
@@ -375,10 +374,10 @@ function whiten!(R::RawData,freqmin::Float64, freqmax::Float64; pad::Int=50)
     end
 
     freqmin = max(freqmin,R.freqmin) # check for freqmin = 0
-    freqmax = min(freqmax,max(R.freqmax,1 / R.cc_len)) # check for freqmax = 0
+    freqmax = min(freqmax,max(R.freqmax,R.fs / R.cc_len)) # check for freqmax = 0
     FFT = rfft(R.x,1)
-    whiten!(FFT,freqmin,freqmax,R.fs, convert(Int, R.fs * R.cc_len), pad=pad)
-    R.x .= irfft(FFT,convert(Int,R.cc_len * R.fs),1)
+    whiten!(FFT,freqmin,freqmax,R.fs, R.cc_len, pad=pad)
+    R.x .= irfft(FFT,R.cc_len,1)
     R.freqmin = freqmin
     R.freqmax = freqmax
     R.whitened = true
