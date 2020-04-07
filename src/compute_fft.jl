@@ -109,17 +109,17 @@ function clip!(A::AbstractArray{T,N}, factor::Real; f::Function=rootmeansquare,d
         high = f(A) .* factor
         clamp!(@view(A[:]),-high,high)
     else
+        high = f(@view(A[:,:]),dims=dims) .* factor
         for ii = 1:size(A,2)
-            high = f(@view(A[:,ii])) * factor
-            clamp!(@view(A[:,ii]),-high,high)
+            clamp!(@view(A[:,ii]),-high[ii],high[ii])
         end
     end
     return nothing
 end
 clip(A::AbstractArray, factor::Real; f::Function=rms, dims=1) = (U = deepcopy(A);
      clip!(U,factor,f=f,dims=dims);return U)
-clip!(R::RawData,factor::Real;f::Function=rms,dims=1) = clip!(R.x,factor,f=f,dims=dims)
-clip(R::RawData,factor::Real;f::Function=rms,dims=1) = (U = deepcopy(R);
+clip!(R::RawData,factor::Real;f::Function=rootmeansquare,dims=1) = clip!(R.x,factor,f=f,dims=dims)
+clip(R::RawData,factor::Real;f::Function=rootmeansquare,dims=1) = (U = deepcopy(R);
      clip!(U.x,factor,f=f,dims=dims); return U)
 clamp!(R::RawData,val::Real) = clamp!(R.x,-abs(val),abs(val))
 clamp!(R::RawData,lo::Real,hi::Real) = clamp!(R.x,lo,hi)
@@ -187,6 +187,6 @@ function nonzero(A::AbstractArray)
     return ind
 end
 
-function rootmeansquare(A::AbstractArray;dims=1)
+function rootmeansquare(A::AbstractArray;dims::Int=1)
     return sqrt.(sum(A.^2,dims=dims))
 end
