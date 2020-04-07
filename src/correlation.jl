@@ -14,10 +14,10 @@ Demean, detrend, taper and filter time series.
 - `freqmax::Float64`: Pass band high corner frequency in Hz.
 """
 function clean_up!(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
-                   corners::Int=4)
+                   corners::Int=4,zerophase::Bool=true)
     detrend!(A)
     taper!(A,fs)
-    bandpass!(A,freqmin,freqmax,fs,corners=corners)
+    bandpass!(A,freqmin,freqmax,fs,corners=corners,zerophase=zerophase)
     return nothing
 end
 clean_up(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
