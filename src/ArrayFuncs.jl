@@ -5,86 +5,37 @@ export hilbert
 # Signal processing functions for arrays (rather than SeisData or SeisChannel)
 
 """
-    detrend!(X::AbstractArray{<:AbstractFloat,1})
+    detrend!(X::AbstractArray{<:AbstractFloat})
 
 Remove linear trend from array `X` using least-squares regression.
 """
-function detrend!(X::AbstractArray{<:AbstractFloat,1})
+function detrend!(X::AbstractArray{<:AbstractFloat})
     T = eltype(X)
-    N = length(X)
-    A = similar(X,T,N,2)
-    A[:,2] .= T(1)
-    A[:,1] .= range(T(1/N),T(1),length=N)
-    factor = prefactor(A)
-    coeff = factor * X
-    X[:] .-= A *coeff
-    return nothing
-end
-detrend(A::AbstractArray{<:AbstractFloat,1}) = (U = deepcopy(A);
-        detrend!(U);return U)
-
-"""
-    detrend!(X::AbstractArray{<:AbstractFloat,2})
-
-Remove linear trend from columns of `X` using least-squares regression.
-"""
-function detrend!(X::AbstractArray{<:AbstractFloat,2})
-    T = eltype(X)
-    Nrows, Ncols = size(X)
+    N = size(X,1)
 
     # create linear trend matrix
-    A = similar(X,T,Nrows,2)
+    A = similar(X,T,N,2)
     A[:,2] .= T(1)
-    A[:,1] .= range(T(1/Nrows),T(1),length=Nrows)
-    factor = prefactor(A)
+    A[:,1] .= range(T(0),T(1),length=N)
+    # create linear trend matrix
+    R = transpose(A) * A
 
-    # solve least-squares
-    for ii = 1:Ncols
-        coeff = factor * X[:,ii]
-        X[:,ii] .-=  A *coeff
-    end
+    # do the matrix inverse for 2x2 matrix
+    # this is really slow on GPU
+    Rinv = inv(Array(R)) |> typeof(R)
+    factor = Rinv * transpose(A)
+
+    # remove trend
+    X .-= A * (factor * X)
     return nothing
 end
-detrend(A::AbstractArray{<:AbstractFloat,2}) = (U = deepcopy(A);
+detrend(A::AbstractArray{<:AbstractFloat}) = (U = deepcopy(A);
         detrend!(U);return U)
 detrend!(R::RawData) = detrend!(R.x)
 detrend(R::RawData) = (U = deepcopy(R); detrend!(U.x); return U)
 detrend!(C::CorrData) = detrend!(C.corr)
 detrend(C::CorrData) = (U = deepcopy(C); detrend!(U.corr); return U)
 
-
-"""
-  prefactor(A)
-
-Computes prefactor (A^T * A) ^ -1 * X^T when solving Y = AX using linear-least squares.
-"""
-function prefactor(A::AbstractArray{<:AbstractFloat})
-    T = eltype(A)
-    N = size(A,1)
-
-    # create linear trend matrix
-    R = transpose(A) * A
-
-    # do the matrix inverse for 2x2 matrix
-    Rinv = inv2x2(R)
-
-    # return
-    return Rinv * transpose(A)
-end
-
-
-"""
-    inv2x2(X::AbstractArray{<:AbstractFloat,2})
-
-Inverse of 2x2 matrix `X`.
-"""
-function inv2x2(X::AbstractArray{<:AbstractFloat})
-    Xinv = -X
-    Xinv[1,1] = X[2,2]
-    Xinv[2,2] = X[1,1]
-    Xinv ./=  (X[1,1] .* X[2,2] .- X[1,2] .* X[2,1])
-    return Xinv
-end
 
 """
     demean!(A::AbstractArray{<:AbstractFloat})
