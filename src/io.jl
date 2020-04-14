@@ -14,7 +14,7 @@ function save_fft(F::FFTData, FFTOUT::String)
 
     # create JLD2 file and save FFT
     net,sta,loc,chan = split(F.name,'.')
-    filename = joinpath(FFTOUT,"$net.$sta.$chan.jld2")
+    filename = joinpath(FFTOUT,"$(F.name).jld2")
     file = jldopen(filename, "a+")
     if !(chan in keys(file))
         group = JLD2.Group(file, chan)
@@ -82,8 +82,7 @@ function save_corr(C::CorrData, CORROUT::String)
     end
 
     # create JLD2 file and save correlation
-    net1,sta1,loc1,chan1,net2,sta2,loc1,chan2 = split(C.name,'.')
-    filename = joinpath(CORROUT,"$net1.$sta1.$chan1.$net2.$sta2.$chan2.jld2")
+    filename = joinpath(CORROUT,"$(C.name).jld2")
     file = jldopen(filename, "a+")
     if !(C.comp in keys(file))
         group = JLD2.Group(file, C.comp)
