@@ -1,6 +1,6 @@
-export process_raw, process_raw!, process_fft, compute_fft, rfft
+export process_raw, process_raw!, process_fft, rfft
 export onebit!, onebit, remove_response!, remove_response, amplitude!, amplitude
-export clip, clip!, clamp, clamp!, mute!, mute
+export clip, clip!, clamp, clamp!, mute!, mute, phase
 import Base: clamp, clamp!
 import FFTW: rfft
 """
@@ -55,22 +55,50 @@ function rfft(R::RawData,dims::Int=1)
                  R.misc, R.notes, R.t, FFT)
 end
 
+"""
+    phase(A::AbstractArray)
+
+Extract instantaneous phase from signal A.
+
+For time series `A`, its analytic representation ``S = A + H(A)``, where
+``H(A)`` is the Hilbert transform of `A`. The instantaneous phase ``e^{iθ}``
+of `A` is given by dividing ``S`` by its modulus: ``e^{iθ} = \\frac{S}{|S|}``
+For more information on Phase Cross-Correlation, see:
+[Ventosa et al., 2019](https://pubs.geoscienceworld.org/ssa/srl/article-standard/570273/towards-the-processing-of-large-data-volumes-with).
+"""
+function phase(A::AbstractArray)
+	Nrows = size(A,1)
+    T = eltype(A)
+    f = similar(A,fftouttype(T))
+    fill!(f,fftouttype(T)(0))
+    f[1:Nrows÷2 + 1 + isodd(Nrows),:] .= rfft(A,1)
+    f[2:Nrows÷2  + isodd(Nrows),:] .*= T(2.)
+	f[1:Nrows÷2 + 1 + isodd(Nrows),:] ./= abs.(f[1:Nrows÷2 + 1 + isodd(Nrows),:])
+	ind = findall(isweird.(f[1:Nrows÷2 + isodd(Nrows),:]))
+	if length(ind) > 0
+		fill!(f[ind],fftouttype(T)(0))
+	end
+    return f
+end
 
 """
 
-  compute_fft(R)
+ phase(R)
 
-Computes windowed rfft of ambient noise data. Returns FFTData structure.
+Computes windowed analytic signal of ambient noise data. Returns FFTData structure.
+
 
 # Arguments
 - `R::RawData`: RawData structure
 """
-function compute_fft(R::RawData)
-    FFT = rfft(R.x,1)
+function phase(R::RawData)
+    FFT = phase(R.x)
     return FFTData(R.name, R.id,R.loc, R.fs, R.gain, R.freqmin, R.freqmax,
-                   R.cc_len, R.cc_step, R.whitened, R.time_norm, R.resp,
-                   R.misc, R.notes, R.t, FFT)
+                 R.cc_len, R.cc_step, R.whitened, R.time_norm, R.resp,
+                 R.misc, R.notes, R.t, FFT)
 end
+
+isweird(x) =  isnan(x) .| isinf(x) .| isnothing(x)
 
 """
 

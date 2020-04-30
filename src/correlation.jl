@@ -1,5 +1,6 @@
 # cross-correlation module
-export clean_up!, clean_up, correlate, compute_cc, generate_pairs, map_cc, corrmap
+export clean_up!, clean_up, correlate, generate_pairs, map_cc, corrmap
+export phasecorrelate
 export coherence!, coherence, deconvolution!, deconvolution, whiten, whiten!
 
 """
@@ -14,26 +15,26 @@ Demean, detrend, taper and filter time series.
 - `freqmax::Float64`: Pass band high corner frequency in Hz.
 """
 function clean_up!(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
-                   corners::Int=4,zerophase::Bool=true)
+                   corners::Int=4,zerophase::Bool=true,max_length::Float64=20.)
     detrend!(A)
-    taper!(A,fs)
+    taper!(A,fs,max_length=max_length)
     bandpass!(A,freqmin,freqmax,fs,corners=corners,zerophase=zerophase)
     return nothing
 end
 clean_up(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
-         corners::Int=4, zerophase::Bool=true) =
-                 (U = deepcopy(A); clean_up!(U,freqmin,freqmax, fs,
-                  corners=corners, zerophase=zerophase); return U)
+         corners::Int=4, zerophase::Bool=true,max_length::Float64=20.) =
+         (U = deepcopy(A); clean_up!(U,freqmin,freqmax, fs,
+         corners=corners, zerophase=zerophase, max_length=max_length); return U)
 
 clean_up!(C::CorrData,freqmin::Float64,freqmax::Float64; corners::Int=4,
-          zerophase::Bool=true) = (clean_up!(C.corr,freqmin,freqmax,C.fs,
-          corners=corners,zerophase=zerophase);C.freqmin=freqmin;
-          C.freqmax=freqmax;return nothing)
+          zerophase::Bool=true,max_length::Float64=20.) = (clean_up!(C.corr,
+          freqmin,freqmax,C.fs,corners=corners,zerophase=zerophase,
+          max_length=max_length);C.freqmin=freqmin;C.freqmax=freqmax;return nothing)
 
 clean_up!(R::RawData,freqmin::Float64,freqmax::Float64; corners::Int=4,
-          zerophase::Bool=true) = (clean_up!(R.x,freqmin,freqmax,R.fs,
-          corners=corners,zerophase=true);R.freqmin=freqmin;
-          R.freqmax=freqmax;return nothing)
+          zerophase::Bool=true,max_length::Float64=20.) = (clean_up!(R.x,freqmin,
+          freqmax,R.fs,corners=corners,zerophase=true, max_length=max_length);
+          R.freqmin=freqmin;R.freqmax=freqmax;return nothing)
 
 """
     correlate(FFT1, FFT2, N, maxlag, corr_type='cross-correlation')
@@ -71,45 +72,74 @@ function correlate(FFT1::AbstractArray{Complex{T}}, FFT2::AbstractArray{Complex{
 end
 
 """
-    compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;
-               corr_type::String="cross-correlation")
+    phasecorrelate(FFT1, FFT2, maxlag)
+
+Phase Cross-correlate (PCC) ambient noise data in the frequency domain.
+
+# Arguments
+- `FFT1::AbstractArray`: Complex Array of fourier transform of ambient noise data.
+- `FFT2::AbstractArray`: Complex Array of fourier transform of ambient noise data.
+- `N::Int`: Number of input data points in time domain, equal to `cc_len`.
+- `maxlag::Int`: Number of data points in cross-correlation to save,
+                 e.g. `maxlag = 2000` will save lag times = -2000/fs:2000/fs s.
+- `corr_type::String`: Type of correlation: `cross-correlation`, `coherence` or
+                       `deconv`.
+"""
+function phasecorrelate(FFT1::AbstractArray{Complex{T}}, FFT2::AbstractArray{Complex{T}},
+                      N::Int, maxlag::Int) where T <: AbstractFloat
+    # take inverse fft
+    corrT = real.(ifft(conj.(FFT1) .* FFT2,1))
+
+    # return corr[-maxlag:maxlag]
+    t = vcat(0:Int(N  / 2)-1, -Int(N  / 2):-1)
+    ind = findall(abs.(t) .<= maxlag)
+    newind = fftshift(ind,1)
+    return corrT[newind,:]
+end
+
+"""
+    correlate(FFT1, FFT2, maxlag,corr_type="CC")
 
 Cross-correlate ambient noise data in the frequency domain.
 
-Cross-correlation can be done using one of three options:
+Cross-correlation can be done using one of two options:
 
-- Cross-correlation: ``C_{AB}(ω) = u_A(ω) u^∗_B(ω)``
-- Coherence: ``C_{AB}(ω) = \frac{u_A(ω) u^∗_B(ω)}{∣ u_A(ω) ∣  ∣ u_B(ω) ∣}``
-- Deconvolution: ``C_{AB}(ω) = \frac{u_A(ω) u^∗_B(ω)}{∣ u_B(ω) ∣^2}``
+- CC: Cross-correlation, i.e. ``C_{AB}(ω) = u_A(ω) u^∗_B(ω)``
+- PCC: Phase cross-correlation, see [Ventosa et al., 2019]
 
 # Arguments
 - `FFT1::FFTData`: FFTData object of fft'd ambient noise data.
 - `FFT2::FFTData`: FFTData object of fft'd ambient noise data.
 - `maxlag::Float64`: Maximum lag time (in seconds) in cross-correlation to save,
                      e.g. `maxlag = 20.` will save lag times = -20.:20. s.
-- `corr_type::String`: Type of correlation: `cross-correlation`, `coherence` or
-                       `deconv`.
+- `corr_type::String`: Type of correlation: `CC` or `PCC`.
 """
-function compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;
-                    corr_type::String="cross-correlation")
+function correlate(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;corr_type::String="CC")
 
     comp = FFT1.name[end] * FFT2.name[end]
     # get intersect of dates; return nothing if no intersect
     inter = intersect(FFT1.t,FFT2.t)
     if length(inter) == 0
-        return nothing
+        throw(ArgumentError("No common windows for $(FFT1.name)-$(FFT2.name) $(FFT1.id)"))
     end
 
     ind1 = findall(x -> x ∈ inter, FFT1.t)
     ind2 = findall(x -> x ∈ inter, FFT2.t)
-    corr = correlate(@views(FFT1.fft[:,ind1]), @views(FFT2.fft[:,ind2]), FFT1.cc_len,
-                     convert(Int,round(maxlag * FFT1.fs)))
+    if uppercase(corr_type) == "CC"
+        corr = correlate(@views(FFT1.fft[:,ind1]), @views(FFT2.fft[:,ind2]),
+                     FFT1.cc_len,convert(Int,round(maxlag * FFT1.fs)))
+    elseif uppercase(corr_type) == "PCC"
+        corr = phasecorrelate(@views(FFT1.fft[:,ind1]), @views(FFT2.fft[:,ind2]),
+                     FFT1.cc_len,convert(Int,round(maxlag * FFT1.fs)))
+    else
+        throw(ArgumentError("Unrecognized cross-correlation type $corr_type. Options are CC and PCC."))
+    end
+
     rotated = false
 
-    return CorrData(FFT1, FFT2, comp, rotated, corr_type,
-                    maxlag, inter, corr)
-
+    return CorrData(FFT1, FFT2, comp, rotated, corr_type,maxlag, inter, corr)
 end
+
 
 """
     corrmap(A,maxlag,smoothing_half_win,corr_type,OUTDIR)

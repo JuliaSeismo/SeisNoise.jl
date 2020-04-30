@@ -37,4 +37,7 @@ include("correlation.jl")
 include("rotation.jl")
 include("Plotting/plotting.jl")
 
+# out with the old
+include("deprecated.jl")
+
 end # module

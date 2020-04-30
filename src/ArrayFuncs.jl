@@ -1,7 +1,5 @@
 import SeisIO: demean, demean!, taper, taper!,detrend, detrend!
-import DSP: hilbert
-export detrend, detrend!, taper, taper!, demean, demean!, phase, phase!, hanningwindow
-export hilbert
+export detrend, detrend!, taper, taper!, demean, demean!, hanningwindow
 # Signal processing functions for arrays (rather than SeisData or SeisChannel)
 
 """
@@ -109,39 +107,4 @@ function hanningwindow(A::AbstractArray, n::Int)
    win .= T(pi) .* range(T(0.),stop=T(n),length=n)
    win .= sin.(win).^2
    return win
-end
-
-"""
-    phase!(A::AbstractArray)
-
-Extract instantaneous phase from signal A.
-
-For time series `A`, its analytic representation ``S = A + H(A)``, where
-``H(A)`` is the Hilbert transform of `A`. The instantaneous phase ``e^{iθ}``
-of `A` is given by dividing ``S`` by its modulus: ``e^{iθ} = \\frac{S}{|S|}``
-For more information on Phase Cross-Correlation, see:
-[Ventosa et al., 2019](https://pubs.geoscienceworld.org/ssa/srl/article-standard/570273/towards-the-processing-of-large-data-volumes-with).
-"""
-function phase!(A::AbstractArray)
-    A .= angle.(hilbert(A))
-    return nothing
-end
-phase(A::AbstractArray) = (U = deepcopy(A);phase!(U);return U)
-phase!(R::RawData) = phase!(R.x)
-phase(R::RawData) = (U = deepcopy(R);phase!(U.x);return U)
-
-"""
-hilbert(A)
-
-Computes the analytic representation of x, x_a = x + j hilbert{x}.
-
-Only works for arrays on the GPU!
-"""
-function hilbert(A::AbstractGPUArray{Float32})
-    Nrows = size(A,1)
-    T = eltype(A)
-    f = fft(A,1)
-    f[2:Nrows÷2 + isodd(Nrows),:] .*= T(2.)
-    f[Nrows÷2+1 + isodd(Nrows):end,:] .= complex(T(0.))
-    return ifft(f,1)
 end
