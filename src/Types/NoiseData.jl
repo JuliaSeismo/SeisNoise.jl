@@ -28,8 +28,8 @@ A structure for raw ambient noise data.
 | :gain       | Scalar gain; divide data by the gain to convert to units  |
 | :freqmin    | Minimum frequency from instrument response.  |
 | :freqmax    | Maximum frequency from instrument response. |
-| :cc_len     | Raw data window length in number of points. |
-| :cc_step    | Spacing between windows in number of points. |
+| :cc_len     | Raw data window length in seconds. |
+| :cc_step    | Spacing between windows in seconds. |
 | :time_norm  | Apply one-bit whitening with "one_bit". |
 | :resp       | SeisIO InstrumentResponse object |
 | :misc       | Dictionary for non-critical information. |
@@ -46,8 +46,8 @@ mutable struct RawData <: NoiseData
    gain::Float64                               # gain
    freqmin::Float64                            # minumum frequency [Hz]
    freqmax::Float64                            # maximum frequency [Hz]
-   cc_len::Int                                 # window_length points
-   cc_step::Int                                # step between windows in points
+   cc_len::Float64                             # window_length [S]
+   cc_step::Float64                            # step between windows [S]
    whitened::Bool                              # whitening applied
    time_norm::String                           # time normaliation
    resp::InstrumentResponse                    # response poles/zeros
@@ -64,8 +64,8 @@ mutable struct RawData <: NoiseData
      gain     ::Float64,
      freqmin  ::Float64,
      freqmax  ::Float64,
-     cc_len   ::Int,
-     cc_step  ::Int,
+     cc_len   ::Float64,
+     cc_step  ::Float64,
      whitened ::Bool,
      time_norm::String,
      resp     ::InstrumentResponse,
@@ -79,13 +79,17 @@ mutable struct RawData <: NoiseData
              whitened, time_norm, resp, misc, notes, t, x)
    end
 
-   function RawData(S::SeisData,cc_len::Int,cc_step::Int)
+   function RawData(S::SeisData,cc_len::Real,cc_step::Real)
      merge!(S)
      ungap!(S)
 
+     # convert input to float 64
+     cc_len = Float64(cc_len)
+     cc_step = Float64(cc_step)
+
      # check if waveform length is < cc_len
-     if length(S[1].x) < cc_len
-         throw(DomainError(cc_len, "cc_len must be less than length(S[1].x)."))
+     if length(S.x[1]) < cc_len * S.fs[1]
+         throw(DomainError(cc_len, "cc_len must be less than length of data."))
      end
 
      # phase shift data onto exaclty the sampling rate
@@ -93,18 +97,22 @@ mutable struct RawData <: NoiseData
      # subset by time
      startslice, endslice = nearest_start_end(S[1],cc_len, cc_step)
      # get starting and ending indices
-     startind, endind = slide_ind(startslice, endslice, S[1].fs, S[1].t)
-     x, starts = slide(@view(S[1].x[startind:endind]), cc_len, cc_step, S[1].fs, startslice,endslice)
-     return new(S[1].id,Dates.format(u2d(S[1].t[1,2]*1e-6),"Y-mm-dd"),S[1].loc,
-                S[1].fs,S[1].gain,1/cc_len,S[1].fs/2,cc_len,cc_step,false,
-                "",S[1].resp,S[1].misc,S[1].notes,starts,x)
+     startind, endind = slide_ind(startslice, endslice, S.fs[1], S.t[1])
+     x, starts = slide(@view(S.x[1][startind:endind]), cc_len, cc_step, S.fs[1], startslice,endslice)
+     return new(S[1].id,Dates.format(u2d(S.t[1][1,2]*1e-6),"Y-mm-dd"),S.loc[1],
+                S.fs[1],S.gain[1],S.fs[1]/cc_len,S[1].fs/2,cc_len,cc_step,false,
+                "",S[1].resp,S.misc[1],S.notes[1],starts,x)
    end
 
-   function RawData(C::SeisChannel,cc_len::Int,cc_step::Int)
+   function RawData(C::SeisChannel,cc_len::Real,cc_step::Real)
      # check if waveform length is < cc_len
-     if length(C.x) < cc_len
-         throw(DomainError(cc_len, "cc_len must be less than length(C.x)."))
+     if length(C.x) < cc_len * C.fs
+         throw(DomainError(cc_len, "cc_len must be less than length of data."))
      end
+
+     # convert input to float 64
+     cc_len = Float64(cc_len)
+     cc_step = Float64(cc_step)
 
      # phase shift data onto exaclty the sampling rate
      phase_shift!(C)
@@ -116,7 +124,7 @@ mutable struct RawData <: NoiseData
      startind, endind = slide_ind(startslice, endslice, C.fs,C.t)
      x, starts = slide(@view(C.x[startind:endind]), cc_len, cc_step, C.fs, startslice,endslice)
      return new(C.id,Dates.format(u2d(C.t[1,2]*1e-6),"Y-mm-dd"),C.loc,C.fs,
-                C.gain,1/cc_len,C.fs/2,cc_len,cc_step,false,"", C.resp,
+                C.gain,C.fs/cc_len,C.fs/2,cc_len,cc_step,false,"", C.resp,
                 C.misc,C.notes,starts,x)
    end
 end
@@ -129,8 +137,8 @@ RawData(;
          gain     ::Float64                   = one(Float64),
          freqmin  ::Float64                   = zero(Float64),
          freqmax  ::Float64                   = zero(Float64),
-         cc_len   ::Int                       = zero(Int),
-         cc_step  ::Int                       = zero(Int),
+         cc_len   ::Float64                   = zero(Float64),
+         cc_step  ::Float64                   = zero(Float64),
          whitened ::Bool                      = false,
          time_norm::String                    = "",
          resp     ::InstrumentResponse        = PZResp(),
@@ -175,8 +183,8 @@ mutable struct FFTData <: NoiseData
    gain::Float64                               # gain
    freqmin::Float64                            # minumum frequency [Hz]
    freqmax::Float64                            # maximum frequency [Hz]
-   cc_len::Int                                 # window_length in points
-   cc_step::Int                                # step between windows in points
+   cc_len::Float64                             # window_length [S]
+   cc_step::Float64                            # step between windows [S]
    whitened::Bool                              # whitening applied
    time_norm::String                           # time normaliation
    resp::InstrumentResponse                    # response poles/zeros
@@ -193,8 +201,8 @@ function FFTData(
    gain     ::Float64,
    freqmin  ::Float64,
    freqmax  ::Float64,
-   cc_len   ::Int,
-   cc_step  ::Int,
+   cc_len   ::Float64,
+   cc_step  ::Float64,
    whitened ::Bool,
    time_norm::String,
    resp     ::InstrumentResponse,
@@ -217,8 +225,8 @@ FFTData(;
        gain     ::Float64                   = one(Float64),
        freqmin  ::Float64                   = zero(Float64),
        freqmax  ::Float64                   = zero(Float64),
-       cc_len   ::Int                       = zero(Int),
-       cc_step  ::Int                       = zero(Int),
+       cc_len   ::Float64                   = zero(Float64),
+       cc_step  ::Float64                   = zero(Float64),
        whitened ::Bool                      = false,
        time_norm::String                    = "",
        resp     ::InstrumentResponse        = PZResp(),
@@ -279,8 +287,8 @@ mutable struct CorrData <: NoiseData
   gain::Float64                               # gain
   freqmin::Float64                            # minumum frequency [Hz]
   freqmax::Float64                            # maximum frequency [Hz]
-  cc_len::Int                                 # window_length in points
-  cc_step::Int                                # step between windows in points
+  cc_len::Float64                             # window_length [S]
+  cc_step::Float64                            # step between windows [S]
   whitened::Bool                              # whitening applied
   time_norm::String                           # time normaliation
   resp::InstrumentResponse                    # response poles/zeros
@@ -304,8 +312,8 @@ mutable struct CorrData <: NoiseData
       gain     ::Float64,
       freqmin  ::Float64,
       freqmax  ::Float64,
-      cc_len   ::Int,
-      cc_step  ::Int,
+      cc_len   ::Float64,
+      cc_step  ::Float64,
       whitened ::Bool,
       time_norm::String,
       resp     ::InstrumentResponse,
@@ -336,8 +344,8 @@ CorrData(;
           gain     ::Float64                   = one(Float64),
           freqmin  ::Float64                   = zero(Float64),
           freqmax  ::Float64                   = zero(Float64),
-          cc_len   ::Int                       = zero(Int),
-          cc_step  ::Int                       = zero(Int),
+          cc_len   ::Float64                   = zero(Float64),
+          cc_step  ::Float64                   = zero(Float64),
           whitened ::Bool                      = false,
           time_norm::String                    = "",
           resp     ::InstrumentResponse        = PZResp(),

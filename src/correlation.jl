@@ -53,7 +53,7 @@ cross-correlating.
 # Arguments
 - `FFT1::AbstractArray`: Complex Array of fourier transform of ambient noise data.
 - `FFT2::AbstractArray`: Complex Array of fourier transform of ambient noise data.
-- `N::Int`: Number of input data points in time domain, equal to `cc_len`.
+- `N::Int`: Number of input data points in time domain, equal to `cc_len` * `fs`.
 - `maxlag::Int`: Number of data points in cross-correlation to save,
                  e.g. `maxlag = 2000` will save lag times = -2000/fs:2000/fs s.
 - `corr_type::String`: Type of correlation: `cross-correlation`, `coherence` or
@@ -79,7 +79,7 @@ Phase Cross-correlate (PCC) ambient noise data in the frequency domain.
 # Arguments
 - `FFT1::AbstractArray`: Complex Array of fourier transform of ambient noise data.
 - `FFT2::AbstractArray`: Complex Array of fourier transform of ambient noise data.
-- `N::Int`: Number of input data points in time domain, equal to `cc_len`.
+- `N::Int`: Number of input data points in time domain, equal to `cc_len` * `fs`.
 - `maxlag::Int`: Number of data points in cross-correlation to save,
                  e.g. `maxlag = 2000` will save lag times = -2000/fs:2000/fs s.
 - `corr_type::String`: Type of correlation: `cross-correlation`, `coherence` or
@@ -125,12 +125,13 @@ function correlate(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;corr_type::Stri
 
     ind1 = findall(x -> x ∈ inter, FFT1.t)
     ind2 = findall(x -> x ∈ inter, FFT2.t)
+    N = convert(Int,round(FFT1.cc_len * FFT1.fs)) # number of data points
     if uppercase(corr_type) == "CC"
         corr = correlate(@views(FFT1.fft[:,ind1]), @views(FFT2.fft[:,ind2]),
-                     FFT1.cc_len,convert(Int,round(maxlag * FFT1.fs)))
+                     N,convert(Int,round(maxlag * FFT1.fs)))
     elseif uppercase(corr_type) == "PCC"
         corr = phasecorrelate(@views(FFT1.fft[:,ind1]), @views(FFT2.fft[:,ind2]),
-                     FFT1.cc_len,convert(Int,round(maxlag * FFT1.fs)))
+                     N,convert(Int,round(maxlag * FFT1.fs)))
     else
         throw(ArgumentError("Unrecognized cross-correlation type $corr_type. Options are CC and PCC."))
     end
@@ -380,9 +381,10 @@ function whiten!(F::FFTData, freqmin::Float64, freqmax::Float64;pad::Int=50)
         in FFTData ($(F.freqmax) Hz). Whitening in ($freqmin,$(F.freqmax) Hz) band."
     end
 
+    N = convert(Int, F.fs * F.cc_len) # number of data points
     freqmin = max(freqmin,F.freqmin) # check for freqmin = 0
-    freqmax = min(freqmax,max(F.freqmax,F.fs / F.cc_len)) # check for freqmax = 0
-    whiten!(F.fft, freqmin, freqmax, F.fs, F.cc_len, pad=pad)
+    freqmax = min(freqmax,max(F.freqmax,1 / F.cc_len)) # check for freqmax = 0
+    whiten!(F.fft, freqmin, freqmax, F.fs, N, pad=pad)
     F.whitened = true
     F.freqmin = freqmin
     F.freqmax = freqmax
@@ -403,11 +405,12 @@ function whiten!(R::RawData,freqmin::Float64, freqmax::Float64; pad::Int=50)
         in FFTData ($(R.freqmax) Hz). Whitening in ($freqmin,$(R.freqmax) Hz) band."
     end
 
+    N = convert(Int, R.fs * R.cc_len) # number of data points
     freqmin = max(freqmin,R.freqmin) # check for freqmin = 0
-    freqmax = min(freqmax,max(R.freqmax,R.fs / R.cc_len)) # check for freqmax = 0
+    freqmax = min(freqmax,max(R.freqmax,1 / R.cc_len)) # check for freqmax = 0
     FFT = rfft(R.x,1)
-    whiten!(FFT,freqmin,freqmax,R.fs, R.cc_len, pad=pad)
-    R.x .= irfft(FFT,R.cc_len,1)
+    whiten!(FFT,freqmin,freqmax,R.fs, N, pad=pad)
+    R.x .= irfft(FFT,N,1)
     R.freqmin = freqmin
     R.freqmax = freqmax
     R.whitened = true
