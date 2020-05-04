@@ -55,7 +55,7 @@ function slide(A::AbstractArray, cc_len::Float64, cc_step::Float64, fs::Abstract
                starttime::Float64,endtime::Float64)
     N = size(A,1)
     window_samples = Int(cc_len * fs)
-    starts = Array(range(starttime,stop=endtime,step=cc_step/fs))
+    starts = Array(range(starttime,stop=endtime,step=cc_step))
     ends = starts .+ cc_len .- 1. / fs
     ind = findlast(x -> x <= endtime,ends)
     starts = starts[1:ind]

@@ -81,6 +81,15 @@ mutable struct RawData <: NoiseData
 
    function RawData(S::SeisData,cc_len::Real,cc_step::Real)
      merge!(S)
+     # check cc_len & fs compatibility
+     if mod(cc_len * S.fs[1], 1.) !== 0.
+          throw(DomainError(cc_len, "cc_len * fs must be an integer for slicing."))
+     end
+
+     # check cc_step and sampling rate
+     if mod(cc_step * S.fs[1], 1.) !== 0.
+          throw(DomainError(cc_step, "cc_step * fs must be an integer for slicing."))
+     end
      ungap!(S)
 
      # convert input to float 64
@@ -100,32 +109,43 @@ mutable struct RawData <: NoiseData
      startind, endind = slide_ind(startslice, endslice, S.fs[1], S.t[1])
      x, starts = slide(@view(S.x[1][startind:endind]), cc_len, cc_step, S.fs[1], startslice,endslice)
      return new(S[1].id,Dates.format(u2d(S.t[1][1,2]*1e-6),"Y-mm-dd"),S.loc[1],
-                S.fs[1],S.gain[1],S.fs[1]/cc_len,S[1].fs/2,cc_len,cc_step,false,
+                S.fs[1],S.gain[1],1. / cc_len,S[1].fs/2,cc_len,cc_step,false,
                 "",S[1].resp,S.misc[1],S.notes[1],starts,x)
    end
 
    function RawData(C::SeisChannel,cc_len::Real,cc_step::Real)
-     # check if waveform length is < cc_len
-     if length(C.x) < cc_len * C.fs
-         throw(DomainError(cc_len, "cc_len must be less than length of data."))
-     end
+    # check cc_len and sampling rate
+    if mod(cc_len * C.fs, 1.) !== 0.
+         throw(DomainError(cc_len, "cc_len * fs must be an integer for slicing."))
+    end
 
-     # convert input to float 64
-     cc_len = Float64(cc_len)
-     cc_step = Float64(cc_step)
+    # check cc_step and sampling rate
+    if mod(cc_step * C.fs, 1.) !== 0.
+         throw(DomainError(cc_step, "cc_step * fs must be an integer for slicing."))
+    end
 
-     # phase shift data onto exaclty the sampling rate
-     phase_shift!(C)
+    ungap!(C)
+    # check if waveform length is < cc_len
+    if length(C.x) < cc_len * C.fs
+        throw(DomainError(cc_len, "cc_len must be less than length of data."))
+    end
 
-     # subset by time
-     startslice, endslice = nearest_start_end(C,cc_len, cc_step)
+    # convert input to float 64
+    cc_len = Float64(cc_len)
+    cc_step = Float64(cc_step)
 
-     # get starting and ending indices
-     startind, endind = slide_ind(startslice, endslice, C.fs,C.t)
-     x, starts = slide(@view(C.x[startind:endind]), cc_len, cc_step, C.fs, startslice,endslice)
-     return new(C.id,Dates.format(u2d(C.t[1,2]*1e-6),"Y-mm-dd"),C.loc,C.fs,
-                C.gain,C.fs/cc_len,C.fs/2,cc_len,cc_step,false,"", C.resp,
-                C.misc,C.notes,starts,x)
+    # phase shift data onto exaclty the sampling rate
+    phase_shift!(C)
+
+    # subset by time
+    startslice, endslice = nearest_start_end(C,cc_len, cc_step)
+
+    # get starting and ending indices
+    startind, endind = slide_ind(startslice, endslice, C.fs,C.t)
+    x, starts = slide(@view(C.x[startind:endind]), cc_len, cc_step, C.fs, startslice,endslice)
+    return new(C.id,Dates.format(u2d(C.t[1,2]*1e-6),"Y-mm-dd"),C.loc,C.fs,
+               C.gain,1. / cc_len,C.fs/2,cc_len,cc_step,false,"", C.resp,
+               C.misc,C.notes,starts,x)
    end
 end
 
