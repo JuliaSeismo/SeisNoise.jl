@@ -12,12 +12,8 @@ if !CuArrays.functional()
 end
 
 # import types first
-# include("Types/RawData.jl")
-# include("Types/FFTData.jl")
-# include("Types/CorrData.jl")
 include("Types/NoiseData.jl")
 include("Types/show.jl")
-include("Types/InputParams.jl")
 
 # import pre and post processing tools
 include("distance.jl")
@@ -27,7 +23,6 @@ include("tools.jl")
 include("slicing.jl")
 include("filter.jl")
 include("downsample.jl")
-include("availability.jl")
 include("phase_shift.jl")
 include("stacking.jl")
 
