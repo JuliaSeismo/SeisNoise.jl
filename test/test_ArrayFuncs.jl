@@ -1,10 +1,11 @@
 # test array functions
-N = 10000 # data length 
+N = 10000 # data length
 
 # function to test similarity of vectors
 cosinedist(a,b) = sum(a .* b, dims=1) ./ sqrt.(sum(a .^ 2, dims=1)) ./ sqrt.(sum(b .^ 2,dims=1))
 
 ## 1D detrending
+@testset "Test detrending" begin
 A = rand(N)
 A .-= SeisNoise.mean(A) # remove mean
 x = collect(1:N)
@@ -78,8 +79,10 @@ Cnew = detrend(C)
 ## test failure on Integer data
 A = rand(-2^30 : 2^30, N)
 @test_throws MethodError detrend(A)
+end
 
 ## test demean
+@testset "Test demeaning" begin
 # 1D demean in-place
 A = Float64.(collect(-N:N))
 x = rand() * N
@@ -141,8 +144,10 @@ C.corr = A .+ x
 @test isa(detrend(C),CorrData)
 Cnew = demean(C)
 @test isapprox(A,Cnew.corr)
+end
 
 ## test taper
+@testset "Test tapering" begin
 # test 1D in-place
 A = ones(N)
 taperA = deepcopy(A)
@@ -283,3 +288,4 @@ win = hanningwindow(A,2 * Nlength)
 @test eltype(win) == eltype(A)     # test type stability
 @test length(win) == 2 * Nlength   # test vector length
 @test isapprox(win[1:Nlength],win[end:-1:Nlength+1]) # test taper mirroring
+end

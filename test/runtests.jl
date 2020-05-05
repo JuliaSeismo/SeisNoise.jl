@@ -3,7 +3,7 @@ using Test
 
 include("test_NoiseData.jl")
 include("test_ArrayFuncs.jl")
-# include("test_distance.jl")
+include("test_distance.jl")
 # include("test_io.jl")
 # include("test_ArrayFuncs.jl")
 # include("test_tools.jl")

@@ -31,108 +31,33 @@ S.t[2] = [1 round(Int, d2u(DateTime(Date(now())))*1e6); nx 0]
 S.x[2] = rand(Float32,nx)
 
 # test empty allocator
+@testset "Empty RawData" begin
 @test !isa(try RawData() catch ex ex end, Exception)    # Passes
 R = RawData()
 @test isempty(R)
+end
+
 
 # check SeisData to RawData with similar cc_len, cc_step
+@testset "SeisData to RawData cc_len == cc_step" begin
 cc_len = cc_step = 1800.
-Ch = S[1]
-R = RawData(Ch,cc_len,cc_step)
-@test !isa(try RawData(S,cc_len,cc_step) catch ex ex end, Exception)    # Passes
-@test length(R.t) == size(R.x,2)        # check number of windows
-@test size(R.x,1) == R.cc_len * R.fs    # check length of window
-@test R.freqmin == 1 / R.cc_len         # check freqmin
-@test R.freqmax == R.fs / 2             # check freqmax
-@test ndims(R.x) == 2                   # check dimensions
-@test size(R.x,2) == 48                 # check number of windows
-@test R == R                            # test equality
-@test u2d(R.t[1]) == u2d(Ch.t[1,2] * 1e-6) # test starttimes equal
-@test eltype(R.x) == eltype(Ch.x)
-
-# check uncommon cc_len & cc_step
-cc_len = π
-@test_throws DomainError RawData(Ch,cc_len,cc_step)
-cc_len = 1800.
-cc_step = π
-@test_throws DomainError RawData(Ch,cc_len,cc_step)
-
-# check huge cc_len
-cc_len = 86401.
-cc_step = 1800.
-@test_throws DomainError RawData(Ch,cc_len,cc_step)
-
-# check SeisChannel to RawData with different cc_len, cc_step
-cc_len = 1800.
-cc_step = 450.
-Ch = S[1]
-R = RawData(Ch,cc_len,cc_step)
-@test !isa(try RawData(Ch,cc_len,cc_step) catch ex ex end, Exception)    # Passes
-@test length(R.t) == size(R.x,2)        # check number of windows
-@test size(R.x,1) == R.cc_len * R.fs    # check length of window
-@test R.freqmin ==  1 / R.cc_len        # check freqmin
-@test R.freqmax == R.fs / 2             # check freqmax
-@test ndims(R.x) == 2                   # check dimensions
-@test size(R.x,2) == 189                # check number of windows
-@test R == R                            # test equality
-@test u2d(R.t[1]) == u2d(Ch.t[1,2] * 1e-6) # test starttimes equal
-@test eltype(R.x) == eltype(Ch.x)
-
-# check uncommon cc_len & cc_step
-cc_len = π
-@test_throws DomainError RawData(Ch,cc_len,cc_step)
-cc_len = 1800.
-cc_step = π
-@test_throws DomainError RawData(Ch,cc_len,cc_step)
-
-# check huge cc_len
-cc_len = 86401.
-cc_step = 1800.
-@test_throws DomainError RawData(Ch,cc_len,cc_step)
-
-# check SeisChannel to RawData with similar cc_len, cc_step
-cc_len = cc_step = 1800.
-R = RawData(Ch,cc_len,cc_step)
-@test !isa(try RawData(Ch,cc_len,cc_step) catch ex ex end, Exception)    # Passes
-@test length(R.t) == size(R.x,2)        # check number of windows
-@test size(R.x,1) == R.cc_len * R.fs    # check length of window
-@test R.freqmin == 1 / R.cc_len         # check freqmin
-@test R.freqmax == R.fs / 2             # check freqmax
-@test ndims(R.x) == 2                   # check dimensions
-@test size(R.x,2) == 48                 # check number of windows
-@test R == R                            # test equality
-@test u2d(R.t[1]) == u2d(S.t[1][1,2] * 1e-6) # test starttimes equal
-@test eltype(R.x) == eltype(S.x[1])
-
-# check uncommon cc_len & cc_step
-cc_len = π
-@test_throws DomainError RawData(S,cc_len,cc_step)
-cc_len = 1800.
-cc_step = π
-@test_throws DomainError RawData(S,cc_len,cc_step)
-
-# check huge cc_len
-cc_len = 86401.
-cc_step = 1800.
-@test_throws DomainError RawData(S,cc_len,cc_step)
-
-# check SeisData to RawData with different cc_len, cc_step
-cc_len = 1800.
-cc_step = 450.
 R = RawData(S,cc_len,cc_step)
 @test !isa(try RawData(S,cc_len,cc_step) catch ex ex end, Exception)    # Passes
 @test length(R.t) == size(R.x,2)        # check number of windows
 @test size(R.x,1) == R.cc_len * R.fs    # check length of window
-@test R.freqmin ==  1 / R.cc_len        # check freqmin
+@test R.freqmin == 1 / R.cc_len         # check freqmin
 @test R.freqmax == R.fs / 2             # check freqmax
-@test size(R.x,2) == 189                # check number of windows
 @test ndims(R.x) == 2                   # check dimensions
+@test size(R.x,2) == 48                 # check number of windows
 @test R == R                            # test equality
 @test u2d(R.t[1]) == u2d(S.t[1][1,2] * 1e-6) # test starttimes equal
 @test eltype(R.x) == eltype(S.x[1])
+end
 
 # check uncommon cc_len & cc_step
+@testset "SeisData odd cc_len/cc_step" begin
 cc_len = π
+cc_step = 1800.
 @test_throws DomainError RawData(S,cc_len,cc_step)
 cc_len = 1800.
 cc_step = π
@@ -142,9 +67,61 @@ cc_step = π
 cc_len = 86401.
 cc_step = 1800.
 @test_throws DomainError RawData(S,cc_len,cc_step)
+end
+
+# check SeisChannel to RawData with similar cc_len, cc_step
+@testset "SeisChannel to RawData cc_len == cc_step" begin
+cc_len = cc_step = 1800.
+Ch = S[1]
+R = RawData(Ch,cc_len,cc_step)
+@test !isa(try RawData(Ch,cc_len,cc_step) catch ex ex end, Exception)    # Passes
+@test length(R.t) == size(R.x,2)        # check number of windows
+@test size(R.x,1) == R.cc_len * R.fs    # check length of window
+@test R.freqmin == 1 / R.cc_len         # check freqmin
+@test R.freqmax == R.fs / 2             # check freqmax
+@test ndims(R.x) == 2                   # check dimensions
+@test size(R.x,2) == 48                 # check number of windows
+@test R == R                            # test equality
+@test u2d(R.t[1]) == u2d(Ch.t[1,2] * 1e-6) # test starttimes equal
+@test eltype(R.x) == eltype(Ch.x)
+end
+
+# check SeisChannel to RawData with different cc_len, cc_step
+@testset "SeisChannel to RawData cc_len != cc_step" begin
+cc_len = 1800.
+cc_step = 450.
+Ch = S[1]
+R = RawData(Ch,cc_len,cc_step)
+@test !isa(try RawData(Ch,cc_len,cc_step) catch ex ex end, Exception)    # Passes
+@test length(R.t) == size(R.x,2)        # check number of windows
+@test size(R.x,1) == R.cc_len * R.fs    # check length of window
+@test R.freqmin ==  1 / R.cc_len        # check freqmin
+@test R.freqmax == R.fs / 2             # check freqmax
+@test ndims(R.x) == 2                   # check dimensions
+@test size(R.x,2) == 189                # check number of windows
+@test R == R                            # test equality
+@test u2d(R.t[1]) == u2d(Ch.t[1,2] * 1e-6) # test starttimes equal
+@test eltype(R.x) == eltype(Ch.x)
+end
+
+# check uncommon cc_len & cc_step
+@testset "SeisChannel odd cc_len/cc_step" begin
+cc_len = π
+cc_step = 1800.
+@test_throws DomainError RawData(S,cc_len,cc_step)
+cc_len = 1800.
+cc_step = π
+@test_throws DomainError RawData(S,cc_len,cc_step)
+
+# check huge cc_len
+cc_len = 86401.
+cc_step = 1800.
+@test_throws DomainError RawData(S,cc_len,cc_step)
+end
 
 ## test when starttime is not aligned with cc_len
 # this SeisData starts at 00:16:40
+@testset "SeisChannel to RawData starttime offset" begin
 S.t[1] = [1 round(Int, (d2u(DateTime(Date(now()))) + 1e3) *1e6 ); nx 0]
 cc_len = cc_step = 1800.
 Ch = S[1]
@@ -156,14 +133,24 @@ R = RawData(S,cc_len,cc_step)
 @test R.freqmax == R.fs / 2             # check freqmax
 @test ndims(R.x) == 2                   # check dimensions
 @test size(R.x,2) == 47                 # check number of windows
-@test eltype(R.x) == eltype(S.x[1])
+@test eltype(R.x) == eltype(Ch.x)
+end
 
 # test CPU/ GPU
+@testset "RawData CPU/GPU" begin
+cc_len = cc_step = 1800.
+Ch = S[1]
+R = RawData(S,cc_len,cc_step)
 @test R == cpu(R)
 @test cpu(R) == cpu(R)
 @test R == cpu(gpu(R))
+end
 
 # test in
+@testset "RawData appends" begin
+cc_len = cc_step = 1800.
+Ch = S[1]
+R = RawData(S,cc_len,cc_step)
 @test in(R.id,R)
 
 # test addition
@@ -171,10 +158,12 @@ R = RawData(S[1],cc_len,cc_step)
 R1 = RawData()
 @test append!(R1,R) == R
 @test append!(R1,R) == R + R
+end
 
 ## test FFTData
 
 # test empty allocator
+@testset "FFTData creation" begin
 @test !isa(try FFTData() catch ex ex end, Exception)    # Passes
 F = FFTData()
 @test isempty(F)
@@ -203,6 +192,7 @@ F = FFTData(R.name, R.id, R.loc, R.fs, R.gain, R.freqmin,
 @test eltype(F.fft) <: Complex
 
 # test CPU/ GPU
+
 @test F == cpu(F)
 @test cpu(F) == cpu(F)
 @test F == cpu(gpu(F))
@@ -214,9 +204,10 @@ F = FFTData(R.name, R.id, R.loc, R.fs, R.gain, R.freqmin,
 F1 = FFTData()
 @test append!(F1,F) == F
 @test append!(F1,F) == F + F
-
+end
 ## test CorrData
 # test empty allocator
+@testset "FFTData creation" begin
 @test !isa(try CorrData() catch ex ex end, Exception)    # Passes
 C = CorrData()
 @test isempty(C)
@@ -259,3 +250,5 @@ C = CorrData(F1.name, F1.id, F1.loc, comp, false, "CC", F1.fs, F1.gain,
 C1 = CorrData()
 @test append!(C1,C) == C
 @test append!(C1,C) == C + C
+end
+ 
