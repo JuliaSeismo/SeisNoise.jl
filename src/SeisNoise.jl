@@ -22,7 +22,6 @@ include("ArrayFuncs.jl")
 include("tools.jl")
 include("slicing.jl")
 include("filter.jl")
-include("downsample.jl")
 include("phase_shift.jl")
 include("stacking.jl")
 
