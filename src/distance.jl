@@ -347,6 +347,10 @@ function get_loc(loc1::GeoLoc, azi::Float64, dist::Float64)
         lon2,lat2,baz2 = forward(deg2rad.((loc1.lon, loc1.lat,azi))...,
                          dist*1000, EARTH_R_MAJOR_WGS84, F_WGS84)
         lon2, lat2, baz2 = rad2deg.((lon2, lat2, baz2))
+
+        if abs(lon2) > 180
+            lon2 += -sign(lon2) * 360.
+        end
         loc2 = GeoLoc("",lat2,lon2, zero(Float64), zero(Float64), zero(Float64),
                       loc1.inc)
     end

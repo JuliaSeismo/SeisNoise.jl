@@ -127,19 +127,19 @@ end
     @test get_dist(loc1,loc2) == 0
 
     # second location empty
-    loc1.lat = rand(-90:90,1)[1]
-    loc1.lon = rand(-180:180,1)[1]
+    loc1.lat = rand(-89.:1e-4:89.,1)[1]
+    loc1.lon = rand(-89.:1e-4:89.,1)[1]
     @test get_dist(loc1,loc2) == 0
 
     # first location empty
     loc1 = GeoLoc()
-    loc2.lat = rand(-90:90,1)[1]
-    loc2.lon = rand(-180:180,1)[1]
+    loc2.lat = rand(-89.:1e-4:89.,1)[1]
+    loc2.lon = rand(-89.:1e-4:89.,1)[1]
     @test get_dist(loc1,loc2) == 0
 
     # both locations contain coordinates
-    loc1.lat = rand(-90:90,1)[1]
-    loc1.lon = rand(-180:180,1)[1]
+    loc1.lat = rand(-89.:1e-4:89.,1)[1]
+    loc1.lon = rand(-89.:1e-4:89.,1)[1]
     # check dist in km is less than 1/2 Earth circumference
     @test 0 < get_dist(loc1,loc2) < SeisNoise.EARTH_R_MAJOR_WGS84/1000 *  π
 
@@ -156,19 +156,19 @@ end
     @test get_azi(loc1,loc2) == 0
 
     # second location empty
-    loc1.lat = rand(-90:90,1)[1]
-    loc1.lon = rand(-180:180,1)[1]
+    loc1.lat = rand(-89.:1e-4:89.,1)[1]
+    loc1.lon = rand(-89.:1e-4:89.,1)[1]
     @test get_azi(loc1,loc2) == 0
 
     # first location empty
     loc1 = GeoLoc()
-    loc2.lat = rand(-90:90,1)[1]
-    loc2.lon = rand(-180:180,1)[1]
+    loc2.lat = rand(-89.:1e-4:89.,1)[1]
+    loc2.lon = rand(-89.:1e-4:89.,1)[1]
     @test get_azi(loc1,loc2) == 0
 
     # both locations contain coordinates
-    loc1.lat = rand(-90:90,1)[1]
-    loc1.lon = rand(-180:180,1)[1]
+    loc1.lat = rand(-89.:1e-4:89.,1)[1]
+    loc1.lon = rand(-89.:1e-4:89.,1)[1]
     @test 0 <= get_azi(loc1,loc2) <= 360
 
     # test get_azi with FFTData
@@ -184,19 +184,19 @@ end
     @test get_baz(loc1,loc2) == 0
 
     # second location empty
-    loc1.lat = rand(-90:90,1)[1]
-    loc1.lon = rand(-180:180,1)[1]
+    loc1.lat = rand(-89.:1e-4:89.,1)[1]
+    loc1.lon = rand(-89.:1e-4:89.,1)[1]
     @test get_baz(loc1,loc2) == 0
 
     # first location empty
     loc1 = GeoLoc()
-    loc2.lat = rand(-90:90,1)[1]
-    loc2.lon = rand(-180:180,1)[1]
+    loc2.lat = rand(-89.:1e-4:89.,1)[1]
+    loc2.lon = rand(-89.:1e-4:89.,1)[1]
     @test get_baz(loc1,loc2) == 0
 
     # both locations contain coordinates
-    loc1.lat = rand(-90:90,1)[1]
-    loc1.lon = rand(-180:180,1)[1]
+    loc1.lat = rand(-89.:1e-4:89.,1)[1]
+    loc1.lon = rand(-89.:1e-4:89.,1)[1]
     @test 0 <= get_baz(loc1,loc2) <= 360
 
     # test get_azi with FFTData
@@ -212,9 +212,16 @@ end
     @test isa(get_loc(loc1,azi,dist),GeoLoc)
     @test !isempty(get_loc(loc1,azi,dist))
     @test isempty(get_loc(GeoLoc(),azi,dist))
+
+    loc1 = GeoLoc()
+    loc1.lat = rand(-89.:1e-4:89.,1)[1]
+    loc1.lon = rand(-89.:1e-4:89.,1)[1]
+    loc2 = GeoLoc()
+    loc2.lat = rand(-89.:1e-4:89.,1)[1]
+    loc2.lon = rand(-89.:1e-4:89.,1)[1]
     loc3 = get_loc(loc1,get_azi(loc1,loc2),get_dist(loc1,loc2))
-    @test isapprox(loc2.lat,loc3.lat)
-    @test isapprox(loc2.lon,loc3.lon)
+    @test isapprox(loc2.lat,loc3.lat,atol=1e-5) # test to ~ 1m accuracy
+    @test isapprox(loc2.lon,loc3.lon,atol=1e-5) # test to ~ 1m accuracy
 
     # test get_loc with CorrData
     C = CorrData()
@@ -224,10 +231,16 @@ end
     @test isempty(get_loc(C)[2])
 
     # test with loc1
+    loc1 = GeoLoc()
+    loc1.lat = rand(-89.:1e-4:89.,1)[1]
+    loc1.lon = rand(-89.:1e-4:89.,1)[1]
+    loc2 = GeoLoc()
+    loc2.lat = rand(-89.:1e-4:89.,1)[1]
+    loc2.lon = rand(-89.:1e-4:89.,1)[1]
     C.loc = loc1
     C.azi = get_azi(loc1,loc2)
     C.dist = get_dist(loc1,loc2)
     loc4 = get_loc(C)[2]
-    @test isapprox(loc2.lat,loc4.lat)
-    @test isapprox(loc2.lon,loc4.lon)
+    @test isapprox(loc2.lat,loc4.lat,atol=1e-5) # test to ~ 1m accuracy
+    @test isapprox(loc2.lon,loc4.lon,atol=1e-5) # test to ~ 1m accuracy
 end
