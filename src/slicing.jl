@@ -37,12 +37,12 @@ end
 """
     slide(A, cc_len, cc_step, fs, starttime, endtime)
 
-Cut `A` into sliding windows of length `cc_len` [s] and offset `cc_step` [s].
+Cut `A` into sliding windows of length `cc_len` points and offset `cc_step` points.
 
 # Arguments
 - `A::AbstractArray`: 1D time series.
-- `cc_len::Int`: Cross-correlation window length [s].
-- `cc_step::Int`: Step between cross-correlation windows [s].
+- `cc_len::Float64`: Cross-correlation window length in seconds.
+- `cc_step::Float64`: Step between cross-correlation windows in seconds.
 - `starttime::Float64`: Time of first sample in `A` in unix time.
 - `endtime::Float64`: Time of last sample in `A` in unix time.
 
@@ -51,7 +51,7 @@ Cut `A` into sliding windows of length `cc_len` [s] and offset `cc_step` [s].
 - `starts::Array`: Array of start times of each window, in Unix time. E.g to convert
         Unix time to date time, use u2d(starts[1]) = 2018-08-12T00:00:00
 """
-function slide(A::AbstractArray, cc_len::Int, cc_step::Int, fs::AbstractFloat,
+function slide(A::AbstractArray, cc_len::Float64, cc_step::Float64, fs::AbstractFloat,
                starttime::Float64,endtime::Float64)
     N = size(A,1)
     window_samples = Int(cc_len * fs)
@@ -78,28 +78,28 @@ function slide(A::AbstractArray, cc_len::Int, cc_step::Int, fs::AbstractFloat,
 end
 
 """
-    slide(C::SeisChannel, cc_len::Int, cc_step::Int)
+    slide(C, cc_len, cc_step)
 
 Cut `C` into equal length sliding windows.
 
 # Arguments
 - `C::SeisChannel`: SeisChannel.
-- `cc_len::Int`: Cross-correlation window length [s].
-- `cc_step::Int`: Step between cross-correlation windows [s].
+- `cc_len::Float64`: Cross-correlation window length in seconds.
+- `cc_step::Float64`: Step between cross-correlation windows in seconds.
 
 # Returns
 - `out::Array`: Array of sliding windows.
 - `starts::Array`: Array of start times of each window, in Unix time. E.g to convert
         Unix time to date time, use u2d(starts[1]) = 2018-08-12T00:00:00
 """
-slide(C::SeisChannel, cc_len::Int, cc_step::Int) = slide(C.x,cc_len,cc_step,C.fs,C.t)
+slide(C::SeisChannel, cc_len::Float64, cc_step::Float64) = slide(C.x,cc_len,cc_step,C.fs,C.t)
 
 """
-    nearest_start_end(C::SeisChannel, cc_len::Int, cc_step::Int)
+    nearest_start_end(C::SeisChannel, cc_len::Float64, cc_step::Float64)
 
 Return best possible start, end times for data in `C` given the `cc_step` and `cc_len`.
 """
-function nearest_start_end(C::SeisChannel, cc_len::Int, cc_step::Int)
+function nearest_start_end(C::SeisChannel, cc_len::Float64, cc_step::Float64)
   su,eu = SeisIO.t_win(C.t,C.fs) * μs
   ideal_start = d2u(DateTime(Date(u2d(su)))) # midnight of same day
   starts = Array(range(ideal_start,stop=eu,step=cc_step))
@@ -112,9 +112,9 @@ end
 
 Return best possible start, end times for given starttime `S` and endtime `E`.
 """
-function nearest_start_end(S::DateTime, E::DateTime, fs::Float64, cc_len::Int, cc_step::Int)
+function nearest_start_end(S::DateTime, E::DateTime, fs::Float64, cc_len::Float64, cc_step::Float64)
   ideal_start = DateTime(Date(S)) # midnight of same day
-  starts = Array(ideal_start:Second(cc_step):endtime)
+  starts = Array(ideal_start:Second(cc_step/fs):endtime)
   ends = starts .+ Second(cc_len) .- Millisecond(convert(Int,1. / fs * 1e3))
   return starts[findfirst(x -> x >= S, starts)], ends[findlast(x -> x <= E,ends)]
 end

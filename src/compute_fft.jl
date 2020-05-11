@@ -1,7 +1,8 @@
-export process_raw, process_raw!, process_fft, compute_fft
+export process_raw, process_raw!, process_fft, rfft
 export onebit!, onebit, remove_response!, remove_response, amplitude!, amplitude
-export clip, clip!, clamp, clamp!, mute!, mute
+export clip, clip!, clamp, clamp!, mute!, mute, phase
 import Base: clamp, clamp!
+import FFTW: rfft
 """
     process_raw!(S,fs)
 
@@ -38,19 +39,66 @@ process_raw(S::SeisData, fs::Float64;
 
 """
 
-  compute_fft(R)
+ rfft(R)
 
 Computes windowed rfft of ambient noise data. Returns FFTData structure.
+
+Overloads the rfft function from FFTW.
 
 # Arguments
 - `R::RawData`: RawData structure
 """
-function compute_fft(R::RawData)
-    FFT = rfft(R.x,1)
+function rfft(R::RawData,dims::Int=1)
+    FFT = rfft(R.x,dims)
     return FFTData(R.name, R.id,R.loc, R.fs, R.gain, R.freqmin, R.freqmax,
-                   R.cc_len, R.cc_step, R.whitened, R.time_norm, R.resp,
-                   R.misc, R.notes, R.t, FFT)
+                 R.cc_len, R.cc_step, R.whitened, R.time_norm, R.resp,
+                 R.misc, R.notes, R.t, FFT)
 end
+
+"""
+    phase(A::AbstractArray)
+
+Extract instantaneous phase from signal A.
+
+For time series `A`, its analytic representation ``S = A + H(A)``, where
+``H(A)`` is the Hilbert transform of `A`. The instantaneous phase ``e^{iθ}``
+of `A` is given by dividing ``S`` by its modulus: ``e^{iθ} = \\frac{S}{|S|}``
+For more information on Phase Cross-Correlation, see:
+[Ventosa et al., 2019](https://pubs.geoscienceworld.org/ssa/srl/article-standard/570273/towards-the-processing-of-large-data-volumes-with).
+"""
+function phase(A::AbstractArray)
+	Nrows = size(A,1)
+    T = eltype(A)
+    f = similar(A,fftouttype(T))
+    fill!(f,fftouttype(T)(0))
+    f[1:Nrows÷2 + 1 + isodd(Nrows),:] .= rfft(A,1)
+    f[2:Nrows÷2  + isodd(Nrows),:] .*= T(2.)
+	f[1:Nrows÷2 + 1 + isodd(Nrows),:] ./= abs.(f[1:Nrows÷2 + 1 + isodd(Nrows),:])
+	ind = findall(isweird.(f[1:Nrows÷2 + isodd(Nrows),:]))
+	if length(ind) > 0
+		fill!(f[ind],fftouttype(T)(0))
+	end
+    return f
+end
+
+"""
+
+ phase(R)
+
+Computes windowed analytic signal of ambient noise data. Returns FFTData structure.
+
+
+# Arguments
+- `R::RawData`: RawData structure
+"""
+function phase(R::RawData)
+    FFT = phase(R.x)
+    return FFTData(R.name, R.id,R.loc, R.fs, R.gain, R.freqmin, R.freqmax,
+                 R.cc_len, R.cc_step, R.whitened, R.time_norm, R.resp,
+                 R.misc, R.notes, R.t, FFT)
+end
+
+isweird(x) =  isnan(x) .| isinf(x) .| isnothing(x)
 
 """
 
@@ -89,17 +137,17 @@ function clip!(A::AbstractArray{T,N}, factor::Real; f::Function=rootmeansquare,d
         high = f(A) .* factor
         clamp!(@view(A[:]),-high,high)
     else
+        high = f(@view(A[:,:]),dims=dims) .* factor
         for ii = 1:size(A,2)
-            high = f(@view(A[:,ii])) * factor
-            clamp!(@view(A[:,ii]),-high,high)
+            clamp!(@view(A[:,ii]),-high[ii],high[ii])
         end
     end
     return nothing
 end
 clip(A::AbstractArray, factor::Real; f::Function=rms, dims=1) = (U = deepcopy(A);
      clip!(U,factor,f=f,dims=dims);return U)
-clip!(R::RawData,factor::Real;f::Function=rms,dims=1) = clip!(R.x,factor,f=f,dims=dims)
-clip(R::RawData,factor::Real;f::Function=rms,dims=1) = (U = deepcopy(R);
+clip!(R::RawData,factor::Real;f::Function=rootmeansquare,dims=1) = clip!(R.x,factor,f=f,dims=dims)
+clip(R::RawData,factor::Real;f::Function=rootmeansquare,dims=1) = (U = deepcopy(R);
      clip!(U.x,factor,f=f,dims=dims); return U)
 clamp!(R::RawData,val::Real) = clamp!(R.x,-abs(val),abs(val))
 clamp!(R::RawData,lo::Real,hi::Real) = clamp!(R.x,lo,hi)
@@ -148,61 +196,6 @@ end
 onebit(R::RawData) = (U = deepcopy(R); onebit!(U);return U)
 
 """
-  remove_response!(S, stationXML, freqmin, freqmax)
-
-Loads instrument response from stationXML and removes response from `S`.
-
-# Arguments
-- `S::SeisData`: SeisData structure.
-- `stationXML::String`: Path to stationXML file, e.g. "/path/to/file.xml"
-- `freqmin::Float64`: minimum frequency for pre-filtering.
-- `freqmax::Float64`: maximum frequency for pre-filtering.
-- `np::Int`: number of poles in pre-filter.
-- `t_max::Float64`: Length of taper in seconds.
-- `wl::Float32`: Water level for instrument response.
-"""
-function remove_response!(S::SeisData, stationXML::String, freqmin::Float64,
-                          freqmax::Float64;np::Int=2, t_max::Float64=20.,
-                          wl::Float32=eps(Float32))
-
-    # read response file
-    if !isfile(stationXML)
-        error("$stationXML does not exist. Instrument response not removed.")
-    end
-
-    s,e = string.(start_end(S[1]))
-    R = read_sxml(stationXML,s=s,t=e)
-    # loop through responses
-    Rid = R.id
-    Sid = S.id
-
-    # remove trend, taper and prefilter
-    SeisIO.detrend!(S)
-    SeisIO.taper!(S,t_max=t_max)
-    filtfilt!(S,fl=freqmin,fh=freqmax,np=np,rt="Bandpass")
-
-    # remove instrument response for each channel in S
-    @inbounds for ii = 1:S.n
-        id = S[ii].id
-        ind = findfirst(x -> x == id,Rid)
-        LOC = R[ind].loc
-        GAIN = R[ind].gain
-        RESP = R[ind].resp
-        UNITS = R[ind].units
-        setindex!(S.loc,LOC,ii)
-        setindex!(S.gain,GAIN,ii)
-        setindex!(S.units,UNITS,ii)
-        translate_resp!(S,RESP,chans=ii,wl=wl)
-    end
-    return nothing
-end
-remove_response(S::SeisData, stationXML::String, freqmin::Float64,
-                          freqmax::Float64;np::Int=2, t_max::Float64=20.,
-                          wl::Float32=eps(Float32)) = (U = deepcopy(S);
-            remove_response!(U,stationXML,freqmin,freqmax,np=np,t_max=t_max,
-                             wl=wl); return U)
-
-"""
 nonzero(A)
 
 Find indices of all nonzero columns in array `A`.
@@ -222,71 +215,6 @@ function nonzero(A::AbstractArray)
     return ind
 end
 
-"""
-    compute_fft(S, freqmin, freqmax, fs, cc_step, cc_len;
-                time_norm=false, to_whiten=false, max_std=5.)
-Computes windowed fft of ambient noise data.
-# Arguments
-- `S::SeisData`: SeisData structure.
-- `freqmin::Float64`: minimum frequency for filtering/whitening.
-- `freqmax::Float64`: maximum frequency for filtering/whitening.
-- `fs::Float64`: Sampling rate to downsample `S`.
-- `cc_step::Int`: time, in seconds, between successive cross-correlation windows.
-- `cc_len::Int`: length of noise data window, in seconds, to cross-correlate.
-- `time_norm::Union{Bool,String}`: time domain normalization to perform.
-- `to_whiten::Bool`: Apply whitening in frequency domain.
-- `max_std::Float64=5.`: Number of standard deviations above mean to reject windowed data.
-"""
-function compute_fft(S::SeisData,freqmin::Float64,freqmax::Float64,fs::Float64,
-                     cc_step::Int, cc_len::Int;
-                     time_norm::Union{Bool,String}=false,
-                     to_whiten::Bool=false,
-                     max_std::Float64=5.,
-                     ϕshift::Bool=true)
-
-    # sync!(S,s=starttime,t=endtime)
-    merge!(S)
-    ungap!(S)
-    process_raw!(S,fs,ϕshift=ϕshift)  # demean, detrend, taper, lowpass, downsample
-
-    # subset by time
-    starttime, endtime = u2d.(nearest_start_end(S[1],cc_len, cc_step))
-    # check if waveform length is < cc_len
-    if Int(floor((endtime - starttime).value / 1000)) < cc_len
-        return nothing
-    end
-
-    sync!(S,s=starttime,t=endtime)
-    A, starts, ends = slide(S[1], cc_len, cc_step)
-
-    # remove nonzero columns
-    zeroind = nonzero(A)
-    if length(zeroind) == 0
-        return nothing
-    elseif size(A,2) != length(zeroind)
-        A = A[:,zeroind]
-        starts = starts[zeroind]
-        ends = ends[zeroind]
-    end
-
-    # amplitude threshold indices
-    stdind = std_threshold(A,max_std)
-    if length(stdind) == 0
-        return nothing
-    elseif size(A,2) != length(stdind)
-        A = A[:,stdind]
-        starts = starts[stdind]
-        ends = ends[stdind]
-    end
-
-    FFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,
-                      to_whiten=to_whiten)
-    return F = FFTData(S[1].id, Dates.format(u2d(starts[1]),"Y-mm-dd"),
-                       S[1].loc, S[1].fs, S[1].gain, freqmin, freqmax,
-                       cc_len, cc_step, to_whiten, time_norm, S[1].resp,
-                       S[1].misc, S[1].notes, starts, FFT)
-end
-
-function rootmeansquare(A::AbstractArray;dims=1)
+function rootmeansquare(A::AbstractArray;dims::Int=1)
     return sqrt.(sum(A.^2,dims=dims))
 end

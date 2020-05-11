@@ -423,20 +423,20 @@ lowpass(A::AbstractArray{<:AbstractFloat},freq::Float64, fs::Float64;
       lowpass!(U,freq,fs,corners=corners,zerophase=zerophase);return U)
 lowpass!(R::RawData,freq::Float64; corners::Int=4,
        zerophase::Bool=true) = (lowpass!(R.x,freq,R.fs,corners=corners,
-       zerophase=zerophase);setfield!(R,:freqmax,min(freqmax,R.fs/2));
+       zerophase=zerophase);setfield!(R,:freqmax,min(freq,R.fs/2));
        return nothing)
 lowpass(R::RawData,freq::Float64; corners::Int=4,
        zerophase::Bool=true) = (U = deepcopy(R);lowpass!(U.x,freq,U.fs,
        corners=corners,zerophase=zerophase);
-       setfield!(U,:freqmax,min(freqmax,U.fs/2));return U)
+       setfield!(U,:freqmax,min(freq,U.fs/2));return U)
 lowpass!(C::CorrData,freq::Float64; corners::Int=4,
       zerophase::Bool=true) = (lowpass!(C.corr,freq,C.fs,corners=corners,
-      zerophase=zerophase);setfield!(C,:freqmax,min(freqmax,C.fs/2));
+      zerophase=zerophase);setfield!(C,:freqmax,min(freq,C.fs/2));
       return nothing)
 lowpass(C::CorrData,freq::Float64; corners::Int=4,
       zerophase::Bool=true) = (U = deepcopy(R);lowpass!(U.corr,freq,U.fs,
       corners=corners,zerophase=zerophase);
-      setfield!(U,:freqmax,min(freqmax,U.fs/2));return U)
+      setfield!(U,:freqmax,min(freq,U.fs/2));return U)
 
 """
  lowpass(A,freq,fs,corners=4,zerophase=true)
@@ -593,17 +593,17 @@ highpass(A::AbstractArray{<:AbstractFloat},freq::Float64,fs::Float64;
         highpass!(U,freq,fs,corners=corners,zerophase=zerophase);return U)
 highpass!(R::RawData,freq::Float64; corners::Int=4,
         zerophase::Bool=true) = (highpass!(R.x,freq,R.fs,corners=corners,
-        zerophase=zerophase);setfield!(R,:freqmin,freqmin);return nothing)
+        zerophase=zerophase);setfield!(R,:freqmin,freq);return nothing)
 highpass(R::RawData,freq::Float64; corners::Int=4,
         zerophase::Bool=true) = (U = deepcopy(R);highpass!(U.x,freq,U.fs,
-        corners=corners,zerophase=zerophase);setfield!(U,:freqmin,freqmin);
+        corners=corners,zerophase=zerophase);setfield!(U,:freqmin,freq);
         return U)
 highpass!(C::CorrData,freq::Float64; corners::Int=4,
         zerophase::Bool=true) = (highpass!(C.corr,freq,C.fs,corners=corners,
-        zerophase=zerophase);setfield!(C,:freqmin,freqmin);return nothing)
+        zerophase=zerophase);setfield!(C,:freqmin,freq);return nothing)
 highpass(C::CorrData,freq::Float64; corners::Int=4,
         zerophase::Bool=true) = (U = deepcopy(C);highpass!(U.cprr,freq,U.fs,
-        corners=corners,zerophase=zerophase);setfield!(U,:freqmin,freqmin);
+        corners=corners,zerophase=zerophase);setfield!(U,:freq,freq);
         return U)
 
 """
