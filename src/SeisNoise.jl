@@ -2,7 +2,7 @@ module SeisNoise
 
 using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO
 using Statistics, StatsBase, Plots, Distributed
-using Distributed, CuArrays, Adapt, CUDAnative, GPUArrays
+using CuArrays, Adapt, CUDAnative, GPUArrays
 
 # check use of cuda
 const use_cuda = Ref(false)
