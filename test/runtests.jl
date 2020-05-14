@@ -1,12 +1,11 @@
-using SeisNoise, SeisIO, Dates, FFTW
+using SeisNoise, SeisIO, Dates, FFTW, Statistics
 using Test
 
 include("test_NoiseData.jl")
 include("test_ArrayFuncs.jl")
 include("test_distance.jl")
 # include("test_io.jl")
-# include("test_ArrayFuncs.jl")
-# include("test_tools.jl")
+include("test_tools.jl")
 # include("test_slicing.jl")
 # include("test_filter.jl")
 # include("test_downsample.jl")

@@ -1,23 +1,24 @@
-export snr, smooth, smooth!, nextpow2, abs_max!, standardize!, mad, savitsky_golay,
-    pws, std_threshold
+export snr, smooth, smooth!, abs_max, abs_max!, standardize, standardize!
+export mad, std_threshold
 
 """
-    snr(A,fs)
+    snr(A)
 
-Signal to noise ratio of cross-correlations in matrix `A` with `fs'.
+Signal to noise ratio of cross-correlations in matrix `A`.
 
 Follows method of Clarke et. al, 2011. Measures SNR at each point.
 """
-function snr(A::AbstractArray,fs::Real)
-    t,N = size(A)
+function snr(A::AbstractArray)
+    Nrows,Ncols = size(A)
     A_mean = mean(A,dims=2)
 
     # calculate noise and envelope functions
     sigma = mean(A.^2,dims=2) .- A_mean.^2
-    sigma = sqrt.(sigma./ (N-1))
-    return sigma
+    sigma .= sqrt.(sigma./ (Ncols-1))
+    s = abs.(A_mean .+ im .* hilbert(A_mean))
+    return s ./ sigma
 end
-snr(C::CorrData) = snr(C.corr,C.fs)
+snr(C::CorrData) = snr(C.corr)
 
 """
     smooth(A, half_win)
@@ -38,24 +39,21 @@ smooth(A::AbstractArray,half_win::Int=3, dims::Int=1) =
       (U = deepcopy(A);smooth!(U,half_win,dims);return U)
 
 """
-    nextpow2(x)
-
-Returns the next power of 2 of real, positive number `x`.
-"""
-function nextpow2(x::Real)
-    ceil(Int,log2(abs(x)))
-end
-
-"""
     abs_max!(A)
 
 Returns array `A` divided by its absolute maximum value.
 """
 function abs_max!(A::AbstractArray)
-    A .= A ./ maximum(abs.(A),dims=1)
+    maxabs = maximum(abs.(A),dims=1)
+    if any(maxabs .== 0)
+        throw(DomainError("All zero column leads to NaN"))
+    end
+    A ./= maxabs
     return nothing
 end
+abs_max(A::AbstractArray) = (U = deepcopy(A);abs_max!(U);return U)
 abs_max!(C::CorrData) = abs_max!(C.corr)
+abs_max(C::CorrData) = (U = deepcopy(C);abs_max!(U);return U)
 
 """
     standardize!(A)
@@ -63,10 +61,13 @@ abs_max!(C::CorrData) = abs_max!(C.corr)
 Demean and standardize array `A` to unit std.
 """
 function standardize!(A::AbstractArray)
-    A .= (A .- mean(A,dims=1)) ./ std(A,dims=1)
+    A .-= mean(A,dims=1)
+    A ./= std(A,dims=1)
     return nothing
 end
+standardize(A::AbstractArray) = (U = deepcopy(A);standardize!(U);return U)
 standardize!(C::CorrData) = standardize!(C.corr)
+standardize(C::CorrData) = (U = deepcopy(C);standardize!(U);return U)
 
 """
     mad(A)
@@ -78,40 +79,6 @@ function mad(A::AbstractArray)
     return median(abs.(A .- median(A,dims=1)),dims=1)
 end
 mad(C::CorrData) = mad(C.corr)
-
-"""
-    savitsky_golay(x, window, polyOrder, [deriv])
-
-Polynomial smoothing of vector `x` with Savitsky Golay filter.
-Polynomial order `polyOrder' must be less than window length `N`.
-Modified from https://github.com/BBN-Q/Qlab.jl/blob/master/src/SavitskyGolay.jl
-"""
-function savitsky_golay(x::Vector, N::Int, polyOrder::Int; deriv::Int=0)
-    #Some error checking
-    @assert isodd(N) "Window size must be an odd integer."
-    @assert polyOrder < N "Polynomial order must me less than window size."
-
-    halfWindow = Int((N-1)/2)
-
-    #Setup the S matrix of basis vectors.
-    S = zeros(N, polyOrder+1)
-    for ct = 0:polyOrder
-        S[:,ct+1] = Array(-halfWindow:halfWindow).^ct
-    end
-
-    #Compute the filter coefficients for all orders
-    G = S*pinv(S'*S)
-
-    #Slice out the derivative order we want
-    filterCoeffs = G[:,deriv+1] * factorial(deriv);
-
-    #Pad the signal with the endpoints and convolve with filter
-    paddedX = vcat(x[1]*ones(halfWindow), x, x[end]*ones(halfWindow))
-    y = conv(filterCoeffs[end:-1:1], paddedX)
-
-    #Return the valid midsection
-    return y[2*halfWindow+1:end-2*halfWindow]
-end
 
 """
 
