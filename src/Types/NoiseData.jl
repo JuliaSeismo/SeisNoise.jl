@@ -456,7 +456,7 @@ append!(F::FFTData, U::FFTData)  = (if F.name == U.name;
    end;
    return F)
 
- append!(C::CorrData, U::CorrData)  = (if C == U;
+ append!(C::CorrData, U::CorrData)  = (if C.name == U.name;
    setfield!(C, :t, vcat(getfield(C,:t), getfield(U,:t)));
    setfield!(C, :corr, hcat(getfield(C,:corr), getfield(U,:corr)))
    elseif isempty(C)

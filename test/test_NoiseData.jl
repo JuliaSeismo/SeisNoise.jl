@@ -204,6 +204,7 @@ F = FFTData(R.name, R.id, R.loc, R.fs, R.gain, R.freqmin,
 F1 = FFTData()
 @test append!(F1,F) == F
 @test append!(F1,F) == F + F
+@test size(F1.fft,2) == 2 * size(F.fft,2)
 end
 ## test CorrData
 # test empty allocator
@@ -250,5 +251,5 @@ C = CorrData(F1.name, F1.id, F1.loc, comp, false, "CC", F1.fs, F1.gain,
 C1 = CorrData()
 @test append!(C1,C) == C
 @test append!(C1,C) == C + C
+@test size(C1.corr,2) == 2 * size(C.corr,2)
 end
- 
