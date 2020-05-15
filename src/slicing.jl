@@ -92,7 +92,7 @@ Cut `C` into equal length sliding windows.
 - `starts::Array`: Array of start times of each window, in Unix time. E.g to convert
         Unix time to date time, use u2d(starts[1]) = 2018-08-12T00:00:00
 """
-slide(C::SeisChannel, cc_len::Float64, cc_step::Float64) = slide(C.x,cc_len,cc_step,C.fs,C.t)
+slide(C::SeisChannel, cc_len::Float64, cc_step::Float64) = slide(C.x,cc_len,cc_step,C.fs,d2u.(start_end(C))...)
 
 """
     nearest_start_end(C::SeisChannel, cc_len::Float64, cc_step::Float64)
@@ -101,6 +101,7 @@ Return best possible start, end times for data in `C` given the `cc_step` and `c
 """
 function nearest_start_end(C::SeisChannel, cc_len::Float64, cc_step::Float64)
   su,eu = SeisIO.t_win(C.t,C.fs) * μs
+  eu = round(eu,digits=4) # round due to numerical roundoff error
   ideal_start = d2u(DateTime(Date(u2d(su)))) # midnight of same day
   starts = Array(range(ideal_start,stop=eu,step=cc_step))
   ends = starts .+ cc_len .- 1. / C.fs
@@ -114,9 +115,9 @@ Return best possible start, end times for given starttime `S` and endtime `E`.
 """
 function nearest_start_end(S::DateTime, E::DateTime, fs::Float64, cc_len::Float64, cc_step::Float64)
   ideal_start = DateTime(Date(S)) # midnight of same day
-  starts = Array(ideal_start:Second(cc_step/fs):endtime)
+  starts = Array(ideal_start:Second(cc_step):E)
   ends = starts .+ Second(cc_len) .- Millisecond(convert(Int,1. / fs * 1e3))
-  return starts[findfirst(x -> x >= S, starts)], ends[findlast(x -> x <= E,ends)]
+  return d2u(starts[findfirst(x -> x >= S, starts)]), d2u(ends[findlast(x -> x <= E,ends)])
 end
 
 function slide_ind(startslice::AbstractFloat,endslice::AbstractFloat,fs::AbstractFloat,t::AbstractArray)
