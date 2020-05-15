@@ -101,6 +101,7 @@ Return best possible start, end times for data in `C` given the `cc_step` and `c
 """
 function nearest_start_end(C::SeisChannel, cc_len::Float64, cc_step::Float64)
   su,eu = SeisIO.t_win(C.t,C.fs) * μs
+  su = round(su,digits=4) # round due to numerical roundoff error
   eu = round(eu,digits=4) # round due to numerical roundoff error
   ideal_start = d2u(DateTime(Date(u2d(su)))) # midnight of same day
   starts = Array(range(ideal_start,stop=eu,step=cc_step))

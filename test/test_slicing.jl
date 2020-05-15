@@ -18,7 +18,7 @@ end
 A = rand(10000)
 fs = 10.
 cc_step = cc_len = 100.
-starttime = d2u(now())
+starttime = d2u(DateTime(Date(now())))
 endtime = starttime + length(A) / fs - 1 / fs
 
 # test even splitting
