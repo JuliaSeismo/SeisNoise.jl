@@ -52,7 +52,8 @@ function bandpass!(A::AbstractArray{<:AbstractFloat},
 end
 bandpass(A::AbstractArray{<:AbstractFloat},freqmin::Float64,
          freqmax::Float64, fs::Float64; corners::Int=4,zerophase::Bool=true) =
-         (U = deepcopy(A);bandpass!(U,freqmin,freqmax, fs, corners=corners);return U)
+         (U = deepcopy(A);bandpass!(U,freqmin,freqmax, fs, corners=corners,
+          zerophase=zerophase);return U)
 bandpass!(R::RawData,freqmin::Float64,freqmax::Float64;
           corners::Int=4,zerophase::Bool=true) = (bandpass!(R.x,freqmin,freqmax,
           R.fs,corners=corners,zerophase=zerophase);setfield!(R,:freqmin,freqmin);
@@ -140,6 +141,7 @@ bandpass(A::AbstractGPUArray,freqmin::Float64,
 Butterworth-Bandpass Filter.
 
 Filter data in `C` from `freqmin` to `freqmax` using `corners` corners.
+This is a wrapper to `filtfilt` from `SeisIO`.
 
 # Arguments
 - `C::SeisChannel`: SeisChannel to filter.
@@ -153,7 +155,7 @@ the resulting filtered trace.
 """
 function bandpass!(C::SeisChannel, freqmin::Float64, freqmax::Float64;
                    corners::Int=4, zerophase::Bool=true)
-    bandpass!(C.x,freqmin,freqmax,C.fs,corners=corners,zerophase=zerophase)
+    filtfilt!(C,fl=freqmin,fh=freqmax,np=corners,rt="Bandpass")
     return nothing
 end
 bandpass(C::SeisChannel,freqmin::Float64, freqmax::Float64; corners::Int=4,
@@ -166,6 +168,7 @@ bandpass(C::SeisChannel,freqmin::Float64, freqmax::Float64; corners::Int=4,
 Butterworth-Bandpass Filter.
 
 Filter channels in `S` from `freqmin` to `freqmax` using `corners` corners.
+This is a wrapper to `filtfilt` from `SeisIO`.
 
 # Arguments
 - `S::SeisData`: SeisData to filter.
@@ -179,10 +182,7 @@ the resulting filtered trace.
 """
 function bandpass!(S::SeisData, freqmin::Float64, freqmax::Float64;
                    corners::Int=4, zerophase::Bool=true)
-    @inbounds for i = 1:S.n
-        bandpass!(S[i].x,freqmin,freqmax,S[i].fs,corners=corners,
-                             zerophase=zerophase)
-    end
+    filtfilt!(S,fl=freqmin,fh=freqmax,np=corners,rt="Bandpass")
     return nothing
 end
 bandpass(S::SeisData,freqmin::Float64, freqmax::Float64; corners::Int=4,
@@ -240,7 +240,7 @@ function bandstop!(A::AbstractArray{<:AbstractFloat},
 end
 bandstop(A::AbstractArray{<:AbstractFloat},freqmin::Float64,
       freqmax::Float64, fs::Float64; corners::Int=4,zerophase::Bool=true) =
-      (U = deepcopy(A);bandstop!(U,freqmin,freqmax,corners=corners,
+      (U = deepcopy(A);bandstop!(U,freqmin,freqmax,fs,corners=corners,
       zerophase=zerophase);return U)
 bandstop!(R::RawData,freqmin::Float64,freqmax::Float64;
  corners::Int=4,zerophase::Bool=true) = bandstop!(R.x,freqmin,freqmax,
@@ -329,6 +329,7 @@ Butterworth-Bandstop Filter.
 
 Filter data in `C` removing data between frequencies `freqmin` to `freqmax` using
 `corners` corners.
+This is a wrapper to `filtfilt` from `SeisIO`.
 
 # Arguments
 - `C::SeisChannel`: SeisChannel to filter.
@@ -342,7 +343,7 @@ the resulting filtered trace.
 """
 function bandstop!(C::SeisChannel, freqmin::Float64, freqmax::Float64;
                    corners::Int=4, zerophase::Bool=true)
-    bandstop!(C.x,freqmin,freqmax,C.fs,corners=corners,zerophase=zerophase)
+    filtfilt!(C,fl=freqmin,fh=freqmax,np=corners,rt="Bandstop")
     return nothing
 end
 bandstop(C::SeisChannel,freqmin::Float64, freqmax::Float64; corners::Int=4,
@@ -351,9 +352,7 @@ bandstop(C::SeisChannel,freqmin::Float64, freqmax::Float64; corners::Int=4,
 
 function bandstop!(S::SeisData, freqmin::Float64, freqmax::Float64;
                    corners::Int=4, zerophase::Bool=true)
-    @inbounds for i = 1:S.n
-        bandstop!(S[i].x,freqmin,freqmax,s[i].fs,corners=corners,zerophase=zerophase)
-    end
+    filtfilt!(S,fl=freqmin,fh=freqmax,np=corners,rt="Bandstop")
     return nothing
 end
 
@@ -364,6 +363,7 @@ Butterworth-Bandstop Filter.
 
 Filter channels in `S` removing data between frequencies `freqmin` to `freqmax` using
 `corners` corners.
+This is a wrapper to `filtfilt` from `SeisIO`.
 
 # Arguments
 - `S::SeisData`: SeisData to filter.
@@ -434,7 +434,7 @@ lowpass!(C::CorrData,freq::Float64; corners::Int=4,
       zerophase=zerophase);setfield!(C,:freqmax,min(freq,C.fs/2));
       return nothing)
 lowpass(C::CorrData,freq::Float64; corners::Int=4,
-      zerophase::Bool=true) = (U = deepcopy(R);lowpass!(U.corr,freq,U.fs,
+      zerophase::Bool=true) = (U = deepcopy(C);lowpass!(U.corr,freq,U.fs,
       corners=corners,zerophase=zerophase);
       setfield!(U,:freqmax,min(freq,U.fs/2));return U)
 
@@ -505,6 +505,7 @@ lowpass(A::AbstractGPUArray,freq::Float64, fs::Float64;
 Butterworth-Lowpass Filter.
 
 Filter data in `C` over certain frequency `freq` using `corners` corners.
+This is a wrapper to `filtfilt` from `SeisIO`.
 
 # Arguments
 - `C::SeisChannel`: SeisChannel to filter.
@@ -516,7 +517,7 @@ This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
 function lowpass!(C::SeisChannel, freq::Float64;corners::Int=4, zerophase::Bool=true)
-    lowpass!(C.x,freq,C.fs,corners=corners,zerophase=zerophase)
+    filtfilt!(C,fh=freq,np=corners,rt="Lowpass")
     return nothing
 end
 lowpass(C::SeisChannel,freq::Float64; corners::Int=4,zerophase::Bool=true) =
@@ -529,6 +530,7 @@ lowpass(C::SeisChannel,freq::Float64; corners::Int=4,zerophase::Bool=true) =
 Butterworth-Lowpass Filter.
 
 Filter channels in `S` over certain frequency `freq` using `corners` corners.
+This is a wrapper to `filtfilt` from `SeisIO`.
 
 # Arguments
 - `S::SeisData`: SeisData to filter.
@@ -540,10 +542,7 @@ This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
 function lowpass!(S::SeisData, freq::Float64;corners::Int=4, zerophase::Bool=true)
-    @inbounds for i = 1:S.n
-        lowpass!(S[i].x,freq,S[i].fs,corners=corners,
-                            zerophase=zerophase)
-    end
+    filtfilt!(S,fh=freq,np=corners,rt="Lowpass")
     return nothing
 end
 
@@ -602,8 +601,8 @@ highpass!(C::CorrData,freq::Float64; corners::Int=4,
         zerophase::Bool=true) = (highpass!(C.corr,freq,C.fs,corners=corners,
         zerophase=zerophase);setfield!(C,:freqmin,freq);return nothing)
 highpass(C::CorrData,freq::Float64; corners::Int=4,
-        zerophase::Bool=true) = (U = deepcopy(C);highpass!(U.cprr,freq,U.fs,
-        corners=corners,zerophase=zerophase);setfield!(U,:freq,freq);
+        zerophase::Bool=true) = (U = deepcopy(C);highpass!(U.corr,freq,U.fs,
+        corners=corners,zerophase=zerophase);setfield!(U,:freqmin,freq);
         return U)
 
 """
@@ -670,6 +669,7 @@ highpass(A::AbstractGPUArray,freq::Float64, fs::Float64;
 Butterworth-Highpass Filter.
 
 Filter data in `C` removing data below certain frequency `freq` using `corners` corners.
+This is a wrapper to `filtfilt` from `SeisIO`.
 
 # Arguments
 - `C::SeisChannel`: SeisChannel to filter.
@@ -681,7 +681,7 @@ This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
 function highpass!(C::SeisChannel, freq::Float64;corners::Int=4, zerophase::Bool=true)
-    highpass!(C.x,freq,C.fs,corners=corners,zerophase=zerophase)
+    filtfilt!(C,fl=freq,np=corners,rt="Highpass")
     return nothing
 end
 highpass(C::SeisChannel,freq::Float64; corners::Int=4,zerophase::Bool=true) =
@@ -694,6 +694,7 @@ highpass(C::SeisChannel,freq::Float64; corners::Int=4,zerophase::Bool=true) =
 Butterworth-Highpass Filter.
 
 Filter channels in `S` removing data below certain frequency `freq` using `corners` corners.
+This is a wrapper to `filtfilt` from `SeisIO`.
 
 # Arguments
 - `S::SeisData`: SeisData to filter.
@@ -705,10 +706,7 @@ This results in twice the filter order but zero phase shift in
 the resulting filtered trace.
 """
 function highpass!(S::SeisData, freq::Float64;corners::Int=4, zerophase::Bool=true)
-    @inbounds for i = 1:S.n
-        highpass!(S[i].x,freq,S[i].fs,corners=corners,
-                             zerophase=zerophase)
-    end
+    filtfilt!(S,fl=freq,np=corners,rt="Highpass")
     return nothing
 end
 highpass(S::SeisData,freq::Float64; corners::Int=4,zerophase::Bool=true) =
@@ -726,7 +724,7 @@ Computes the upper and lower envelopes of the given function.
 - `A::AbstractArray`: Data to make envelope of.
 """
 function envelope(A::AbstractArray)
-    Amean = mean(A)
+    Amean = mean(A,dims=1)
     Acentered = A .- Amean
     env = abs.(hilbert(Acentered))
     upper = env .+ Amean
