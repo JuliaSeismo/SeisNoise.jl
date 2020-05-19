@@ -44,7 +44,17 @@ A = rand(T,N,Nwin)
 @test bandpass(A,freqmin,freqmax,fs,corners=4,zerophase=true) != bandpass(A,freqmin,
                freqmax,fs,corners=3,zerophase=true)
 
+# test high frequency
+highfreq = fs
+B = highpass(A,freqmin,fs,corners=corners,zerophase=zerophase)
+bandpass!(A,freqmin,highfreq,fs,corners=4,zerophase=true)
+@test A == B
+
+# test error with freqmin > fs / 2
+@test_throws ArgumentError bandpass!(A,highfreq,freqmax,fs,corners=4,zerophase=true)
+
 # test RawData filtering
+A = rand(T,N,Nwin)
 R = RawData()
 R.x = A
 R.fs = fs
@@ -179,7 +189,16 @@ A = rand(T,N,Nwin)
 @test bandstop(A,freqmin,freqmax,fs,corners=4,zerophase=true) != bandstop(A,freqmin,
                freqmax,fs,corners=3,zerophase=true)
 
+# test high freq
+highfreq = fs / 2
+@test_throws ArgumentError bandstop!(A,freqmin,highfreq,fs,corners=4,zerophase=true)
+
+# test low freq
+highfreq = fs / 2
+@test_throws ArgumentError bandstop!(A,highfreq,freqmax,fs,corners=4,zerophase=true)
+
 # test RawData filtering
+A = rand(T,N,Nwin)
 R = RawData()
 R.x = A
 R.fs = fs
@@ -302,6 +321,13 @@ A = rand(T,N,Nwin)
 # test corners
 @test lowpass(A,freqmax,fs,corners=4,zerophase=true) != lowpass(A,
                freqmax,fs,corners=3,zerophase=true)
+
+# test low freq
+highfreq = fs / 2
+B = lowpass(A,highfreq,fs,corners=4,zerophase=true)
+@test B == A
+lowpass!(A,highfreq,fs,corners=4,zerophase=true)
+@test B == A
 
 # test RawData filtering
 R = RawData()
@@ -430,6 +456,10 @@ A = rand(T,N,Nwin)
 # test corners
 @test highpass(A,freqmin,fs,corners=4,zerophase=true) != highpass(A,
                freqmin,fs,corners=3,zerophase=true)
+
+# test low freq
+highfreq = fs / 2
+@test_throws ArgumentError highpass!(A,highfreq,fs,corners=4,zerophase=true)
 
 # test RawData filtering
 R = RawData()

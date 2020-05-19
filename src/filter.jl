@@ -21,10 +21,10 @@ the resulting filtered trace.
 function bandpass!(A::AbstractArray{<:AbstractFloat},
                    freqmin::Float64, freqmax::Float64, fs::Float64;
                    corners::Int=4, zerophase::Bool=true)
-   fe = 0.5 * fs
-   low = freqmin / fe
-   high = freqmax / fe
    T = eltype(A)
+   fe = T(0.5 * fs)
+   low = T(freqmin / fe)
+   high = T(freqmax / fe)
 
    # warn if above Nyquist frequency
    if high - oneunit(high) > -1e-6
@@ -35,8 +35,8 @@ function bandpass!(A::AbstractArray{<:AbstractFloat},
    end
 
    # throw error if low above Nyquist frequency
-   if low > 1
-       ArgumentError("Selected low corner frequency is above Nyquist.")
+   if low >= 1
+       throw(ArgumentError("Selected low corner frequency is above Nyquist."))
    end
 
    # create filter
@@ -104,6 +104,11 @@ function bandpass!(A::AbstractGPUArray, freqmin::Float64, freqmax::Float64,
         above Nyquist ($fe). Applying a high-pass instead."
         highpass!(A,freqmin,fs,corners=corners)
         return nothing
+    end
+
+    # throw error if low above Nyquist frequency
+    if low >= 1
+        throw(ArgumentError("Selected low corner frequency is above Nyquist."))
     end
 
     # construct filter
@@ -210,21 +215,19 @@ the resulting filtered trace.
 function bandstop!(A::AbstractArray{<:AbstractFloat},
                  freqmin::Float64,freqmax::Float64,fs::Float64;
                  corners::Int=4, zerophase::Bool=true)
-    fe = 0.5 * fs
-    low = freqmin / fe
-    high = freqmax / fe
     T = eltype(A)
+    fe = T(0.5 * fs)
+    low = T(freqmin / fe)
+    high = T(freqmax / fe)
 
-    # warn if above Nyquist frequency
-    if high > 1
-        @warn "Selected high corner frequency ($freqmax) is"
-        "above Nyquist ($fe). Setting Nyquist as high corner."
-        freqmax = fe
+    # throw error if high above Nyquist frequency
+    if high >= 1
+        throw(ArgumentError("Selected high corner frequency $freqmax Hz is above Nyquist $(fs/2) Hz."))
     end
 
     # throw error if low above Nyquist frequency
-    if low > 1
-        ArgumentError("Selected low corner frequency is above Nyquist.")
+    if low >= 1
+        throw(ArgumentError("Selected low corner frequency $freqmin Hz is above Nyquist $(fs/2) Hz."))
     end
 
     # create filter
@@ -282,15 +285,13 @@ function bandstop!(A::AbstractGPUArray,freqmin::Float64,freqmax::Float64,
     high = freqmax / fe
 
     # warn if above Nyquist frequency
-    if high > 1
-        @warn "Selected high corner frequency ($freqmax) is"
-        "above Nyquist ($fe). Setting Nyquist as high corner."
-        freqmax = fe
+    if high >= 1
+        throw(ArgumentError("Selected high corner frequency $freqmax Hz is above Nyquist $(fs/2) Hz."))
     end
 
     # throw error if low above Nyquist frequency
-    if low > 1
-        ArgumentError("Selected low corner frequency is above Nyquist.")
+    if low >= 1
+        throw(ArgumentError("Selected low corner frequency $freqmin Hz is above Nyquist $(fs/2) Hz."))
     end
 
     # construct filter
@@ -404,8 +405,8 @@ function lowpass!(A::AbstractArray{<:AbstractFloat},freq::Float64,
     # warn if above Nyquist frequency
     if f >= 1
         @warn """Selected corner frequency ($freq) is
-        above Nyquist ($fe). Setting Nyquist as high corner."""
-        freq = fe - 1. / fs
+        above Nyquist ($fe). No filter applied."""
+        return nothing
     end
 
     # create filter
@@ -464,8 +465,8 @@ function lowpass!(A::AbstractGPUArray,freq::Float64,
    # warn if above Nyquist frequency
    if f >= 1
        @warn """Selected corner frequency ($freq) is
-       above Nyquist ($fe). Setting Nyquist as high corner."""
-       freq = fe - 1. / fs
+       above Nyquist ($fe). No filter applied."""
+       return nothing
    end
 
    # construct filter
@@ -573,8 +574,8 @@ function highpass!(A::AbstractArray{<:AbstractFloat},freq::Float64,
     T = eltype(A)
 
     # warn if above Nyquist frequency
-    if f > 1
-        ArgumentError("Selected low corner frequency is above Nyquist.")
+    if f >= 1
+        throw(ArgumentError("Selected low corner frequency $freq Hz is above Nyquist $(fs/2) Hz."))
     end
 
     # create filter
@@ -630,8 +631,8 @@ function highpass!(A::AbstractGPUArray,freq::Float64,
     f = freq / fe
 
     # warn if above Nyquist frequency
-    if f > 1
-        ArgumentError("Selected low corner frequency is above Nyquist.")
+    if f >= 1
+        throw(ArgumentError("Selected low corner frequency $freq Hz is above Nyquist $(fs/2) Hz."))
     end
 
     # construct filter
