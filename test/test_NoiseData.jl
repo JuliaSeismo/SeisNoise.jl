@@ -106,17 +106,18 @@ end
 
 # check uncommon cc_len & cc_step
 @testset "SeisChannel odd cc_len/cc_step" begin
+Ch = S[1]
 cc_len = π
 cc_step = 1800.
-@test_throws DomainError RawData(S,cc_len,cc_step)
+@test_throws DomainError RawData(Ch,cc_len,cc_step)
 cc_len = 1800.
 cc_step = π
-@test_throws DomainError RawData(S,cc_len,cc_step)
+@test_throws DomainError RawData(Ch,cc_len,cc_step)
 
 # check huge cc_len
 cc_len = 86401.
 cc_step = 1800.
-@test_throws DomainError RawData(S,cc_len,cc_step)
+@test_throws DomainError RawData(Ch,cc_len,cc_step)
 end
 
 ## test when starttime is not aligned with cc_len
