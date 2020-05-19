@@ -8,9 +8,7 @@ include("test_distance.jl")
 include("test_tools.jl")
 include("test_slicing.jl")
 include("test_filter.jl")
-# include("test_downsample.jl")
-# include("test_availability.jl")
-# include("test_phase_shift.jl")
+include("test_phase_shift.jl")
 # include("test_stacking.jl")
 #
 # # import  routines for doin' stuff
