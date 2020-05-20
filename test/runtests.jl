@@ -10,7 +10,7 @@ include("test_tools.jl")
 include("test_slicing.jl")
 include("test_filter.jl")
 include("test_phase_shift.jl")
-# include("test_stacking.jl")
+include("test_stacking.jl")
 #
 # # import  routines for doin' stuff
 # include("test_compute_fft.jl")

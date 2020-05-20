@@ -1,6 +1,6 @@
 export stack, stack!, remove_nan, remove_nan!, shorten, shorten!
 export pws, pws!, robuststack, robuststack!, adaptive_filter!, adaptive_filter
-export robustpws
+export robustpws, robustpws!
 """
 
   stack!(C)
@@ -31,7 +31,7 @@ function stack!(C::CorrData; interval::Union{Month,Day,Hour,Second}=Day(1),
           stackT = unique(C.t)
           ind = indexin(stackT,C.t)
           push!(ind,length(C.t)+1)
-          stack_out = Array{eltype(C.corr)}(undef,size(C.corr)[1],length(stackT))
+          stack_out = Array{eltype(C.corr)}(undef,size(C.corr,1),length(stackT))
 
           for ii = 1:length(stackT)
                  if stacktype == mean
@@ -110,10 +110,10 @@ function robuststack(A::AbstractArray{T};ϵ::AbstractFloat=Float32(1e-4),
     end
     return Bnew
 end
-robuststack!(C::CorrData;ϵ::AbstractFloat=eps(Float32)) =
-       (C.corr = robuststack(C.corr,ϵ=ϵ); C.t = C.t[1:1]; return C)
-robuststack(C::CorrData;ϵ::AbstractFloat=eps(Float32))  =
-       (U = deepcopy(C); U.corr = robuststack(U.corr,ϵ=ϵ); U.t = U.t[1:1];
+robuststack!(C::CorrData;ϵ::AbstractFloat=eps(Float32),maxiter::Int=10) =
+       (C.corr = robuststack(C.corr,ϵ=ϵ,maxiter=maxiter); C.t = C.t[1:1]; return C)
+robuststack(C::CorrData;ϵ::AbstractFloat=eps(Float32),maxiter::Int=10)  =
+       (U = deepcopy(C); U.corr = robuststack(U.corr,ϵ=ϵ,maxiter=maxiter); U.t = U.t[1:1];
        return U)
 
 """
@@ -135,15 +135,17 @@ where N is number of traces used, v is sharpness of phase-weighted stack
 - `A::AbstractArray`: Time series stored in columns.
 - `pow::Int`: Sharpness of transition from phase similarity to dissimilarity.
 """
-function pws(A::AbstractArray{T}; pow::AbstractFloat=2.) where T <: AbstractFloat
-    pow = T(pow)
+function pws(A::AbstractArray{T}; pow::Real=2) where T <: AbstractFloat
+    # preserve type-stability 
+    if !isa(pow,Int)
+        pow = T(pow)
+    end
     Nrows,Ncols = size(A)
-    phase_stack = abs.(mean(exp.(im.*angle.(A .+ im .* hilbert(A))),dims=2)[:,1] ./ Ncols).^pow
-    abs_max!(phase_stack)
+    phase_stack = abs.(sum(exp.(im .* angle.(hilbert(A))),dims=2) ./ Ncols) .^ pow
     return mean(A .* phase_stack,dims=2)
 end
-pws!(C::CorrData; pow::AbstractFloat=2.) = (C.corr=pws(C.corr,pow=pow); C.t = C.t[1:1]; return nothing)
-pws(C::CorrData; pow::AbstractFloat=2.) = (U = deepcopy(C);
+pws!(C::CorrData; pow::Real=2) = (C.corr=pws(C.corr,pow=pow); C.t = C.t[1:1]; return nothing)
+pws(C::CorrData; pow::Real=2) = (U = deepcopy(C);
     U.corr=pws(U.corr,pow=pow); U.t = U.t[1:1];return U)
 
 """
@@ -159,6 +161,13 @@ function remove_nan!(C::CorrData)
                   append!(ind,ii)
             end
       end
+
+      # throw error if all values are NaN
+      if length(ind) == 0
+          throw(ArgumentError("All correlation windows contain NaNs."))
+      end
+
+      # return non-NaN columns
       C.corr = C.corr[:,ind]
       C.t = C.t[ind]
       return nothing
@@ -205,7 +214,11 @@ and `P` is the filter. `P` is constructed by using the temporal covariance matri
 function adaptive_filter!(A::AbstractArray{T}, window::AbstractFloat,
                           fs::Float64; g::AbstractFloat=2., overlap::AbstractFloat=0.9) where T <: AbstractFloat
     if ndims(A) == 1
-        return A
+        return nothing
+    end
+
+    if overlap <= 0 || overlap >= 1
+        throw(ArgumentError("overlap must be > 0 and < 1."))
     end
 
     Nrows, Ncols = size(A)
@@ -304,7 +317,7 @@ stack downweights outlier phases.
 - `pow::Int`: Sharpness of transition from phase similarity to dissimilarity.
 """
 function robustpws(A::AbstractArray{T};ϵ::AbstractFloat=Float32(1e-6),
-                     maxiter::Int=10,pow::AbstractFloat=2.) where T <: AbstractFloat
+                     maxiter::Int=10,pow::Real=2) where T <: AbstractFloat
     N = size(A,2)
     Bold = median(A,dims=2)
     w = Array{T}(undef,N)
