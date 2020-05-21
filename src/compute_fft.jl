@@ -20,22 +20,49 @@ Pre-process raw seismic data.
 function process_raw!(S::SeisData, fs::Float64; ϕshift::Bool=true)
     merge!(S)
     ungap!(S)
-
-    for ii = 1:S.n
-        SeisIO.detrend!(S[ii])         # remove mean & trend from channel
-        SeisNoise.taper!(S[ii].x,S[ii].fs)         # taper channel ends
-        if fs ∉ S.fs
-            lowpass!(S[ii].x,fs/2,S[ii].fs,zerophase=true)    # lowpass filter before downsampling
-        end
-        resample!(S,chans=ii,fs=fs) # downsample to lower fs
-        SeisNoise.taper!(S[ii].x,S[ii].fs)
-        phase_shift!(S[ii], ϕshift=ϕshift) # timing offset from sampling period
-    end
+	detrend!(S)         # remove mean & trend from channel
+	taper!(S)                      # taper channel ends
+	if fs ∉ S.fs
+		filtfilt!(S,fh=fs/2,rt="Lowpass")    # lowpass filter before downsampling
+	end
+	resample!(S,fs=fs) # downsample to lower fs
+	taper!(S)
+    phase_shift!(S, ϕshift=ϕshift) # timing offset from sampling period
     return nothing
 end
 process_raw(S::SeisData, fs::Float64;
            ϕshift::Bool=true) = (U = deepcopy(S);
            process_raw!(U,fs, ϕshift=ϕshift); return U)
+
+"""
+   process_raw!(C,fs)
+
+Pre-process raw SeisChannel.
+
+- Removes mean from data in `C`.
+- Detrends data in `C`.
+- Downsamples data to sampling rate `fs`
+- Phase-shifts data to begin at 00:00:00.0
+
+# Arguments
+- `C::SeisChannel`: SeisChannel structure.
+- `fs::Float64`: Sampling rate to downsample `C`.
+"""
+function process_raw!(C::SeisChannel, fs::Float64; ϕshift::Bool=true)
+	ungap!(C)
+    detrend!(C)         # remove mean & trend from channel
+    taper!(C)         # taper channel ends
+    if fs != C.fs
+    	filtfilt!(C,fh=fs/2,rt="Lowpass")    # lowpass filter before downsampling
+	end
+	resample!(C,fs) # downsample to lower fs
+	taper!(C)
+	phase_shift!(C, ϕshift=ϕshift) # timing offset from sampling period
+	return nothing
+end
+process_raw(C::SeisChannel, fs::Float64;
+        ϕshift::Bool=true) = (U = deepcopy(C);
+        process_raw!(U,fs, ϕshift=ϕshift); return U)
 
 """
 
@@ -74,9 +101,9 @@ function phase(A::AbstractArray)
     f[1:Nrows÷2 + 1 + isodd(Nrows),:] .= rfft(A,1)
     f[2:Nrows÷2  + isodd(Nrows),:] .*= T(2.)
 	f[1:Nrows÷2 + 1 + isodd(Nrows),:] ./= abs.(f[1:Nrows÷2 + 1 + isodd(Nrows),:])
-	ind = findall(isweird.(f[1:Nrows÷2 + isodd(Nrows),:]))
+	ind = findall(isweird.(f[1:Nrows÷2 + isodd(Nrows) + 1,:]))
 	if length(ind) > 0
-		fill!(f[ind],fftouttype(T)(0))
+		fill!(@view(f[ind]),fftouttype(T)(0))
 	end
     return f
 end
@@ -98,7 +125,7 @@ function phase(R::RawData)
                  R.misc, R.notes, R.t, FFT)
 end
 
-isweird(x) =  isnan(x) .| isinf(x) .| isnothing(x)
+isweird(x) =  isnan(x) .| isinf(x)
 
 """
 
