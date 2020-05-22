@@ -117,7 +117,7 @@ end
     p = phase(A)
     @test all(.!SeisNoise.isweird.(p)) # test no NaNs
 
-    # test phase 
+    # test phase
     A = rand(T,N,Nwin)
     p = phase(A)
     @test size(A) == size(p)
@@ -166,4 +166,158 @@ end
     # test in-place
     mute!(R)
     @test R.x == M.x
+end
+
+@testset "clip/clamp" begin
+    Nspikes = 100
+    A = rand(T,N,Nwin) .- 0.5
+    ind = rand(1:N,Nspikes)
+    A[ind,:] .= randn(Nspikes,Nwin) .* 100000
+    A[:,1] .= T(0)
+
+    # test clipping
+    B = clip(A,3)
+    @test size(B) == size(A)
+    @test eltype(B) == eltype(A)
+    @test B != A
+    @test all(maximum(abs.(B),dims=1) .<= maximum(abs.(A),dims=1))
+
+    # test in-place
+    clip!(A,3)
+    @test A == B
+
+    # test 1D array
+    A = rand(T,N) .- 0.5
+    ind = rand(1:N,Nspikes)
+    A[ind] .= randn(Nspikes) .* 100000
+    B = clip(A,3)
+    @test size(B) == size(A)
+    @test eltype(B) == eltype(A)
+    @test all(maximum(abs.(B),dims=1) .<= maximum(abs.(A),dims=1))
+
+    # test RawData
+    Nspikes = 100
+    A = rand(T,N,Nwin) .- 0.5
+    ind = rand(1:N,Nspikes)
+    A[ind,:] .= randn(Nspikes,Nwin) .* 100000
+    A[:,1] .= T(0)
+    R = RawData()
+    R.x = A
+    Rclip = clip(R,3)
+    @test isa(Rclip,RawData)
+    @test size(Rclip.x) == size(R.x)
+    @test eltype(Rclip.x) == eltype(R.x)
+    @test Rclip.x != R.x
+    @test all(maximum(abs.(Rclip.x),dims=1) .<= maximum(abs.(R.x),dims=1))
+
+    # test in-place
+    clip!(R,3)
+    @test R.x == Rclip.x
+
+    # test clamping w RawData
+    A = rand(T,N,Nwin) .- 0.5
+    ind = rand(1:N,Nspikes)
+    A[ind,:] .= randn(Nspikes,Nwin) .* 100000
+    A[:,1] .= T(0)
+    R = RawData()
+    R.x = deepcopy(A)
+    Rclamp = clamp(R,π)
+    @test isa(Rclamp,RawData)
+    @test size(Rclamp.x) == size(R.x)
+    @test eltype(Rclamp.x) == eltype(R.x)
+    @test all(abs.(Rclamp.x) .<= π)
+    @test Rclamp.x != R.x
+
+    # test in place
+    clamp!(R,π)
+    @test R.x == Rclamp.x
+
+    # test clamping with two values
+    R.x = deepcopy(A)
+    Rclamp = clamp(R,-0.75,0.5)
+    @test isa(Rclamp,RawData)
+    @test size(Rclamp.x) == size(R.x)
+    @test eltype(Rclamp.x) == eltype(R.x)
+    @test all(Rclamp.x .>= -0.75)
+    @test all(Rclamp.x .<= 0.5)
+
+    # test switching hi and lo
+    @test_throws ArgumentError clamp(R,0.5,-0.75)
+
+    # test in-place
+    clamp!(R,-0.75,0.5)
+    @test R.x == Rclamp.x
+end
+
+@testset "remove_amp" begin
+    # create array with std == 1
+    A = rand(T,N,Nwin) .- 0.5
+    A ./= std(A,dims=1)
+
+    # add amplitude spikes
+    Nspikes = 100
+    cols = unique(rand(1:Nwin,Nwin÷2))
+    ind = rand(1:N,Nspikes)
+    R = RawData()
+    R.x = deepcopy(A)
+    R.x[ind,cols] .= randn(Nspikes,length(cols)) .* 100000
+    R.t = collect(1.:10.)
+    Ramp = remove_amp(R)
+    @test isa(Ramp,RawData)
+    @test size(Ramp.x,2) == Nwin - length(cols)
+    @test length(Ramp.t) == Nwin - length(cols)
+
+    # test in-place
+    remove_amp!(R)
+    @test R.x == Ramp.x
+
+    # add amplitude spikes to all columns
+    R.x = deepcopy(A)
+    R.x[ind,:] .= randn(Nspikes) .* 100000
+    @test_throws ErrorException remove_amp(R)
+
+    # test with zeros
+    cols = unique(rand(1:Nwin,Nwin÷2))
+    R.x = deepcopy(A)
+    R.x[:,cols] .= T(0)
+    R.t = collect(1.:10.)
+    Ramp = remove_amp(R)
+    @test isa(Ramp,RawData)
+    @test size(Ramp.x,2) == Nwin - length(cols)
+    @test length(Ramp.t) == Nwin - length(cols)
+
+    # test with all zeros
+    R.x .= zero(T)
+    @test_throws ErrorException remove_amp(R)
+end
+
+@testset "one-bit" begin
+    A = rand(T,N,Nwin) .- T(0.5)
+    R = RawData()
+    R.x = A
+
+    # one-bit RawData
+    R1 = onebit(R)
+    @test isa(R1,RawData)
+    @test maximum(R1.x) == T(1)
+    @test size(R1.x) == size(A)
+    @test eltype(R1.x) == eltype(A)
+    @test minimum(R1.x) == T(-1)
+    @test maximum(R1.x) == T(1)
+
+    # test in-place
+    onebit!(R)
+    @test R.x == R1.x
+
+end
+
+@testset "nonzero" begin
+    A = rand(T,N,Nwin)
+    cols = unique(rand(1:Nwin,Nwin÷2))
+    A[:,cols] .= T(0)
+    ind = SeisNoise.nonzero(A)
+    # test no intersect between cols and ind
+    @test setdiff(cols,ind) == cols
+    # test ind are Int
+    @test all(isa.(ind,Int))
 end

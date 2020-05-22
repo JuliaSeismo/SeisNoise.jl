@@ -1,5 +1,5 @@
 export process_raw, process_raw!, process_fft, rfft
-export onebit!, onebit, remove_response!, remove_response, amplitude!, amplitude
+export onebit!, onebit, remove_response!, remove_response, remove_amp!, remove_amp
 export clip, clip!, clamp, clamp!, mute!, mute, phase
 import Base: clamp, clamp!
 import FFTW: rfft
@@ -159,7 +159,7 @@ Truncate array A at `factor` times the root mean square of each column.
 - `f::Function`: Input statistical function (e.g. rms, var, std, mad)
 - `dims`: Dimension of `A` to apply clipping (defaults to 1)
 """
-function clip!(A::AbstractArray{T,N}, factor::Real; f::Function=rootmeansquare,dims=1) where {T,N}
+function clip!(A::AbstractArray{T,N}, factor::Real; f::Function=std,dims=1) where {T,N}
     if N == 1
         high = f(A) .* factor
         clamp!(@view(A[:]),-high,high)
@@ -171,43 +171,42 @@ function clip!(A::AbstractArray{T,N}, factor::Real; f::Function=rootmeansquare,d
     end
     return nothing
 end
-clip(A::AbstractArray, factor::Real; f::Function=rms, dims=1) = (U = deepcopy(A);
+clip(A::AbstractArray, factor::Real; f::Function=std, dims=1) = (U = deepcopy(A);
      clip!(U,factor,f=f,dims=dims);return U)
-clip!(R::RawData,factor::Real;f::Function=rootmeansquare,dims=1) = clip!(R.x,factor,f=f,dims=dims)
-clip(R::RawData,factor::Real;f::Function=rootmeansquare,dims=1) = (U = deepcopy(R);
+clip!(R::RawData,factor::Real;f::Function=std,dims=1) = clip!(R.x,factor,f=f,dims=dims)
+clip(R::RawData,factor::Real;f::Function=std,dims=1) = (U = deepcopy(R);
      clip!(U.x,factor,f=f,dims=dims); return U)
 clamp!(R::RawData,val::Real) = clamp!(R.x,-abs(val),abs(val))
-clamp!(R::RawData,lo::Real,hi::Real) = clamp!(R.x,lo,hi)
+clamp!(R::RawData,lo::Real,hi::Real) = lo < hi ? clamp!(R.x,lo,hi) : throw(ArgumentError("lo value $lo must be less than hi value $hi."))
 clamp(R::RawData,val::Real) = (U = deepcopy(R); clamp!(U,val);return U)
 clamp(R::RawData,lo::Real,hi::Real) = (U = deepcopy(R); clamp!(U,lo,hi);return U)
 
 """
-  amplitude!(R)
+  remove_amp!(R)
 
 Filter raw data based on amplitude.
 """
-function amplitude!(R::RawData; max_std::Float64=10.)
+function remove_amp!(R::RawData; max_std::Float64=10.)
     # remove nonzero columns
     zeroind = nonzero(R.x)
     if length(zeroind) == 0
-        R = nothing
+        throw(ErrorException("All values in Rawdata == 0"))
     elseif size(R.x,2) != length(zeroind)
         R.x = R.x[:,zeroind]
-        starts = starts[zeroind]
+        R.t = R.t[zeroind]
     end
 
     # amplitude threshold indices
     stdind = std_threshold(R.x,max_std)
     if length(stdind) == 0
-        R = nothing
+        throw(ErrorException("All columns in Rawdata contain values > max_std"))
     elseif size(R.x,2) != length(stdind)
         R.x = R.x[:,stdind]
-        starts = starts[stdind]
-        ends = ends[stdind]
+        R.t = R.t[stdind]
     end
     return nothing
 end
-amplitude(R::RawData; max_std::Float64=10.) = (U = deepcopy(R);amplitude!(U,
+remove_amp(R::RawData; max_std::Float64=10.) = (U = deepcopy(R);remove_amp!(U,
           max_std=max_std); return U)
 
 """
@@ -240,8 +239,4 @@ function nonzero(A::AbstractArray)
         end
     end
     return ind
-end
-
-function rootmeansquare(A::AbstractArray;dims::Int=1)
-    return sqrt.(sum(A.^2,dims=dims))
 end
