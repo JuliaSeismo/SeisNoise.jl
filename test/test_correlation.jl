@@ -12,6 +12,10 @@ corners = 4   # number of corners
 zerophase = true # do zerophase filtering
 maxlag = 20. # seconds of coda to save
 starttime = d2u(DateTime(Date(now()))) # starttime for SeisChanel / SeisData
+rand_net()    = uppercase(String(rand('A':'Z', 2)))
+rand_sta()    = String(rand('A':'Z', rand(3:5)))
+rand_loc()    = rand() < 0.5 ? "" : lpad(rand(0:9), 2, "0")
+rand_id() = string(rand_net(), ".", rand_sta(), ".", rand_loc(), ".HH", rand('A':'Z'))
 
 @testset "clean up" begin
     A = rand(T,N,Nwin)
@@ -299,7 +303,7 @@ end
 
     # change FFTData names
     for ii = 1:5
-        Fs[ii].name = SeisIO.RandSeis.rand_irr_id()
+        Fs[ii].name = rand_id()
     end
 
     # test corrmap with defaults
