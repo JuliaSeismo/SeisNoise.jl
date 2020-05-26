@@ -15,7 +15,7 @@ include("test_stacking.jl")
 # # import  routines for doin' stuff
 include("test_compute_fft.jl")
 include("test_correlation.jl")
-# include("test_rotation.jl")
+include("test_rotation.jl")
 # include("test_plotting.jl")
 #
 # # out with the old
