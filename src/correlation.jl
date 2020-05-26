@@ -1,6 +1,5 @@
 # cross-correlation module
-export clean_up!, clean_up, correlate, generate_pairs, map_cc, corrmap
-export phasecorrelate
+export clean_up!, clean_up, correlate, map_cc, corrmap, phasecorrelate
 export coherence!, coherence, deconvolution!, deconvolution, whiten, whiten!
 
 """
@@ -31,10 +30,20 @@ clean_up!(C::CorrData,freqmin::Float64,freqmax::Float64; corners::Int=4,
           freqmin,freqmax,C.fs,corners=corners,zerophase=zerophase,
           max_length=max_length);C.freqmin=freqmin;C.freqmax=freqmax;return nothing)
 
+clean_up(C::CorrData,freqmin::Float64,freqmax::Float64; corners::Int=4,
+         zerophase::Bool=true,max_length::Float64=20.) = (U = deepcopy(C);
+         clean_up!(U,freqmin,freqmax,corners=corners,zerophase=zerophase,
+         max_length=max_length);return U)
+
 clean_up!(R::RawData,freqmin::Float64,freqmax::Float64; corners::Int=4,
           zerophase::Bool=true,max_length::Float64=20.) = (clean_up!(R.x,freqmin,
           freqmax,R.fs,corners=corners,zerophase=true, max_length=max_length);
           R.freqmin=freqmin;R.freqmax=freqmax;return nothing)
+
+clean_up(R::RawData,freqmin::Float64,freqmax::Float64; corners::Int=4,
+       zerophase::Bool=true,max_length::Float64=20.) = (U = deepcopy(R);
+       clean_up!(U,freqmin,freqmax,corners=corners,zerophase=zerophase,
+       max_length=max_length);return U)
 
 """
     correlate(FFT1, FFT2, N, maxlag, corr_type='cross-correlation')
@@ -143,110 +152,6 @@ end
 
 
 """
-    corrmap(A,maxlag,smoothing_half_win,corr_type,OUTDIR)
-
-Compute cross-correlations using a parallel map.
-
-`corrmap` takes in an array of FFT's and cross-correlates using full parallism.
-For a list of `N` `FFT`s, there are `N * (N - 1) / 2` total possible
-cross-correlations. To avoid parallel I/O issues, `corrmap` copies the current
-correlation `F`, then maps the correlation of `F` against all other correlations
-in parallel.
-
-# Arguments
-- `A::AbstractArray`: Array of FFTData objects.
-- `maxlag::Float64`: Maximum lag time (in seconds) in cross-correlation to save,
-                     e.g. `maxlag = 20.` will save lag times = -20.:20. s.
-- `smoothing_half_win::Int`: Number of points to smooth spectrum of
-                    cross-correlations if using deconvolution or coherence.
-- `corr_type::String`: Type of correlation: `cross-correlation`, `coherence` or
-                       `deconv`.
-- `OUTDIR::String`: Path to save correlation, e.g. "/home/ubuntu/CORR/".
-"""
-function corrmap(A::Array{FFTData,1},maxlag::Float64, smoothing_half_win::Int,
-                 corr_type::String,OUTDIR::String;
-                 water_level::Union{Nothing,AbstractFloat}=nothing)
-        N = size(A,1)
-
-        if corr_type == "coherence"
-            A = pmap(coherence,A,fill(smoothing_half_win,N),fill(water_level,N))
-        end
-
-        # copy the current FFT and correlate against all remaining
-        for ii = 1:N-1
-            FFT = pop!(A)
-            if corr_type == "deconv"
-                deconvolution!(FFT,smoothing_half_win,water_level)
-            end
-            out = fill(deepcopy(FFT),length(A))
-            pmap(map_cc,out,A,fill(maxlag,length(A)),
-                 fill(corr_type,length(A)),fill(OUTDIR,length(A)))
-        end
-end
-
-function corrmap(A::Array{FFTData,1},maxlag::Float64, smoothing_half_win::Int,
-                 corr_type::String,OUTDIR::String,
-                 interval::Union{Month,Day,Hour,Second};
-                 water_level::Union{Nothing,AbstractFloat}=nothing)
-        N = size(A,1)
-
-        if corr_type == "coherence"
-            A = pmap(coherence,A,fill(smoothing_half_win,N),fill(water_level,N))
-        end
-
-        # copy the current FFT and correlate against all remaining
-        for ii = 1:N-1
-            FFT = pop!(A)
-            out = fill(deepcopy(FFT),length(A))
-            if corr_type == "deconv"
-                deconvolution!(FFT,smoothing_half_win,water_level)
-            end
-            pmap(map_cc,out,A,fill(maxlag,length(A)),
-                 fill(corr_type,length(A)),fill(OUTDIR,length(A)),
-                 fill(interval,length(A)))
-        end
-end
-
-"""
-  map_cc(FFT1,FFT2,maxlag,OUTDIR)
-
-Input function for corrmap.
-
-Correlates `FFT1` and `FFT2`.
-
-# Arguments
-- `FFT1::FFTData`: FFTData object of fft'd ambient noise data.
-- `FFT2::FFTData`: FFTData object of fft'd ambient noise data.
-- `maxlag::Float64`: Maximum lag time (in seconds) in cross-correlation to save,
-                 e.g. `maxlag = 20.` will save lag times = -20.:20. s.
-- `corr_type::String`: Type of correlation: `cross-correlation`, `coherence` or
-                   `deconv`.
-- `OUTDIR::String`: Path to save correlation, e.g. "/home/ubuntu/CORR/".
-
-"""
-function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Float64,
-                corr_type::String,OUTDIR::String)
-    println("Correlation $(FFT1.name), $(FFT2.name)")
-    C = compute_cc(FFT1,FFT2,maxlag,corr_type=corr_type)
-    if !isnothing(C)
-        save_corr(C,OUTDIR)
-    end
-    return nothing
-end
-
-function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Float64,
-                corr_type::String,OUTDIR::String,
-                interval::Union{Month,Day,Hour,Second})
-    println("Correlation $(FFT1.name), $(FFT2.name)")
-    C = compute_cc(FFT1,FFT2,maxlag,corr_type=corr_type)
-    if !isnothing(C)
-        stack!(C,interval=interval)
-        save_corr(C,OUTDIR)
-    end
-    return nothing
-end
-
-"""
     whiten(A, freqmin, freqmax, fs, pad=50)
 
 Whiten spectrum of rfft `A` between frequencies `freqmin` and `freqmax`.
@@ -283,32 +188,32 @@ function whiten!(A::Array{<:Complex{<:AbstractFloat}}, freqmin::Float64, freqmax
         right = high - pad
     end
 
-    # left zero cut-off
     compzero = complex(T(0))
     for jj = 1:Ncols
-         for ii = 1:low
+        # left zero cut-off
+        for ii = 1:low-1
             A[ii,jj] = compzero
         end
 
-    # left tapering
-         for ii = low+1:left
-            A[ii,jj] = cos(T(pi) ./ T(2) .+ T(pi) ./ T(2) .* (ii-low-1) ./ pad).^2 .* exp(
+        # left tapering
+        for ii = low:left-1
+            A[ii,jj] = cos(T(pi) ./ T(2) .+ T(pi) ./ T(2) .* (ii-low) ./ pad).^2 .* exp(
             im .* angle(A[ii,jj]))
         end
 
-    # pass band
-         for ii = left+1:right
+        # pass band
+        for ii = left:right-1
             A[ii,jj] = exp(im .* angle(A[ii,jj]))
         end
 
-    # right tapering
-         for ii = right+1:high
+        # right tapering
+        for ii = right+1:high
             A[ii,jj] = cos(T(pi) ./ T(2) .* (ii-right) ./ pad).^2 .* exp(
             im .* angle(A[ii,jj]))
         end
 
-    # right zero cut-off
-         for ii = high+1:size(A,1)
+        # right zero cut-off
+        for ii = high+1:size(A,1)
             A[ii,jj] = compzero
         end
     end
@@ -344,13 +249,13 @@ function whiten!(A::AbstractGPUArray{Complex{Float32}}, freqmin::Float64,
    padarr = similar(A,T,pad)
    padarr .= T(1.):T(pad)
    # left zero cut-off
-   A[1:low,:] .= compzero
+   A[1:low-1,:] .= compzero
    # left tapering
-   A[low+1:left,:] .= cos.(T(pi) ./ T(2) .+ T(pi) ./ T(2) .* padarr ./ pad).^2 .* exp.(im .* CUDAnative.angle.(A[low+1:left,:]))
+   A[low:left-1,:] .= cos.(T(pi) ./ T(2) .+ T(pi) ./ T(2) .* padarr ./ pad).^2 .* exp.(im .* CUDAnative.angle.(A[low:left-1,:]))
    # pass band
-   A[left+1:right,:] .= exp.(im .* CUDAnative.angle.(A[left+1:right,:]))
+   A[left:right-1,:] .= exp.(im .* CUDAnative.angle.(A[left:right-1,:]))
    # right tapering
-   A[right+1:high,:] .= cos.(T(pi) ./ T(2) .* padarr ./ pad).^2 .* exp.(im .* CUDAnative.angle.(A[right+1:high,:]))
+   A[right:high-1,:] .= cos.(T(pi) ./ T(2) .* padarr ./ pad).^2 .* exp.(im .* CUDAnative.angle.(A[right:high-1,:]))
    # right zero cut-off
    A[high:end,:] .= compzero
    return nothing
@@ -440,6 +345,7 @@ function coherence!(F::FFTData, half_win::Int,
         smoothF .+= reg
     end
     F.fft ./= smoothF
+    return nothing
 end
 coherence(F::FFTData,half_win::Int,
           water_level::Union{Nothing,AbstractFloat}=nothing) =
@@ -467,22 +373,85 @@ function deconvolution!(F::FFTData, half_win::Int,
         smoothF .+= reg
     end
     F.fft ./= smoothF
+    return nothing
 end
 deconvolution(F::FFTData,half_win::Int,
               water_level::Union{Nothing,AbstractFloat}=nothing) =
               (U = deepcopy(F);deconvolution!(U,half_win,water_level);
               return U)
 
-function generate_pairs(files::AbstractArray)
-    N = length(files)
-    num_pairs = convert(Int,round(N * (N-1) / 2 + N))
-    pairs = Array{Array{String,1},1}(undef,num_pairs)
-    count = 0
-    for ii = 1:length(files)
-      for jj = ii:length(files)
-          count += 1
-          pairs[count] = [files[ii], files[jj]]
-      end
+"""
+  corrmap(A,maxlag,corr_type,OUTDIR)
+
+Compute cross-correlations using a parallel map.
+
+`corrmap` takes in an array of FFT's and cross-correlates using full parallism.
+For a list of `N` `FFT`s, there are `N * (N - 1) / 2` total possible
+cross-correlations. To avoid parallel I/O issues, `corrmap` copies the current
+correlation `F`, then maps the correlation of `F` against all other correlations
+in parallel.
+
+# Arguments
+- `A::AbstractArray`: Array of FFTData objects.
+- `maxlag::Float64`: Maximum lag time (in seconds) in cross-correlation to save,
+                   e.g. `maxlag = 20.` will save lag times = -20.:20. s.
+- `corr_type::String`: Type of correlation: `CC` or `PCC`.
+- `smoothing_half_win::Int`: Number of points to smooth spectrum of
+                  cross-correlations if using deconvolution or coherence.
+- `smooth_type::String`: Type of smoothing to apply: `cross-correlation`, `coherence` or
+                 `deconvolution`.
+- `OUTDIR::String`: Path to save correlation, e.g. "/home/ubuntu/CORR/".
+"""
+function corrmap(A::Array{FFTData,1},maxlag::Float64,OUTDIR::String;
+               corr_type::String="CC",interval::DatePeriod=Day(0),
+               smooth_type::String="none",smoothing_half_win::Int=5,
+               water_level::Union{Nothing,AbstractFloat}=nothing)
+    N = size(A,1)
+
+    if smooth_type == "coherence"
+        A = pmap(coherence,A,fill(smoothing_half_win,N),fill(water_level,N))
     end
-    return pairs
+
+    # copy the current FFT and correlate against all remaining
+    for ii = 1:N-1
+        FFT = pop!(A)
+        out = fill(deepcopy(FFT),length(A))
+        if smooth_type == "deconvolution"
+            deconvolution!(FFT,smoothing_half_win,water_level)
+        end
+        pmap(map_cc,out,A,fill(maxlag,length(A)),
+        fill(corr_type,length(A)),fill(OUTDIR,length(A)),
+        fill(interval,length(A)))
+    end
+end
+
+
+"""
+map_cc(FFT1,FFT2,maxlag,OUTDIR)
+
+Input function for corrmap.
+
+Correlates `FFT1` and `FFT2`.
+
+# Arguments
+- `FFT1::FFTData`: FFTData object of fft'd ambient noise data.
+- `FFT2::FFTData`: FFTData object of fft'd ambient noise data.
+- `maxlag::Float64`: Maximum lag time (in seconds) in cross-correlation to save,
+               e.g. `maxlag = 20.` will save lag times = -20.:20. s.
+- `smooth_type::String`: Type of smoothing to apply: `cross-correlation`, `coherence` or
+                 `deconv`.
+- `OUTDIR::String`: Path to save correlation, e.g. "/home/ubuntu/CORR/".
+-`interval::DatePeriod`:
+
+"""
+function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Float64,
+              corr_type::String,OUTDIR::String,
+              interval::DatePeriod)
+    println("Correlation $(FFT1.name), $(FFT2.name)")
+    C = correlate(FFT1,FFT2,maxlag,corr_type=corr_type)
+    if interval > Second(0)
+        stack!(C,interval=interval)
+    end
+    save_corr(C,OUTDIR)
+    return nothing
 end

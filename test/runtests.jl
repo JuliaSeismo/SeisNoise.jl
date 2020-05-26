@@ -1,4 +1,4 @@
-using SeisNoise, SeisIO, Dates, FFTW, Statistics
+using SeisNoise, SeisIO, Dates, FFTW, Statistics, Glob
 using Test
 
 include("test_NoiseData.jl")
@@ -14,7 +14,7 @@ include("test_stacking.jl")
 #
 # # import  routines for doin' stuff
 include("test_compute_fft.jl")
-# include("test_correlation.jl")
+include("test_correlation.jl")
 # include("test_rotation.jl")
 # include("test_plotting.jl")
 #
