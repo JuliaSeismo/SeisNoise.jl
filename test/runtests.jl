@@ -19,4 +19,4 @@ include("test_rotation.jl")
 include("test_plotting.jl")
 #
 # # out with the old
-# include("test_deprecated.jl")
+include("test_deprecated.jl")

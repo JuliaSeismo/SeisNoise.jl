@@ -1,5 +1,8 @@
 export compute_fft, compute_cc
 
+@deprecate compute_fft() rfft()
+@deprecate compute_cc() correlate()
+
 """
 
   compute_fft(R)
@@ -37,13 +40,13 @@ Cross-correlation can be done using one of three options:
                        `deconv`.
 """
 function compute_cc(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;
-                    corr_type::String="cross-correlation")
+                    corr_type::String="CC")
 
     comp = FFT1.name[end] * FFT2.name[end]
     # get intersect of dates; return nothing if no intersect
     inter = intersect(FFT1.t,FFT2.t)
     if length(inter) == 0
-        return nothing
+        throw(ArgumentError("No common windows for $(FFT1.name)-$(FFT2.name) $(FFT1.id)"))
     end
 
     N = convert(Int,round(FFT1.cc_len * FFT1.fs)) # number of data points
