@@ -1,27 +1,41 @@
 # SeisNoise.jl
-SeisNoise.jl is designed for fast and easy ambient noise cross-correlation in Julia.
+SeisNoise.jl is designed for fast and easy ambient noise cross-correlation on the CPU and GPU in Julia.
 
- [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://tclements.github.io/SeisNoise.jl/latest) [![Build Status](https://travis-ci.org/tclements/SeisNoise.jl.svg?branch=master)](https://travis-ci.org/tclements/SeisNoise.jl) [![Coverage Status](https://coveralls.io/repos/github/tclements/SeisNoise.jl/badge.svg?branch=master)](https://coveralls.io/github/tclements/SeisNoise.jl?branch=master)
+ [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://tclements.github.io/SeisNoise.jl/latest) [![Build Status](https://travis-ci.org/tclements/SeisNoise.jl.svg?branch=master)](https://travis-ci.org/tclements/SeisNoise.jl) [![](https://img.shields.io/badge/chat-on%20slack-yellow.svg)](https://slackinvite.julialang.org/) [![Coverage Status](https://coveralls.io/repos/github/tclements/SeisNoise.jl/badge.svg?branch=master)](https://coveralls.io/github/tclements/SeisNoise.jl?branch=master)
 
  ![Noise.jl Logo](/docs/src/assets/logo.png)
 
 ## Installation
+You can install the latest version of SeisNoise using the Julia package manager (Press `]` to enter `pkg`). 
 From the Julia command prompt:
-1. Press `]` to enter `pkg`.
-2. Type or copy: `add SeisNoise`
-3. Press backspace to exit `pkg`.
-4. Type or copy: `using SeisNoise`
+
+```julia
+julia>]
+(@v1.4) pkg> add SeisNoise
+```
+
+Or, equivalently, via the `Pkg` API:
+
+```julia
+julia> import Pkg; Pkg.add("SeisNoise")
+```
+
+We recommend using the latest version of SeisNoise by updating with the Julia package manager:
+
+```julia 
+(@v1.4) pkg> update SeisNoise
+```
 
 ## Package Features
   - Built upon [SeisIO](https://seisio.readthedocs.io/en/latest/) for easy and fast I/O.
-  - Custom types for saving Fourier Transforms of data and cross-correlations
-  - Array-based processing of raw data and cross-correlation.
-  - Methods for *dv/v* measurements.
+  - Custom structures for storing Raw Data, Fourier Transforms of data, and cross-correlations
+  - CPU/GPU compatible functions for cross-correlation.
+  - Methods for [*dv/v* measurements](https://github.com/tclements/SeisDvv.jl).
   - Coming soon: Dispersion analysis.
 
 ## SeisNoise Cross-Correlation Example
 Once you have installed the package you can type `using SeisNoise` to start
-cross-correlating. For example
+cross-correlating. SeisNoise uses a functional syntax to implement cross-correlation. For example
 
 ```Julia
 using SeisNoise, SeisIO
@@ -100,3 +114,6 @@ C = correlate(FFT[1],FFT[2],maxlag) |> cpu
   - `correlate`, `cross-coherence`, `deconvolution`
 - Post-processing:
   - `stack`, `filter`s, etc..
+  
+## Contributing
+We welcome folks interested in contributing to SeisNoise. Please [open an issue](https://github.com/tclements/SeisNoise.jl/issues/new) to let us know about bug reports, new methods/code, and or feature requests/usage cases. If you would like to submit a pull request (PR), please include accompanying [tests](https://github.com/tclements/SeisNoise.jl/tree/master/test). 
