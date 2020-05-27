@@ -16,7 +16,7 @@ include("test_stacking.jl")
 include("test_compute_fft.jl")
 include("test_correlation.jl")
 include("test_rotation.jl")
-# include("test_plotting.jl")
+include("test_plotting.jl")
 #
 # # out with the old
 # include("test_deprecated.jl")
