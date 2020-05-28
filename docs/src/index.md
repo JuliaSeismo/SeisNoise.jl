@@ -8,20 +8,38 @@ SeisNoise.jl provides routines for quickly and efficiently implementing [seismic
 
     Much of the I/O and preprocessing in SeisNoise.jl uses the [SeisIO.jl](https://github.com/jpjones76/SeisIO.jl) package. Please read through the [SeisIO Documentation](https://seisio.readthedocs.io/en/latest/) to get familiar with seismic data processing in Julia.
 
+
+
 ## Installation
+You can install the latest version of SeisNoise using the Julia package manager (Press `]` to enter `pkg`).
 From the Julia command prompt:
-1. Press `]` to enter `pkg`.
-2. Type or copy: `add SeisNoise`
-3. Press backspace to exit `pkg`.
-4. Type or copy: `using SeisNoise`
 
-That's it!
+```julia
+julia>]
+(@v1.4) pkg> add SeisNoise
+```
 
-## Using SeisNoise.jl
+Or, equivalently, via the `Pkg` API:
 
-SeisNoise.jl was designed to be as easy to use in the REPL as on an HPC cluster. If
-you want to get started processing data, head over to the tutorial or parallel example.
-This documentation provides a reference to all the underlying function for cross-correlation.
+```julia
+julia> import Pkg; Pkg.add("SeisNoise")
+```
+
+We recommend using the latest version of SeisNoise by updating with the Julia package manager:
+
+```julia
+(@v1.4) pkg> update SeisNoise
+```
+
+## Package Features
+- Built upon [SeisIO](https://seisio.readthedocs.io/en/latest/) for easy and fast I/O.
+- Custom structures for storing Raw Data, Fourier Transforms of data, and cross-correlations
+- CPU/GPU compatible functions for cross-correlation.
+- Methods for [*dv/v* measurements](https://github.com/tclements/SeisDvv.jl).
+- Coming soon: Dispersion analysis.
+
+## Getting Started
+SeisNoise.jl was designed to be as easy to use in the REPL as on an HPC cluster. This documentation provides a reference to all the underlying function for cross-correlation.
 We encourage you to develop your own workflow using SeisNoise's core functionality.
 
 ![plot1](assets/CI-moveout.png)

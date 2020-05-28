@@ -9,12 +9,11 @@ makedocs(
     authors = "Tim Clements",
     pages = Any[
         "Home" => "index.md",
-        "Types" => "types.md",
+        "Workflow" => "types.md",
+        "Using the GPU" => "using_gpus.md",
         "Pre-Processing" => "preprocessing.md",
-        "Filtering" => "filter.md",
         "Computing FFTs" => "fft.md",
         "Correlation" => "correlation.md",
-        "Velocity Change" => "postprocessing.md",
         ],
 )
 

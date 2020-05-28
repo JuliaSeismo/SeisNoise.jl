@@ -1,4 +1,4 @@
-# SeisNoise Types
+# SeisNoise Workflow
 
 `SeisNoise` is designed around array-based cross-correlation. `SeisNoise` uses three custom data structures: `RawData` for storing windows ambient noise, `FFTData` for
 storing Fourier transforms of ambient noise, and `CorrData` for storing
@@ -8,6 +8,8 @@ for 2D-array ambient noise processing. SeisNoise's modular functions work on `Ra
 SeisNoise that end in ! (e.g. `onebit!(R)`) by convention modify their arguments,
 while functions that do not end in ! (e.g. `onebit(R)`) allocate new arrays or
 objects.
+
+![dataflow](assets/SeisNoise-DataFlow.png)
 
 !!! note
 
@@ -177,10 +179,10 @@ of the `whitened` parameter and the swap of the `x` data field to the `fft` data
 field.
 
 `FFTData` more naturally flow from `RawData` input to the
- `compute_fft` function.
+ `rfft` function.
 
  ```julia
- julia> F = compute_fft(R)
+ julia> F = rfft(R)
 FFTData with 11 ffts
       NAME: "TA.M22K..BHZ"                     
         ID: "2019-01-01"                       
@@ -288,7 +290,7 @@ we are computing an "autocorrleation" by inputting the same an `FFTData` twice:
 julia> maxlag = 20.
 20.0
 
-julia> C = compute_cc(F,F,maxlag,corr_type="cross-correlation")
+julia> C = correlate(F,F,maxlag,corr_type="cross-correlation")
 CorrData with 11 Corrs
       NAME: "TA.M22K..BHZ.TA.M22K..BHZ"        
         ID: "2019-01-01"                       

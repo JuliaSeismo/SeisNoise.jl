@@ -116,9 +116,10 @@ FFTData with 36 ffts
 Note that it is necessary to specify the channel when using `load_fft`.
 
 ```@docs
-whiten
-process_fft
-compute_fft
+whiten!
+SeisNoise.rfft
+coherence!
+deconvolution!
 save_fft
 load_fft
 ```

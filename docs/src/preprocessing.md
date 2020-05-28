@@ -8,6 +8,7 @@ rely on [SeisIO's processing](https://seisio.readthedocs.io/en/latest/src/Proces
 - Downsampling
 - Slicing day-long traces into smaller windows
 - Demeaning, detrending and tapering
+- Time-domain normalization
 
 Here is an example workflow:
 
@@ -107,28 +108,6 @@ SeisData with 1 channels (1 shown)
 
 Note that now `S` has sampling rate `fs = 20.0`, has half as many points (`nx = 1728001`) as before and the starttime has changed to 2006-02-01T00:00:00.000.
 
-## Creating Sliding Windows
-[Seats et al., 2011](https://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-246X.2011.05263.x) showed that short term stacks of cross-correlations converge more quickly when dividing raw data into short, overlapping windows. The `slide` function splits `S` into windows of length `cc_len` (in seconds), with step between windows `cc_step` (in seconds).
-
-```julia
-julia> cc_step, cc_len = 450, 1800 # 30 minute window length with 75% overlap
-julia> A, starts, ends = slide(S[1], cc_len, cc_step)
-julia> A
-36000×189 Array{Float64,2}:
-    0.0          -103.095  -67.9792   35.5011   -109.735   …   290.23     18.2172    2827.49    -8198.7      
-    3.14758e-6   -105.382  -69.2759   29.9752   -105.452       483.704    80.7089   -2596.52    -9547.97     
-    0.000105115  -104.929  -71.0974   24.1595   -104.596       635.558     9.51002  -1728.5     -7885.31     
-    0.000551506  -104.545  -73.0085   16.088    -100.576      1193.93     30.3235   -4105.61    -3688.67     
-    0.00155024   -104.646  -75.5247    6.76857   -95.9664     1181.32    -13.5895    1410.62      -65.8756   
-    ⋮                                                      ⋱     ⋮                                           
- -104.322        -105.706  -54.9128  -65.9102     51.2037  …   733.128  -422.694      -76.919      -5.99003  
- -106.025        -106.238  -63.692   -44.0787     46.1554      155.186  -378.362      -63.3664     -1.61041  
- -108.454        -106.888  -70.0719  -26.3757     42.7611     -367.41   -310.284     -142.125       0.503033
- -113.258        -104.777  -79.5973  -20.8923     38.9552      180.431  -272.636     -137.636       0.167523
- -113.7          -103.16   -85.4747   -7.70531    36.072       472.996  -293.358      -74.2375     -0.0133164
-```
-Now `A` is a 2d Array containing 189 sliding windows, each 1800 seconds long.
-
 ## Detrending and Demeaning
 
 The `demean` and `detrend` functions are applied column wise.
@@ -157,12 +136,78 @@ julia> detrend(A)
 3.55271e-15  1.06581e-14
 ```
 
+`demean` and `detrend` also work on `RawData` and `CorrData` structure. If `R` is a `RawData`, then the windowed data stored in `R.x` can be detrended in-place using
+
+```julia
+detrend!(R)
+```
+
+or allocated to a new `RawData` using
+
+```julia
+Rd = detrend(R)
+```
+
+## Amplitude Normaliztion
+
+Time-domain normalization is used to suppress high-amplitude signals, such as earthquakes or instrumental irregularities. SeisNoise provides time-normalization functions for:
+
+- one-bit normalization: `onebit`
+- clipping: `clip`
+- running mean normalization: `smooth`
+- suppressing high-amplitude signals: `mute`
+
+
+## Filtering
+SeisNoise.jl provides `bandpass`, `bandstop`, `lowpass` and `highpass` filters built from
+[DSP.jl](https://github.com/JuliaDSP/DSP.jl). Due to [multiple dispatch](https://en.wikipedia.org/wiki/Multiple_dispatch) in Julia, filter functions in SeisNoise.jl work on either the data in `RawData` or `CorrData` objects or directly with Julia `Array`s. SeisNoise.jl uses Butterworth filters with a default of 4 corners.
+
+### Filtering a RawData or CorrData
+```julia
+julia> freqmin, freqmax = 1., 10. # low and high frequencies in Hz
+julia> corners = 4 # number of corners in Butterworth filter
+julia> zerophase = true # if true, apply filter twice for no phase shifting
+julia> S = get_data("IRIS","TA.V04C..BHZ",s="2006-02-01T00:00:00",t="2006-02-01T01:00:00")
+julia> SeisIO.demean!(S) # remove mean
+julia> SeisIO.detrend!(S) # remove linear trend
+julia> SeisIO.taper!(S) # taper - defaults to 5% taper on either side of the trace
+julia> bandpass(S,freqmin,freqmax,corners=corners,zerophase=zerophase)
+```
+
+### Nyquist Frequency
+Filtering above the Nyquist frequency will give a warning, if using a `lowpass`
+or `bandpass` filter, while using a `highpass` above the Nyquist frequency will throw an
+error.
+
+```julia
+julia> S[1].fs / 2. # Nyquist frequency is half sampling rate
+20.
+julia> freqmax = S[1].fs / 2. + 5.
+25.  
+julia> bandpass(S,freqmin,freqmax,corners=corners,zerophase=zerophase)
+┌ Warning: Selected high corner frequency (25.0) of bandpass is at or
+│        above Nyquist (20.0). Applying a high-pass instead.
+└
+julia> lowpass(S,freqmax,corners=corners,zerophase=zerophase)
+┌ Warning: Selected corner frequency (25.0) is
+│ above Nyquist (20.0). Setting Nyquist as high corner.
+└
+julia> highpass(S,freqmax,corners=corners,zerophase=zerophase)
+ERROR: frequencies must be less than the Nyquist frequency 20.0
+```
+
+
 ## Pre-Processing Functions
+
+```@autodocs
+Modules = [SeisNoise]
+Pages   = ["ArrayFuncs.jl", "filter.jl"]
+```
 
 ```@docs
 process_raw!
-downsample
-slide
-detrend!
-demean!
+onebit!
+clip!
+clamp!
+mute!
 ```
