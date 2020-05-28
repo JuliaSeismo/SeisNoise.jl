@@ -150,9 +150,8 @@ function correlate(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;corr_type::Stri
     return CorrData(FFT1, FFT2, comp, rotated, corr_type,maxlag, inter, corr)
 end
 
-
 """
-    whiten(A, freqmin, freqmax, fs, pad=50)
+   whiten!(A, freqmin, freqmax, fs, pad=50)
 
 Whiten spectrum of rfft `A` between frequencies `freqmin` and `freqmax`.
 Returns the whitened rfft of the time series.
@@ -165,66 +164,7 @@ Returns the whitened rfft of the time series.
 - `N::Int`: Number of input time domain samples for each rfft.
 - `pad::Int`: Number of tapering points outside whitening band.
 """
-function whiten!(A::Array{<:Complex{<:AbstractFloat}}, freqmin::Float64, freqmax::Float64, fs::Float64,
-                 N::Int;pad::Int=50)
-    T = real(eltype(A))
-
-    # get size and convert to Float32
-    Nrows,Ncols = size(A)
-
-    # get whitening frequencies
-    freqvec = FFTW.rfftfreq(N,fs)
-    left = findfirst(x -> x >= freqmin, freqvec)
-    right = findfirst(freqmax .<= freqvec)
-    low, high = left - pad, right + pad
-
-    if low <= 1
-        low = 1
-        left = low + pad
-    end
-
-    if high > length(freqvec)
-        high = length(freqvec)- 1
-        right = high - pad
-    end
-
-    compzero = complex(T(0))
-    for jj = 1:Ncols
-        # left zero cut-off
-        for ii = 1:low-1
-            A[ii,jj] = compzero
-        end
-
-        # left tapering
-        for ii = low:left-1
-            A[ii,jj] = cos(T(pi) ./ T(2) .+ T(pi) ./ T(2) .* (ii-low) ./ pad).^2 .* exp(
-            im .* angle(A[ii,jj]))
-        end
-
-        # pass band
-        for ii = left:right-1
-            A[ii,jj] = exp(im .* angle(A[ii,jj]))
-        end
-
-        # right tapering
-        for ii = right+1:high
-            A[ii,jj] = cos(T(pi) ./ T(2) .* (ii-right) ./ pad).^2 .* exp(
-            im .* angle(A[ii,jj]))
-        end
-
-        # right zero cut-off
-        for ii = high+1:size(A,1)
-            A[ii,jj] = compzero
-        end
-    end
-    return nothing
-end
-whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64, N::Int;
-       pad::Int=50) = (U = deepcopy(A);
-                       whiten!(U,freqmin,freqmax,fs,N,pad=pad);
-                       return U)
-
-function whiten!(A::AbstractGPUArray{Complex{Float32}}, freqmin::Float64,
+function whiten!(A::AbstractArray{Complex{Float32}}, freqmin::Float64,
                  freqmax::Float64, fs::Float64,N::Int;pad::Int=50)
    T = real(eltype(A))
    Nrows,Ncols = size(A)
@@ -247,20 +187,23 @@ function whiten!(A::AbstractGPUArray{Complex{Float32}}, freqmin::Float64,
 
    compzero = complex(T(0))
    padarr = similar(A,T,pad)
-   padarr .= T(1.):T(pad)
+   padarr .= T(0.):T(pad-1)
    # left zero cut-off
    A[1:low-1,:] .= compzero
    # left tapering
-   A[low:left-1,:] .= cos.(T(pi) ./ T(2) .+ T(pi) ./ T(2) .* padarr ./ pad).^2 .* exp.(im .* CUDAnative.angle.(A[low:left-1,:]))
+   A[low:left-1,:] .= cos.(T(pi) ./ T(2) .+ T(pi) ./ T(2) .* padarr ./ pad).^2 .* exp.(im .* angle.(A[low:left-1,:]))
    # pass band
-   A[left:right-1,:] .= exp.(im .* CUDAnative.angle.(A[left:right-1,:]))
+   A[left:right-1,:] .= exp.(im .* angle.(A[left:right-1,:]))
    # right tapering
-   A[right:high-1,:] .= cos.(T(pi) ./ T(2) .* padarr ./ pad).^2 .* exp.(im .* CUDAnative.angle.(A[right:high-1,:]))
+   A[right:high-1,:] .= cos.(T(pi) ./ T(2) .* padarr ./ pad).^2 .* exp.(im .* angle.(A[right:high-1,:]))
    # right zero cut-off
    A[high:end,:] .= compzero
    return nothing
 end
-
+whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64, N::Int;
+    pad::Int=50) = (U = deepcopy(A);
+    whiten!(U,freqmin,freqmax,fs,N,pad=pad);
+    return U)
 """
    whiten(F, freqmin, freqmax)
 
