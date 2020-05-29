@@ -11,14 +11,14 @@ notifications:
     email:
       on_success: change
       on_failure: always
-matrix:
-    allow_failures:
-        - julia: nightly
+      
 after_success:
 - julia -e 'using Pkg; cd(Pkg.dir("SeisNoise")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
 - julia -e 'Pkg.add("Documenter")'
 
 jobs:
+  allow_failures:
+    - julia: nightly
   include:
     - stage: "Documentation"
       julia: 1.3
