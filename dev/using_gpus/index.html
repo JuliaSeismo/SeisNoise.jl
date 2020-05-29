@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Using the GPU · SeisNoise.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><a href="../index.html"><img class="logo" src="../assets/logo.png" alt="SeisNoise.jl logo"/></a><h1>SeisNoise.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../">Home</a></li><li><a class="toctext" href="../types/">Workflow</a></li><li class="current"><a class="toctext" href>Using the GPU</a><ul class="internal"><li><a class="toctext" href="#When-to-use-a-GPU-1">When to use a GPU</a></li><li><a class="toctext" href="#Getting-access-to-GPUs-1">Getting access to GPUs</a></li><li><a class="toctext" href="#I-have-a-GPU.-Now-what?-1">I have a GPU. Now what?</a></li><li><a class="toctext" href="#Using-the-GPU-with-Julia-1">Using the GPU with Julia</a></li><li><a class="toctext" href="#SeisNoise-on-the-GPU-1">SeisNoise on the GPU</a></li></ul></li><li><a class="toctext" href="../preprocessing/">Pre-Processing</a></li><li><a class="toctext" href="../fft/">Computing FFTs</a></li><li><a class="toctext" href="../correlation/">Correlation</a></li></ul></nav><article id="docs"><header><nav><ul><li><a href>Using the GPU</a></li></ul><a class="edit-page" href="https://github.com/tclements/SeisNoise.jl/blob/master/docs/src/using_gpus.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Using the GPU</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Using-GPUs-1" href="#Using-GPUs-1">Using GPUs</a></h1><p>SeisNoise is written to run on graphical processing units (GPUs) for increased performance. Depending on your CPU and GPU combination, speedups of &gt;10-20x are possible.</p><div class="admonition tip"><div class="admonition-title">Running on GPUs</div><div class="admonition-text"><p>If you are having issues with running SeisNoise on a GPU or setting things up, please <a href="https://github.com/tclements/SeisNoise.jl/issues/new">open an issue</a> and we&#39;ll do our best to help out!</p></div></div><h2><a class="nav-anchor" id="When-to-use-a-GPU-1" href="#When-to-use-a-GPU-1">When to use a GPU</a></h2><p>GPUs are very useful for number crunching. If you have a large number of stations to cross-correlate, using a GPU <em>could</em> greatly improve your cross-correlation processing time.</p><p>GPU processing tends to be memory-limited. High-end GPUs (think $$) such as the Nvidia Tesla V100 only come with up to 32 GB of memory. On a GPU with 16 GB of memory, you can cross-correlate ~100 day-long 3-component stations sampled at 100 Hz in memory.</p><h2><a class="nav-anchor" id="Getting-access-to-GPUs-1" href="#Getting-access-to-GPUs-1">Getting access to GPUs</a></h2><p>If you don&#39;t have a GPU there are a few resources you can try to acquire a GPU from.</p><p>If you have access to any supercomputer clusters, check to see if they have any GPUs. See also this Stack Overflow post: <a href="https://scicomp.stackexchange.com/questions/8508/where-can-i-get-access-to-gpu-cluster-for-educational-purpose">Where can I get access to GPU cluster for educational purpose?</a></p><p>Cloud computing providers such as Google Cloud and Amazon EC2 allow you to rent GPUs per hour. Sometimes they offer free trials or credits that can be used towards GPUs although they seem to be getting less common.</p><p>See the <a href="https://discourse.julialang.org/t/julia-on-google-colab-free-gpu-accelerated-shareable-notebooks/15319">Julia on Google Colab: Free GPU-Accelerated Shareable Notebooks</a> post on the Julia Discourse.</p><p><a href="https://codeocean.com/">Code Ocean</a> also has <a href="https://help.codeocean.com/en/articles/1053107-gpu-support">GPU support</a> and allows you to spin up capsules with pretty decent Tesla K80 GPUs for free (for now) if you want to play around with them.  You&#39;ll want to use their &quot;Ubuntu Linux with GPU support (18.04.3)&quot; with the ability to compile CUDA code. Then you&#39;ll have to install Julia manually.</p><p><a href="https://nextjournal.com/">NextJournal</a> provides a Jupyter-like Julia inferface with access to Tesla K80 GPUs for free.</p><h2><a class="nav-anchor" id="I-have-a-GPU.-Now-what?-1" href="#I-have-a-GPU.-Now-what?-1">I have a GPU. Now what?</a></h2><p>Make sure you have an Nvidia GPU that is CUDA compatible: <a href="https://developer.nvidia.com/cuda-gpus">https://developer.nvidia.com/cuda-gpus</a>. Most recent GPUs should be but older GPUs and many laptop GPUs may not be.</p><p>Then download and install the CUDA Toolkit: <a href="https://developer.nvidia.com/cuda-downloads">https://developer.nvidia.com/cuda-downloads</a></p><p>Once the CUDA Toolkit is installed, you might have to build SeisNoise again</p><pre><code class="language-none">julia&gt;]
+(v1.4) pkg&gt; build SeisNoise</code></pre><h2><a class="nav-anchor" id="Using-the-GPU-with-Julia-1" href="#Using-the-GPU-with-Julia-1">Using the GPU with Julia</a></h2><p>SeisNoise uses the <a href="https://github.com/JuliaGPU/CUDA.jl">Cuda.jl library</a> to do all GPU-based operations. To get started with GPU-programming, take a look at the <a href="https://juliagpu.gitlab.io/CUDA.jl/tutorials/introduction/">Cuda.jl introduction tutorial</a>. Here is a great slide from Tim Besard on <a href="https://docs.google.com/presentation/d/1l-BuAtyKgoVYakJSijaSqaTL3friESDyTOnU2OLqGoA/edit#slide=id.p">GPU computing in Julia</a>.</p><p>Allocating arrays on the GPU is simple using the <code>cu</code> function. This example creates a random maxtrix on the CPU, then sends it to the GPU using <code>cu</code>:</p><pre><code class="language-julia">using CUDA
+A = cu(rand(1000,10))
+1000×10 CuArray{Float32,2,Nothing}:
+ 0.483598   0.0278827  0.564381  …  0.0179997  0.0894625  0.943952
+ 0.532773   0.601974   0.965769     0.91777    0.746491   0.837131
+ 0.0613844  0.638339   0.401549     0.385933   0.627327   0.682377
+ 0.597944   0.349372   0.147358     0.607321   0.592268   0.381262
+ 0.516212   0.505277   0.35825      0.0874267  0.946768   0.525376
+ ⋮                               ⋱                        
+ 0.696375   0.694293   0.646136     0.0734224  0.0999966  0.804346
+ 0.266413   0.710535   0.762904     0.13076    0.0786623  0.914678
+ 0.255818   0.0446712  0.943867     0.981916   0.835427   0.506067
+ 0.611743   0.715961   0.181798     0.793934   0.568452   0.84297
+</code></pre><p>or similarly using the Julia pipe syntax,</p><pre><code class="language-julia">A = rand(1000,10) |&gt; cu
+1000×10 CuArray{Float32,2,Nothing}:
+ 0.511658   0.231007   0.819      …  0.110045   0.517574    0.195391
+ 0.589017   0.69037    0.0288187     0.599881   0.0290229   0.136348
+ 0.175985   0.217625   0.124626      0.0619627  0.862026    0.431731
+ 0.0430858  0.569207   0.585091      0.605072   0.333407    0.505581
+ 0.510674   0.969721   0.875608      0.984235   0.0604092   0.0494258
+ ⋮                                ⋱                         
+ 0.938167   0.673817   0.0642641     0.401075   0.420085    0.0400348
+ 0.311241   0.0985884  0.309681      0.33953    0.793376    0.385521
+ 0.738205   0.500696   0.294173      0.681627   0.00480331  0.751362
+ 0.740553   0.566934   0.845259      0.503732   0.970519    0.218747
+</code></pre><p>Note that here <code>A</code> is a <code>CuArray</code> which is stored in memory on the GPU. Most standard Julia functions (matrix multiplication, FFT, mean, max, etc..) will work out of the box on <code>CuArray</code>s. For example, here is matrix multiplication</p><pre><code class="language-julia">B = rand(10,1000) |&gt; cu
+A * B
+1000×1000 CuArray{Float32,2,Nothing}:
+ 3.02011  2.85182  3.17944  …  2.20066  1.89412  2.32329
+ 3.12874  2.83144  3.34268     1.65363  1.97212  2.41745
+ 3.22296  2.53652  2.84638     2.11542  2.31627  1.71027
+ 3.21165  2.51493  2.9726      2.07334  2.55837  2.63839
+ 3.2731   2.83646  3.75265     1.44419  1.68725  3.5038
+ 2.18507  1.80968  2.13033  …  1.47744  1.97971  1.59087
+ ⋮                          ⋱                    
+ 1.95406  1.95351  2.62476  …  1.07703  1.49473  1.72594
+ 2.26404  2.09106  2.86892     1.12002  1.21775  1.73231
+ 2.56381  2.1512   2.70032     2.03604  1.98124  1.38784
+ 3.07007  3.02482  3.36264     2.14246  2.4654   2.34386
+ 3.46125  2.72799  3.75003     1.8953   2.44945  2.65501</code></pre><h2><a class="nav-anchor" id="SeisNoise-on-the-GPU-1" href="#SeisNoise-on-the-GPU-1">SeisNoise on the GPU</a></h2><p>SeisNoise can process data and compute cross-correlations on the GPU with CUDA. CUDA.jl provides an the (<code>CuArray</code>) type for storing data on the GPU. Data in SeisNoise structures (<code>R.x</code>, <code>F.fft</code>, and <code>C.corr</code> fields, for <code>RawData</code>, <code>FFTData</code>, and <code>CorrData</code>, respectively) can move between an <code>Array</code> on the CPU to a <code>CuArray</code> on the GPU using the <code>gpu</code> and <code>cpu</code> functions, as shown below.   </p><div class="admonition note"><div class="admonition-title">Note</div><div class="admonition-text"><p>Only <strong>Nvidia</strong> GPUs are suported at the moment. Hold in there for AMD/OpenCL/Metal support...</p></div></div><pre><code class="language-julia"># create raw data and send to GPU
+R = RawData(S1, cc_len, cc_step) |&gt; gpu
+R.x
+72000×188 CuArrays.CuArray{Float32,2,Nothing}
+
+# send data back to the CPU
+R = R |&gt; cpu
+R.x
+72000×188 Array{Float32,2}</code></pre><p>All basic processing remains the same on the GPU. Here is a complete cross-correlation routine on the GPU:</p><pre><code class="language-julia"># send data to GPU
+R1 = RawData(S1, cc_len, cc_step) |&gt; gpu
+R2 = RawData(S2, cc_len, cc_step) |&gt; gpu
+R = [R1,R2]
+
+# preprocess on the GPU
+detrend!.(R)
+taper!.(R)
+bandpass!.(R,freqmin,freqmax,zerophase=true)
+
+# Real FFT on GPU
+FFT = rfft.(R)
+whiten!.(FFT,freqmin,freqmax)
+
+# compute correlation and send to cpu
+C = correlate(FFT[1],FFT[2],maxlag) |&gt; cpu</code></pre><h3><a class="nav-anchor" id="Routines-Implemented-on-the-GPU-1" href="#Routines-Implemented-on-the-GPU-1">Routines Implemented on the GPU</a></h3><ul><li>Preprocessing:<ul><li><code>detrend</code>,<code>demean</code>, <code>taper</code>, <code>onebit</code>, <code>smooth</code></li></ul></li><li>Filtering:<ul><li><code>bandpass</code>, <code>bandstop</code>, <code>lowpass</code>, <code>highpass</code></li></ul></li><li>Fourier Domain:<ul><li><code>whiten</code>, <code>rfft</code>, <code>irfft</code></li></ul></li><li>Cross-correlation:<ul><li><code>correlate</code>, <code>cross-coherence</code>, <code>deconvolution</code></li></ul></li><li>Post-processing:<ul><li><code>stack</code>, <code>filter</code>s, etc..</li></ul></li></ul><h3><a class="nav-anchor" id="Credits-1" href="#Credits-1">Credits</a></h3><p>This page builds heavily on the using GPUs page from <a href="https://clima.github.io/Oceananigans.jl/stable/using_gpus/">Oceananigans</a>.</p><footer><hr/><a class="previous" href="../types/"><span class="direction">Previous</span><span class="title">Workflow</span></a><a class="next" href="../preprocessing/"><span class="direction">Next</span><span class="title">Pre-Processing</span></a></footer></article></body></html>
