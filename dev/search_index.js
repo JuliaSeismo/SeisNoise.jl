@@ -53,7 +53,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "SeisNoise Workflow",
     "category": "section",
-    "text": "SeisNoise is designed around array-based cross-correlation. SeisNoise uses three custom data structures: RawData for storing windows ambient noise, FFTData for storing Fourier transforms of ambient noise, and CorrData for storing cross-correlations. SeisNoise types extend SeisIO\'s SeisChannel type for 2D-array ambient noise processing. SeisNoise\'s modular functions work on RawData, FFTData, and CorrData objects in-place through Julia\'s multiple-dispatch. Functions in SeisNoise that end in ! (e.g. onebit!(R)) by convention modify their arguments, while functions that do not end in ! (e.g. onebit(R)) allocate new arrays or objects.(Image: dataflow)note: Note\nBy convention in Julia, array data is stored column-wise. Noise windows in   RawData objects, ffts in FFTData objects, and cross-corrleations in   CorrData objects are all stored column-wise. To access data one or more time windows, use column-based indexing, e.g. R[:,1], F[:,2], or C[:,3:5]."
+    "text": "SeisNoise is designed around array-based cross-correlation. SeisNoise uses three custom data structures: RawData for storing windows ambient noise, FFTData for storing Fourier transforms of ambient noise, and CorrData for storing cross-correlations. SeisNoise types extend SeisIO\'s SeisChannel type for 2D-array ambient noise processing.(Image: dataflow)note: Note\nBy convention in Julia, array data is stored column-wise. Noise windows in   RawData objects, ffts in FFTData objects, and cross-corrleations in   CorrData objects are all stored column-wise. To access data one or more   time windows, use column-based indexing, e.g. R[:,1], F[:,2], or C[:,3:5]."
+},
+
+{
+    "location": "types/#Timing-1",
+    "page": "Workflow",
+    "title": "Timing",
+    "category": "section",
+    "text": "SeisNoise stores the start time of each window stored in RawData, FFTData and CorrData objects in the .t field as a 1D array. Timestamps are stored according to Unix Time in double-precision floating-point format (Float64). SeisNoise uses the Dates module for all timing. For instance, January 1st, 2020 in Unix time is given byusing Dates\ndatetime2unix(DateTime(2020,1,1))\n1.5778368e9where datetime2unix is a function in the Dates module for converting between Unix Time and DateTime structures. Dates also provides a unix2datetime for converting from Unix Time to DateTime structures. Let\'s say we have an array of timestamps, t, with hourly samples between 01/01/2020 and 01/02/2020:t = 1.5778368e9 .+ collect(0:3600:3600*24)\n25-element Array{Float64,1}:\n 1.5778368e9\n 1.5778404e9\n 1.577844e9\n 1.5778476e9\n 1.5778512e9\n 1.5778548e9\n ⋮\n 1.5779088e9\n 1.5779124e9\n 1.577916e9\n 1.5779196e9\n 1.5779232e9to convert to timestamps, we would use the unix2datetime function along with the Julia broadcast operator, ., as shown below:timestamps = unix2datetime.(t)\n25-element Array{DateTime,1}:\n 2020-01-01T00:00:00\n 2020-01-01T01:00:00\n 2020-01-01T02:00:00\n 2020-01-01T03:00:00\n 2020-01-01T04:00:00\n 2020-01-01T05:00:00\n ⋮\n 2020-01-01T20:00:00\n 2020-01-01T21:00:00\n 2020-01-01T22:00:00\n 2020-01-01T23:00:00\n 2020-01-02T00:00:00"
 },
 
 {
@@ -61,7 +69,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "RawData - Objects for windowed raw data",
     "category": "section",
-    "text": "RawData objects store windows of ambient noise. RawData have very similar structure to SeisChannel objects, except with added fields for:cc_len: the cross-correlation window length (in seconds).\ncc_step: the step length between successive correlation windows (in seconds).\nfreqmin: minimum frequency RawData has been filtered (in Hz).\nfreqmax: maximum frequency RawData has been filtered (in Hz).\ntime_norm: One-bit whitening or phase-whitening applied.\nt: Starttime of each noise window (number of seconds since the unix epoch 1970-01-01T00:00:00 as a Float64).\nx: Raw data stored in columns (2d-array).To create an empty RawData object, use the RawData() function. Here is an empty RawData object in the REPL:julia> using SeisNoise\njulia> RawData()\nRawData with 0 windows\n      NAME: …\n        ID: …\n       LOC: 0.0 N, 0.0 E, 0.0 m\n        FS: 0.0\n      GAIN: 1.0\n   FREQMIN: 0.0\n   FREQMAX: 0.0\n    CC_LEN: …\n   CC_STEP: …\n TIME_NORM: …\n      RESP: a0 1.0, f0 1.0, 0z, 0p\n      MISC: …\n     NOTES: …\n         T: …\n         X: …A more natural way to create a RawDataobject is to convert an existing SeisChannel or SeisData object into a RawData object. This allows one to do preprocessing that is more natural for single component data (e.g. instrument response removal) before doing array-based processing. Here is an example of converting a SeisData object to a RawData object.note: Note\ncc_len and cc_step must be included to create a RawData object.julia> using SeisIO, SeisNoise\n\njulia> S = get_data(\"FDSN\", \"TA.M22K..BHZ\", src=\"IRIS\",s=\"2019-01-01\",t=600)\nSeisData with 1 channels (1 shown)\n    ID: TA.M22K..BHZ                       \n  NAME: Willow, AK, USA                    \n   LOC: 61.7531 N, -150.12 E, 57.0 m       \n    FS: 40.0                               \n  GAIN: 5.03883e8                          \n  RESP: a0 8.32666e17, f0 0.2, 6z, 11p     \n UNITS: m/s                                \n   SRC: http://service.iris.edu/fdsnws/da…\n  MISC: 4 entries                          \n NOTES: 0 entries                          \n     T: 2019-01-01T00:00:00.000 (0 gaps)   \n     X: +8.540e+02                         \n        +6.230e+02                         \n            ...                            \n        +1.081e+03                         \n        (nx = 24001)                       \n     C: 0 open, 0 total\n\njulia> cc_len, cc_step = 100,50 # specify window length and step (in seconds)\n(100, 50)\n\njulia> R = RawData(S,cc_len,cc_step)\nRawData with 11 windows\n      NAME: \"Willow, AK, USA\"                  \n        ID: \"TA.M22K..BHZ\"                     \n       LOC: 61.7531 N, -150.12 E, 57.0 m\n        FS: 40.0\n      GAIN: 5.03883e8\n   FREQMIN: 0.01\n   FREQMAX: 20.0\n    CC_LEN: 100                                \n   CC_STEP: 50                                 \n TIME_NORM: false                              \n      RESP: a0 8.32666e17, f0 0.2, 6z, 11p\n      MISC: 4 entries                          \n     NOTES: 2 entries                          \n         T: 2019-01-01T00:00:00.000            …\n         X: 4000×11 Array{Float32,2}     \nThis created a RawData object, R, 11 windows, each 100 seconds long and sampled at 40 Hz (4000 points). The freqmin is automatically set to 0.01 Hz because this is the 1 / cc_len, whereas freqmax is set to the Nyquist frequency R.fs/2. To access the noise data stored in R just do R.xjulia> R.x\n4000×11 Array{Float32,2}:\n  854.0  1645.0   790.0  976.0   959.0  …   921.0  1148.0   718.0\n  623.0   292.0   762.0  790.0  1065.0      828.0  1242.0   596.0\n  530.0  1398.0   408.0  649.0  1033.0      -32.0  1263.0   678.0\n  684.0   970.0   546.0  793.0   984.0     1399.0  1324.0   676.0\n  810.0   273.0  1066.0  943.0   992.0      561.0  1340.0   655.0\n  834.0   554.0  1385.0  866.0   955.0  …    62.0  1291.0   729.0\n    ⋮                                   ⋱                     ⋮  \n  647.0   810.0   801.0  380.0  1683.0  …   830.0   815.0  1223.0\n  639.0   700.0   880.0  285.0  1284.0      709.0   798.0  1149.0\n  860.0   789.0   955.0  133.0  1427.0      844.0   913.0   998.0\n 1052.0   875.0   927.0  115.0  1623.0      857.0   944.0   970.0\n  872.0   925.0   883.0    2.0  1141.0      810.0   883.0  1061.0See the Pre-Processing and Filtering pages for functions that work on RawData objects.  "
+    "text": "RawData objects store windows of ambient noise. RawData have very similar structure to SeisChannel objects, except with added fields for:cc_len: the cross-correlation window length (in seconds).\ncc_step: the step length between successive correlation windows (in seconds).\nfreqmin: minimum frequency RawData has been filtered (in Hz).\nfreqmax: maximum frequency RawData has been filtered (in Hz).\ntime_norm: Type of amplitude normalization applied (onebit, clipping, etc..).\nt: Starttime of each noise window (number of seconds since the unix epoch 1970-01-01T00:00:00 as a Float64).\nx: Raw data stored in columns (2d-array).To create an empty RawData object, use the RawData() function. Here is an empty RawData object in the REPL:julia> using SeisNoise\njulia> RawData()\nRawData with 0 windows\n      NAME: …\n        ID: …\n       LOC: 0.0 N, 0.0 E, 0.0 m\n        FS: 0.0\n      GAIN: 1.0\n   FREQMIN: 0.0\n   FREQMAX: 0.0\n    CC_LEN: …\n   CC_STEP: …\n TIME_NORM: …\n      RESP: a0 1.0, f0 1.0, 0z, 0p\n      MISC: …\n     NOTES: …\n         T: …\n         X: …A more natural way to create a RawDataobject is to convert an existing SeisChannel or SeisData object into a RawData object. This allows one to do preprocessing that is more natural for single component data (e.g. instrument response removal) before doing array-based processing. Here is an example of converting a SeisData object to a RawData object.note: Note\ncc_len and cc_step must be included to create a RawData object.julia> using SeisIO, SeisNoise\n\njulia> S = get_data(\"FDSN\", \"TA.M22K..BHZ\", src=\"IRIS\",s=\"2019-01-01\",t=600)\nSeisData with 1 channels (1 shown)\n    ID: TA.M22K..BHZ                       \n  NAME: Willow, AK, USA                    \n   LOC: 61.7531 N, -150.12 E, 57.0 m       \n    FS: 40.0                               \n  GAIN: 5.03883e8                          \n  RESP: a0 8.32666e17, f0 0.2, 6z, 11p     \n UNITS: m/s                                \n   SRC: http://service.iris.edu/fdsnws/da…\n  MISC: 4 entries                          \n NOTES: 0 entries                          \n     T: 2019-01-01T00:00:00.000 (0 gaps)   \n     X: +8.540e+02                         \n        +6.230e+02                         \n            ...                            \n        +1.081e+03                         \n        (nx = 24001)                       \n     C: 0 open, 0 total\n\njulia> cc_len, cc_step = 100.,50. # specify window length and step (in seconds)\n(100, 50)\n\njulia> R = RawData(S,cc_len,cc_step)\nRawData with 11 windows\n      NAME: \"Willow, AK, USA\"                  \n        ID: \"TA.M22K..BHZ\"                     \n       LOC: 61.7531 N, -150.12 E, 57.0 m\n        FS: 40.0\n      GAIN: 5.03883e8\n   FREQMIN: 0.01\n   FREQMAX: 20.0\n    CC_LEN: 100.                                \n   CC_STEP: 50.                                 \n TIME_NORM: false                              \n      RESP: a0 8.32666e17, f0 0.2, 6z, 11p\n      MISC: 4 entries                          \n     NOTES: 2 entries                          \n         T: 2019-01-01T00:00:00.000            …\n         X: 4000×11 Array{Float32,2}     \nThis created a RawData object, R, 11 windows, each 100 seconds long and sampled at 40 Hz (4000 points). The freqmin is automatically set to 0.01 Hz because this is the 1 / cc_len, whereas freqmax is set to the Nyquist frequency R.fs/2. To access the noise data stored in R just do R.xjulia> R.x\n4000×11 Array{Float32,2}:\n  854.0  1645.0   790.0  976.0   959.0  …   921.0  1148.0   718.0\n  623.0   292.0   762.0  790.0  1065.0      828.0  1242.0   596.0\n  530.0  1398.0   408.0  649.0  1033.0      -32.0  1263.0   678.0\n  684.0   970.0   546.0  793.0   984.0     1399.0  1324.0   676.0\n  810.0   273.0  1066.0  943.0   992.0      561.0  1340.0   655.0\n  834.0   554.0  1385.0  866.0   955.0  …    62.0  1291.0   729.0\n    ⋮                                   ⋱                     ⋮  \n  647.0   810.0   801.0  380.0  1683.0  …   830.0   815.0  1223.0\n  639.0   700.0   880.0  285.0  1284.0      709.0   798.0  1149.0\n  860.0   789.0   955.0  133.0  1427.0      844.0   913.0   998.0\n 1052.0   875.0   927.0  115.0  1623.0      857.0   944.0   970.0\n  872.0   925.0   883.0    2.0  1141.0      810.0   883.0  1061.0See the Pre-Processing and Filtering pages for functions that work on RawData objects.  "
 },
 
 {
@@ -69,7 +77,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "FFTData - Objects for Fourier transforms (FFTs)",
     "category": "section",
-    "text": "Cross-correlation in SeisNoise is done in the frequency domain:C_AB(ω) = u^*_A(ω) u_B(ω)where C_AB(ω) is the element-wise multiplication between u^*_A(ω), the complex conjugate of the Fourier transform of ambient noise time series A, and u_B(ω), the Fourier transform of ambient noise time series B. This exploits the O(nlogn) complexity of the Fast-Fourier Transforms. Since ambient noise data is real valued, SeisNoise uses real Fast-Fourier Transforms (rfft), which offer a 2-3x speed over a general fft.The FFTData structure in SeisNoise stores Fourier transforms (u(ω)) of ambient noise. FFTData allow users to apply smoothing operations, such as whitening, coherence, or deconvolution, in-place before cross-corrleating. To create an empty FFTData object, use the FFTData() function.julia> using SeisNoise\njulia> FFTData()\nFFTData with 0 ffts\n      NAME: …\n        ID: …\n       LOC: 0.0 N, 0.0 E, 0.0 m\n        FS: 0.0\n      GAIN: 1.0\n   FREQMIN: 0.0\n   FREQMAX: 0.0\n    CC_LEN: …\n   CC_STEP: …\n  WHITENED: …\n TIME_NORM: …\n      RESP: c = 0.0, 0 zeros, 0 poles\n      MISC: …\n     NOTES: …\n         T: …\n       FFT: …\nThe only difference between an FFTData and a RawData object is the addition of the whitened parameter and the swap of the x data field to the fft data field.FFTData more naturally flow from RawData input to the  rfft function. julia> F = rfft(R)\nFFTData with 11 ffts\n      NAME: \"TA.M22K..BHZ\"                     \n        ID: \"2019-01-01\"                       \n       LOC: 61.7531 N, -150.12 E, 57.0 m\n        FS: 40.0\n      GAIN: 5.03883e8\n   FREQMIN: 0.01\n   FREQMAX: 20.0\n    CC_LEN: 100                                \n   CC_STEP: 50                                 \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: a0 8.32666e17, f0 0.2, 6z, 11p\n      MISC: 4 entries                          \n     NOTES: 2 entries                          \n         T: 2019-01-01T00:00:00.000            …\n       FFT: 2001×11 Array{Complex{Float32},2}  To access the Fourier transform stored in F just do F.fftjulia> F.fft\n2001×11 Array{Complex{Float32},2}:\n 3.18286e6+0.0im      3.18685e6+0.0im       …  3.19561e6+0.0im    \n  -3205.34-7445.99im    12079.2+1573.37im        11842.9-4106.75im\n  -10263.9+5427.09im    -1056.6+3629.68im        5421.51+2751.05im\n  -6255.81-25112.9im    21741.7+9154.63im        37171.6+10855.5im\n  -6164.36-7888.87im    27625.1-2106.65im        10308.3-24606.1im\n   2470.13+8848.62im    13407.9+5940.08im   …   -10548.2+1305.7im\n          ⋮                                 ⋱           ⋮         \n   133.262-18.7686im    1204.43+18.5029im       -135.982+7.42407im\n   122.472-7.24219im    1179.84+1.39209im       -133.742-5.74707im\n   131.036+7.63867im    1199.29+0.913574im      -117.602+4.26135im\n   123.142+4.82568im    1202.13+1.8291im        -112.404+11.0547im\n     126.0+0.0im         1179.0+0.0im       …     -148.0+0.0im    "
+    "text": "Cross-correlation in SeisNoise is done in the frequency domain:C_AB(ω) = u^*_A(ω) u_B(ω)where C_AB(ω) is the element-wise multiplication between u^*_A(ω), the complex conjugate of the Fourier transform of ambient noise time series A, and u_B(ω), the Fourier transform of ambient noise time series B. This exploits the O(nlogn) complexity of the Fast-Fourier Transforms. Since ambient noise data is real valued, SeisNoise uses real Fast-Fourier Transforms (rfft), which offer a 2-3x speed over a general fft.The FFTData structure in SeisNoise stores Fourier transforms (u(ω)) of ambient noise. FFTData allow users to apply smoothing operations, such as whitening, coherence, or deconvolution, in-place before cross-corrleating. To create an empty FFTData object, use the FFTData() function.julia> using SeisNoise\njulia> FFTData()\nFFTData with 0 ffts\n      NAME: …\n        ID: …\n       LOC: 0.0 N, 0.0 E, 0.0 m\n        FS: 0.0\n      GAIN: 1.0\n   FREQMIN: 0.0\n   FREQMAX: 0.0\n    CC_LEN: …\n   CC_STEP: …\n  WHITENED: …\n TIME_NORM: …\n      RESP: c = 0.0, 0 zeros, 0 poles\n      MISC: …\n     NOTES: …\n         T: …\n       FFT: …\nThe only difference between an FFTData and a RawData is the swapping of the x data field to the fft data field.FFTData more naturally flow from RawData input to the  rfft function. julia> F = rfft(R)\nFFTData with 11 ffts\n      NAME: \"TA.M22K..BHZ\"                     \n        ID: \"2019-01-01\"                       \n       LOC: 61.7531 N, -150.12 E, 57.0 m\n        FS: 40.0\n      GAIN: 5.03883e8\n   FREQMIN: 0.01\n   FREQMAX: 20.0\n    CC_LEN: 100.                                \n   CC_STEP: 50.                                 \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: a0 8.32666e17, f0 0.2, 6z, 11p\n      MISC: 4 entries                          \n     NOTES: 2 entries                          \n         T: 2019-01-01T00:00:00.000            …\n       FFT: 2001×11 Array{Complex{Float32},2}  To access the Fourier transform stored in F just do F.fftjulia> F.fft\n2001×11 Array{Complex{Float32},2}:\n 3.18286e6+0.0im      3.18685e6+0.0im       …  3.19561e6+0.0im    \n  -3205.34-7445.99im    12079.2+1573.37im        11842.9-4106.75im\n  -10263.9+5427.09im    -1056.6+3629.68im        5421.51+2751.05im\n  -6255.81-25112.9im    21741.7+9154.63im        37171.6+10855.5im\n  -6164.36-7888.87im    27625.1-2106.65im        10308.3-24606.1im\n   2470.13+8848.62im    13407.9+5940.08im   …   -10548.2+1305.7im\n          ⋮                                 ⋱           ⋮         \n   133.262-18.7686im    1204.43+18.5029im       -135.982+7.42407im\n   122.472-7.24219im    1179.84+1.39209im       -133.742-5.74707im\n   131.036+7.63867im    1199.29+0.913574im      -117.602+4.26135im\n   123.142+4.82568im    1202.13+1.8291im        -112.404+11.0547im\n     126.0+0.0im         1179.0+0.0im       …     -148.0+0.0im    "
 },
 
 {
@@ -77,7 +85,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "CorrData - Objects for ambient noise cross-correlations",
     "category": "section",
-    "text": "As stated in the previous section, cross-correlation in the frequency domain is an element-wise product of Fourier-transforms of ambient noise:C_AB(ω) = u^*_A(ω) u_B(ω)To transform a frequency domain cross-correlation into the time domain, we take the inverse real Fourier transform of C_AB(ω):C(τ)_AB = mathfrakF^-1 left(C_AB(ω)right)where τ is the lag time. Computing a cross-correlation thus necessitates two Fourier transforms, one element-wise multiplication (of complex numbers), and an inverse Fourier transform.The CorrData structure in SeisNoise stores time-domain cross-correlations. To create an empty CorrData object, use the CorrData() function.julia> CorrData()\nCorrData with 0 Corrs\n      NAME: …\n        ID: …\n       LOC: 0.0 N, 0.0 E, 0.0 m\n      COMP: …\n   ROTATED: …\n CORR_TYPE: …\n        FS: 0.0\n      GAIN: 1.0\n   FREQMIN: 0.0\n   FREQMAX: 0.0\n    CC_LEN: …\n   CC_STEP: …\n  WHITENED: …\n TIME_NORM: …\n      RESP: a0 1.0, f0 1.0, 0z, 0p\n      MISC: …\n     NOTES: …\n      DIST: 0.0\n       AZI: 0.0\n       BAZ: 0.0\n    MAXLAG: 0.0\n         T: …\n      CORR: …CorrData have a few additional parameters:comp: The component of the cross-correlations, e.g. EN, RT, ZZ, etc...\nrotated: True/false if correlation has been rotated.\ncorr_type: The type of correlation, e.g. \"cross-correlation\", \"coherence\", or \"deconvolution\".\ndist: Distance between station 1 and station 2 (in Km).\nazi: Azimuth from station 1 and station 2 (in degrees).\nbaz: Back azimuth between station 1 and station 2 (in degrees).\nmaxlag: Maximum lag time (in seconds) in cross-correlations.\ncorr: Time-domain cross-correlations stored in columns.CorrData more naturally flow from FFTData input to the compute_cc function. In this example, we are computing an \"autocorrleation\" by inputting the same an FFTData twice:julia> maxlag = 20.\n20.0\n\njulia> C = correlate(F,F,maxlag,corr_type=\"cross-correlation\")\nCorrData with 11 Corrs\n      NAME: \"TA.M22K..BHZ.TA.M22K..BHZ\"        \n        ID: \"2019-01-01\"                       \n       LOC: 61.7531 N, -150.12 E, 57.0 m\n      COMP: \"ZZ\"                               \n   ROTATED: false                              \n CORR_TYPE: \"cross-correlation\"                \n        FS: 40.0\n      GAIN: 5.03883e8\n   FREQMIN: 0.01\n   FREQMAX: 20.0\n    CC_LEN: 100                                \n   CC_STEP: 50                                 \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: a0 8.32666e17, f0 0.2, 6z, 11p\n      MISC: 4 entries                          \n     NOTES: 2 entries                          \n      DIST: 0.0\n       AZI: 0.0\n       BAZ: 0.0\n    MAXLAG: 20.0\n         T: 2019-01-01T00:00:00.000            …\n      CORR: 1601×11 Array{Float32,2}   To access the autocorrelations stored in C just do C.corr:julia> C.corr\n1601×11 Array{Float32,2}:\n 2.56154e9  2.5478e9   2.51531e9  …  2.53951e9  2.55251e9  2.51616e9\n 2.54715e9  2.52733e9  2.51668e9     2.54039e9  2.55533e9  2.51614e9\n 2.53042e9  2.54303e9  2.52005e9     2.53713e9  2.55813e9  2.51694e9\n 2.57688e9  2.57981e9  2.52313e9     2.53812e9  2.55982e9  2.52244e9\n 2.617e9    2.57287e9  2.52175e9     2.53825e9  2.56081e9  2.52769e9\n 2.51533e9  2.50786e9  2.5218e9   …  2.53502e9  2.56186e9  2.52965e9\n 2.5034e9   2.52427e9  2.52484e9     2.53588e9  2.56324e9  2.53052e9\n 2.5998e9   2.578e9    2.52705e9     2.53676e9  2.56418e9  2.53246e9\n ⋮                                ⋱                        ⋮        \n 2.56922e9  2.56349e9  2.52909e9     2.53253e9  2.56514e9  2.53592e9\n 2.5998e9   2.578e9    2.52705e9  …  2.53676e9  2.56418e9  2.53246e9\n 2.5034e9   2.52427e9  2.52484e9     2.53588e9  2.56324e9  2.53052e9\n 2.51533e9  2.50786e9  2.5218e9      2.53502e9  2.56187e9  2.52965e9\n 2.617e9    2.57287e9  2.52175e9     2.53825e9  2.56081e9  2.52769e9\n 2.57688e9  2.57981e9  2.52313e9     2.53812e9  2.55982e9  2.52244e9\n 2.53042e9  2.54303e9  2.52005e9  …  2.53713e9  2.55813e9  2.51694e9"
+    "text": "As stated in the previous section, cross-correlation in the frequency domain is an element-wise product of Fourier-transforms of ambient noise:C_AB(ω) = u^*_A(ω) u_B(ω)To transform a frequency domain cross-correlation into the time domain, we take the inverse real Fourier transform of C_AB(ω):C(τ)_AB = mathfrakF^-1 left(C_AB(ω)right)where τ is the lag time. Computing a cross-correlation thus necessitates two Fourier transforms, one element-wise multiplication (of complex numbers), and an inverse Fourier transform.The CorrData structure in SeisNoise stores time-domain cross-correlations. To create an empty CorrData object, use the CorrData() function.julia> CorrData()\nCorrData with 0 Corrs\n      NAME: …\n        ID: …\n       LOC: 0.0 N, 0.0 E, 0.0 m\n      COMP: …\n   ROTATED: …\n CORR_TYPE: …\n        FS: 0.0\n      GAIN: 1.0\n   FREQMIN: 0.0\n   FREQMAX: 0.0\n    CC_LEN: …\n   CC_STEP: …\n  WHITENED: …\n TIME_NORM: …\n      RESP: a0 1.0, f0 1.0, 0z, 0p\n      MISC: …\n     NOTES: …\n      DIST: 0.0\n       AZI: 0.0\n       BAZ: 0.0\n    MAXLAG: 0.0\n         T: …\n      CORR: …CorrData have a few additional parameters:comp: The component of the cross-correlations, e.g. EN, RT, ZZ, etc...\nrotated: True/false if correlation has been rotated.\ncorr_type: The type of correlation, e.g. \"cross-correlation\", \"coherence\", or \"deconvolution\".\ndist: Distance between station 1 and station 2 (in Km).\nazi: Azimuth from station 1 and station 2 (in degrees).\nbaz: Back azimuth between station 1 and station 2 (in degrees).\nmaxlag: Maximum lag time (in seconds) in cross-correlations.\ncorr: Time-domain cross-correlations stored in columns.CorrData more naturally flow from FFTData input to the compute_cc function. In this example, we are computing an \"autocorrleation\" by inputting the same an FFTData twice:julia> maxlag = 20.\n20.0\n\njulia> C = correlate(F,F,maxlag,corr_type=\"cross-correlation\")\nCorrData with 11 Corrs\n      NAME: \"TA.M22K..BHZ.TA.M22K..BHZ\"        \n        ID: \"2019-01-01\"                       \n       LOC: 61.7531 N, -150.12 E, 57.0 m\n      COMP: \"ZZ\"                               \n   ROTATED: false                              \n CORR_TYPE: \"cross-correlation\"                \n        FS: 40.0\n      GAIN: 5.03883e8\n   FREQMIN: 0.01\n   FREQMAX: 20.0\n    CC_LEN: 100.                                \n   CC_STEP: 50.                                 \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: a0 8.32666e17, f0 0.2, 6z, 11p\n      MISC: 4 entries                          \n     NOTES: 2 entries                          \n      DIST: 0.0\n       AZI: 0.0\n       BAZ: 0.0\n    MAXLAG: 20.0\n         T: 2019-01-01T00:00:00.000            …\n      CORR: 1601×11 Array{Float32,2}   To access the autocorrelations stored in C just do C.corr:julia> C.corr\n1601×11 Array{Float32,2}:\n 2.56154e9  2.5478e9   2.51531e9  …  2.53951e9  2.55251e9  2.51616e9\n 2.54715e9  2.52733e9  2.51668e9     2.54039e9  2.55533e9  2.51614e9\n 2.53042e9  2.54303e9  2.52005e9     2.53713e9  2.55813e9  2.51694e9\n 2.57688e9  2.57981e9  2.52313e9     2.53812e9  2.55982e9  2.52244e9\n 2.617e9    2.57287e9  2.52175e9     2.53825e9  2.56081e9  2.52769e9\n 2.51533e9  2.50786e9  2.5218e9   …  2.53502e9  2.56186e9  2.52965e9\n 2.5034e9   2.52427e9  2.52484e9     2.53588e9  2.56324e9  2.53052e9\n 2.5998e9   2.578e9    2.52705e9     2.53676e9  2.56418e9  2.53246e9\n ⋮                                ⋱                        ⋮        \n 2.56922e9  2.56349e9  2.52909e9     2.53253e9  2.56514e9  2.53592e9\n 2.5998e9   2.578e9    2.52705e9  …  2.53676e9  2.56418e9  2.53246e9\n 2.5034e9   2.52427e9  2.52484e9     2.53588e9  2.56324e9  2.53052e9\n 2.51533e9  2.50786e9  2.5218e9      2.53502e9  2.56187e9  2.52965e9\n 2.617e9    2.57287e9  2.52175e9     2.53825e9  2.56081e9  2.52769e9\n 2.57688e9  2.57981e9  2.52313e9     2.53812e9  2.55982e9  2.52244e9\n 2.53042e9  2.54303e9  2.52005e9  …  2.53713e9  2.55813e9  2.51694e9"
+},
+
+{
+    "location": "types/#SeisNoise-Functions-1",
+    "page": "Workflow",
+    "title": "SeisNoise Functions",
+    "category": "section",
+    "text": "SeisNoise\'s modular functions work on RawData, FFTData, and CorrData objects in-place through Julia\'s multiple-dispatch. Functions in SeisNoise that end in ! (e.g. onebit!(R)) by convention modify their arguments, while functions that do not end in ! (e.g. onebit(R)) allocate new arrays or objects. Have a look at the Pre-Processing, Computing FFTs and Cross-Correlating sections to learn how to apply functions to NoiseData objects."
 },
 
 {
@@ -193,9 +209,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "preprocessing/#Pre-Processing-methods-for-cleaning-raw-noise-data.-1",
+    "location": "preprocessing/#Pre-Processing-1",
     "page": "Pre-Processing",
-    "title": "Pre-Processing - methods for cleaning raw noise data.",
+    "title": "Pre-Processing",
     "category": "section",
     "text": "The pre-processing functions get raw data ready for correlation. Many of these rely on SeisIO\'s processing. A typical workflow includes the following steps:Loading data\nFilling gaps\nDownsampling\nSlicing day-long traces into smaller windows\nDemeaning, detrending and tapering\nTime-domain normalizationHere is an example workflow:"
 },
@@ -361,19 +377,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "fft/#Computing-FFTs-methods-for-computing-FFTs-raw-noise-data.-1",
-    "page": "Computing FFTs",
-    "title": "Computing FFTs - methods for computing FFTs raw noise data.",
-    "category": "section",
-    "text": "All correlation in SeisNoise.jl is done in the frequency domain, which can be represented by:C_AB(ω) = u_A(ω) u^_B(ω)Where u_A(ω) is the Fourier transform of ambient noise time series A, u^*_B(ω) is the complex conjugate of the Fourier transform of ambient noise time series B, and C_AB(ω) is the cross-correlation of A and B in the frequency domain. For time and memory efficiency, the real Fourier transform (rfft) is used as opposed to the regular Fourier transform (fft). This gives a speedup of about a factor of 3. A typical workflow for computing fft\'s can include:Spectral whitening (removing spectral amplitude information)\nOne-bit normalization\nPhase normalization\nReal Fourier Transform"
-},
-
-{
     "location": "fft/#Computing-FFTs-1",
     "page": "Computing FFTs",
     "title": "Computing FFTs",
     "category": "section",
-    "text": "The compute_fft function provides the typical workflow for computing ffts.julia> using SeisNoise, SeisIO\njulia> S = get_data(\"IRIS\",\"TA.V04C..BHZ\",s=\"2006-02-01T00:00:00\",t=\"2006-02-01T01:00:00\")\njulia> freqmin, freqmax = 1.,10.\njulia> fs = 20.\njulia> cc_step, cc_len = 100, 100\njulia> F = compute_fft(S,freqmin,freqmax,fs,cc_step,cc_len,time_norm=false,\n                       to_whiten=false)\n\nFFTData with 36 ffts\n      NAME: \"TA.V04C..BHZ\"                     \n        ID: \"2006-02-01\"                       \n       LOC: 0.0 N, 0.0 E, 0.0 m\n        FS: 20.0\n      GAIN: 1.0\n   FREQMIN: 0.05\n   FREQMAX: 5.0\n    CC_LEN: 100                                \n   CC_STEP: 100                                \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: c = 0.0, 0 zeros, 0 poles\n      MISC: 0 entries                          \n     NOTES: 2 entries                          \n         T: 2006-02-01T00:00:00.000            …\n       FFT: 1001×36 Array{Complex{Float32},2}  Underneath the hood, compute_fft applies pre-processing with merge, ungap, and process_raw. The SeisData object is then transformed into an Array A of sliding windows. The process_fft then applies spectral or time-domain normalization and returns FFT, the Fourier transform of A. An FFTData object is then created from the parameters of S and FFT.merge!(S)\nungap!(S)\nprocess_raw!(S,fs)\nA, starts, ends = slide(S[1], cc_len, cc_step)\nFFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,to_whiten=to_whiten)\nF = FFTData(S[1].id, Dates.format(u2d(starts[1]),\"Y-mm-dd\"),\n                       S[1].loc, S[1].fs, S[1].gain, freqmin, freqmax,\n                       cc_len, cc_step, to_whiten, time_norm, S[1].resp,\n                       S[1].misc, S[1].notes, starts, FFT)"
+    "text": "All correlation in SeisNoise.jl is done in the frequency domain, which can be represented by:C_AB(ω) = u_A(ω) u^_B(ω)Where u_A(ω) is the Fourier transform of ambient noise time series A, u^*_B(ω) is the complex conjugate of the Fourier transform of ambient noise time series B, and C_AB(ω) is the cross-correlation of A and B in the frequency domain. For time and memory efficiency, the real Fourier transform (rfft) is used as opposed to the regular Fourier transform (fft). This gives a speedup of about a factor of 3. A typical workflow for computing fft\'s can include:Real Fourier Transform\nSpectral whitening (removing spectral amplitude information)\nHilbert Transform (for phase-correlation)"
+},
+
+{
+    "location": "fft/#Creating-FFTData-Structures-1",
+    "page": "Computing FFTs",
+    "title": "Creating FFTData Structures",
+    "category": "section",
+    "text": "The rfft function provides the typical workflow for computing ffts in SeisNoise.using SeisNoise, SeisIO\nS = get_data(\"IRIS\",\"TA.V04C..BHZ\",s=\"2006-02-01T00:00:00\",t=\"2006-02-01T01:00:00\")\ncc_step, cc_len = 100., 100.\nR = RawData(S,cc_len,cc_step)\nF = rfft(R)\nFFTData with 35 ffts\n      NAME: \"TA.V04C..BHZ\"                     \n        ID: \"2006-02-01\"                       \n       LOC: 0.0 N, 0.0 E, 0.0 m\n        FS: 40.0\n      GAIN: 1.0\n   FREQMIN: 0.01\n   FREQMAX: 20.0\n    CC_LEN: 100.0\n   CC_STEP: 100.0\n  WHITENED: false                              \n TIME_NORM: \"\"                                 \n      RESP: a0 1.0, f0 1.0, 0z, 0p\n      MISC: 0 entries                          \n     NOTES: 2 entries                          \n         T: 2006-02-01T00:01:40                …\n       FFT: 2001×35 Array{Complex{Float32},2}  Underneath the hood, rfft applies a real Fourier transform to the .x field of a RawData structure, then allocates a new FFTData structure with the Fourier transform data stored in the .fft field."
+},
+
+{
+    "location": "fft/#Whitening-FFTData-1",
+    "page": "Computing FFTs",
+    "title": "Whitening FFTData",
+    "category": "section",
+    "text": "SeisNoise provides three methods for normalizing the spectrum of an FFTData structure. The whiten! method, sets the complex amplitude of frequencies between freqmin and freqmax to 1. This preserves only the phase component of the signal.  freqmin, freqmax = 10., 20.\nwhiten!(F,freqmin,freqmax)The coherence method smooths an the spectrum of an FFTData by the smoothed absolute value of itself.coherence!(F,20)The deconvolution method smooths an the spectrum of an FFTData by the smoothed absolute value squared of itself.deconvolution!(F,20)"
 },
 
 {
@@ -429,7 +453,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Computing FFTs",
     "title": "Saving/Loading FFTs",
     "category": "section",
-    "text": "FFTData objects can be saved to disk in the native Julia JLD2 format using the save_fft function.julia> OUTDIR = \"~/TEST/FFT/\"\njulia> save_fft(F,OUTDIR)FFTData are stored in groups by channel (e.g. BHZ or HHZ), then by date (in yyyy-mm-dd format) in JLD2. By default, JLD2 files are saved to /PATH/TO/OUTDIR/NET.STA.CHAN.jld2.file = jldopen(\"~/TEST/FFT/TA.V04C.BHZ.jld2\",\"r\")\nJLDFile ~TEST/FFT/TA.V04C.BHZ.jld2 (read-only)\n └─📂 BHZ\n    └─🔢 2006-02-01To read an FFTData on disk, use the load_fft function:julia> F = load_fft(\"~/TEST/FFT/TA.V04C.BHZ.jld2\",\"BHZ\")\nFFTData with 36 ffts\n      NAME: \"TA.V04C..BHZ\"                     \n        ID: \"2006-02-01\"                       \n       LOC: 0.0 N, 0.0 E, 0.0 m\n        FS: 20.0\n      GAIN: 1.0\n   FREQMIN: 0.05\n   FREQMAX: 5.0\n    CC_LEN: 100                                \n   CC_STEP: 100                                \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: c = 0.0, 0 zeros, 0 poles\n      MISC: 0 entries                          \n     NOTES: 2 entries                          \n         T: 2006-02-01T00:00:00.000            …\n       FFT: 1001×36 Array{Complex{Float32},2}Note that it is necessary to specify the channel when using load_fft.whiten!\nSeisNoise.rfft\ncoherence!\ndeconvolution!\nsave_fft\nload_fft"
+    "text": "FFTData objects can be saved to disk in the native Julia JLD2 format using the save_fft function.julia> OUTDIR = \"~/TEST/FFT/\"\njulia> save_fft(F,OUTDIR)FFTData are stored in groups by channel (e.g. BHZ or HHZ), then by date (in yyyy-mm-dd format) in JLD2. By default, JLD2 files are saved to /PATH/TO/OUTDIR/NET.STA.CHAN.jld2.file = jldopen(\"~/TEST/FFT/TA.V04C.BHZ.jld2\",\"r\")\nJLDFile ~TEST/FFT/TA.V04C.BHZ.jld2 (read-only)\n └─📂 BHZ\n    └─🔢 2006-02-01To read an FFTData on disk, use the load_fft function:julia> F = load_fft(\"~/TEST/FFT/TA.V04C.BHZ.jld2\",\"BHZ\")\nFFTData with 35 ffts\n      NAME: \"TA.V04C..BHZ\"                     \n        ID: \"2006-02-01\"                       \n       LOC: 0.0 N, 0.0 E, 0.0 m\n        FS: 20.0\n      GAIN: 1.0\n   FREQMIN: 0.05\n   FREQMAX: 5.0\n    CC_LEN: 100                                \n   CC_STEP: 100                                \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: c = 0.0, 0 zeros, 0 poles\n      MISC: 0 entries                          \n     NOTES: 2 entries                          \n         T: 2006-02-01T00:00:00.000            …\n       FFT: 2001×35 Array{Complex{Float32},2}Note that it is necessary to specify the channel when using load_fft.whiten!\nSeisNoise.rfft\ncoherence!\ndeconvolution!\nsave_fft\nload_fft"
 },
 
 {
@@ -441,9 +465,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "correlation/#Computing-Correlations-methods-for-computing-correlations-from-FFTs.-1",
+    "location": "correlation/#Cross-Correlating-1",
     "page": "Correlation",
-    "title": "Computing Correlations - methods for computing correlations from FFTs.",
+    "title": "Cross-Correlating",
     "category": "section",
     "text": "Cross-correlation in the frequency domain is element-wise multiplication between u_A(ω), the Fourier transform of ambient noise time series A, and u^*_B(ω), the complex conjugate of the Fourier transform of ambient noise time series B. Options for cross-correlation in SeisNoise.jl includecross-correlation:C_AB(ω) = u_A(ω) u^_B(ω)cross-coherency:C_AB(ω) = fracu_A(ω) u^_B(ω) u_A(omega)    u_B(omega) and deconvolution:C_AB(omega) = fracu_A(omega) u^_B(omega)mid u_B(omega) mid^2The cross-correlation in the time domain is just the inverse real Fourier transform of C_AB(ω):C(τ)_AB = mathfrakF^-1 left(C_AB(ω)right)where τ is the lag time."
 },
@@ -453,7 +477,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Correlation",
     "title": "Computing Correlations",
     "category": "section",
-    "text": "The compute_cc function provides the typical workflow for computing correlations in SeisNoise.jl. The necessary inputs to compute_cc are the maximum lag time, max_lag, in seconds to save, e.g. 200 seconds, the type of correlation( e.g. cross-correlate, coherence, or deconv), and the number of points to smooth the spectrum of u_A(ω) or u_B(ω) if using the coherence or deconvolution.using SeisNoise, SeisIO\njulia> fs = 40. # sampling frequency in Hz\njulia> freqmin,freqmax = 0.1,0.2 # minimum and maximum frequencies in Hz\njulia> cc_step, cc_len = 450, 1800 # corrleation step and length in S\njulia> maxlag = 80. # maximum lag time in correlation\njulia> S1 = get_data(\"IRIS\",\"TA.V04C..BHZ\",s=\"2006-02-01\",t=\"2006-02-02\")\njulia> S2 = get_data(\"IRIS\",\"TA.V05C..BHZ\",s=\"2006-02-01\",t=\"2006-02-02\")\njulia> FFT1 = compute_fft(S1,freqmin, freqmax, fs, cc_step, cc_len,\n                  time_norm=false,to_whiten=false)\njulia> FFT2 = compute_fft(S2,freqmin, freqmax, fs, cc_step, cc_len,\n                  time_norm=false,to_whiten=false)\njulia> C = compute_cc(FFT1,FFT2,maxlag,corr_type=\"coherence\")\nCorrData with 188 Corrs\n      NAME: \"TA.V04C..BHZ.TA.V05C..BHZ\"        \n        ID: \"2006-02-01\"                       \n       LOC: 0.0 N, 0.0 E, 0.0 m\n      COMP: \"ZZ\"                               \n   ROTATED: false                              \n CORR_TYPE: \"coherence\"                        \n        FS: 40.0\n      GAIN: 1.0\n   FREQMIN: 0.1\n   FREQMAX: 0.2\n    CC_LEN: 1800                               \n   CC_STEP: 450                                \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: c = 0.0, 0 zeros, 0 poles\n      MISC: 0 entries                          \n     NOTES: 2 entries                          \n    MAXLAG: 80.0\n         T: 2006-02-01T00:07:30.000            …\n      CORR: 6401×188 Array{Float32,2}"
+    "text": "The correlate function provides the typical workflow for computing correlations in SeisNoise.jl. The necessary inputs to correalte are two FFTData structures and the maximum lag time in the correlation in seconds to save, e.g. 200 seconds. Here is an example to cross-correlate data from two Transportable Array stations from February 2, 2006:using SeisNoise, SeisIO\nfs = 40. # sampling frequency in Hz\nfreqmin,freqmax = 0.1,0.2 # minimum and maximum frequencies in Hz\ncc_step, cc_len = 450., 1800. # corrleation step and length in S\nmaxlag = 80. # maximum lag time in correlation\nS1 = get_data(\"IRIS\",\"TA.V04C..BHZ\",s=\"2006-02-01\",t=\"2006-02-02\")\nS2 = get_data(\"IRIS\",\"TA.V05C..BHZ\",s=\"2006-02-01\",t=\"2006-02-02\")\nR1 = RawData(S1,cc_len,cc_step)\nR2 = RawData(S2,cc_len,cc_step)\nF1 = rfft(R1)\nF2 = rfft(R2)\nC = correlate(F1,F2,maxlag)\nCorrData with 188 Corrs\n      NAME: \"TA.V04C..BHZ.TA.V05C..BHZ\"        \n        ID: \"2006-02-01\"                       \n       LOC: 0.0 N, 0.0 E, 0.0 m\n      COMP: \"ZZ\"                               \n   ROTATED: false                              \n CORR_TYPE: \"CC\"                               \n        FS: 40.0\n      GAIN: 1.0\n   FREQMIN: 0.000555556\n   FREQMAX: 20.0\n    CC_LEN: 1800.0\n   CC_STEP: 450.0\n  WHITENED: false                              \n TIME_NORM: \"\"                                 \n      RESP: a0 1.0, f0 1.0, 0z, 0p\n      MISC: 0 entries                          \n     NOTES: 3 entries                          \n      DIST: 0.0\n       AZI: 0.0\n       BAZ: 0.0\n    MAXLAG: 80.0\n         T: 2006-02-01T00:07:30                …\n      CORR: 6401×188 Array{Float32,2}      "
 },
 
 {
@@ -510,6 +534,142 @@ var documenterSearchIndex = {"docs": [
     "title": "Saving/Loading Correlations",
     "category": "section",
     "text": "CorrData objects can be saved to disk in the native Julia JLD2 format using the save_corr function.julia> OUTDIR = \"~/TEST/CORR/\"\njulia> save_corr(C,OUTDIR)CorrData are stored in groups by component (e.g. ZZ or RZ), then by date (in yyyy-mm-dd format) in JLD2. By default, JLD2 files are saved to /PATH/TO/OUTDIR/NET1.STA1.CHAN1.NET2.STA2.CHAN2.jld2.file = jldopen(\"~/TEST/CORR/TA.V04C.BHZ.TA.V05C.BHZ.jld2\",\"r\")\nJLDFile ~/TEST/CORR/TA.V04C.BHZ.TA.V05C.BHZ.jld2 (read-only)\n └─📂 ZZ\n    └─🔢 2006-02-01To read an CorrData on disk, use the load_corr function:julia> C = load_corr(\"~/TEST/CORR/TA.V04C.BHZ.TA.V05C.BHZ.jld2\",\"ZZ\")\nCorrData with 188 Corrs\n      NAME: \"TA.V04C..BHZ.TA.V05C..BHZ\"        \n        ID: \"2006-02-01\"                       \n       LOC: 0.0 N, 0.0 E, 0.0 m\n      COMP: \"ZZ\"                               \n   ROTATED: false                              \n CORR_TYPE: \"coherence\"                        \n        FS: 40.0\n      GAIN: 1.0\n   FREQMIN: 0.1\n   FREQMAX: 0.2\n    CC_LEN: 1800                               \n   CC_STEP: 450                                \n  WHITENED: false                              \n TIME_NORM: false                              \n      RESP: c = 0.0, 0 zeros, 0 poles\n      MISC: 0 entries                          \n     NOTES: 2 entries                          \n    MAXLAG: 80.0\n         T: 2006-02-01T00:07:30.000            …\n      CORR: 6401×188 Array{Float32,2}  clean_up!\ncorrelate\ncompute_cc\nsave_corr\nload_corr\nstack!"
+},
+
+{
+    "location": "extend/#",
+    "page": "Extending SeisNoise",
+    "title": "Extending SeisNoise",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "extend/#Extending-SeisNoise-1",
+    "page": "Extending SeisNoise",
+    "title": "Extending SeisNoise",
+    "category": "section",
+    "text": "Extending SeisNoise for your ambient noise workflow should be fairly easy. Let\'s say you have a function written in Julia that you want to apply to a RawData structure. For example, below is a function double! that accepts an array of Real numbers and doubles them in-place.function double!(A::AbstractArray{T}) where T <: Real\n    A .*= T(2)\n    return nothing\nendIf you want to apply double! to the data in a RawData or CorrData structure, you need to input R.x or C.corr to the double! function, as shown below:using SeisNoise\nR = RawData()\nA = rand(Float32,6,4)\nR.x = deepcopy(A)\ndouble!(R.x)\nR.x\n6×4 Array{Float32,2}:\n 1.78214    1.02787   0.55617   0.512943\n 1.35262    1.54597   0.212465  1.7978\n 1.94816    1.53011   1.6552    0.795328\n 0.955228   0.787446  1.43849   0.175546\n 0.714791   1.05514   0.124099  1.51923\n 0.0911338  1.22735   1.55351   1.15741Rather than inputting R.x, one could use multiple-dispatch to define another double! function that accepts RawData, like this:double!(R::RawData) = double!(R.x)Now we can input a RawData structure to our double! function, like soR.x = deepcopy(A)\ndouble!(R)\nR.x\n6×4 Array{Float32,2}:\n 1.78214    1.02787   0.55617   0.512943\n 1.35262    1.54597   0.212465  1.7978\n 1.94816    1.53011   1.6552    0.795328\n 0.955228   0.787446  1.43849   0.175546\n 0.714791   1.05514   0.124099  1.51923\n 0.0911338  1.22735   1.55351   1.15741By convention, the ! in double! implies that the operation is applied in-place, meaning that the input array is overwritten and no new memory is allocated. Allocating versions of double! could look like this:double(A::AbstractArray) = (U = deepcopy(A); double!(U); return U)\ndouble(R::RawData) = (U = deepcopy(R); double!(U); return U)So now we can output a new RawData structure with the allocating double:R.x = deepcopy(A)\nRnew = double(R)\nRnew.x\n6×4 Array{Float32,2}:\n 1.78214    1.02787   0.55617   0.512943\n 1.35262    1.54597   0.212465  1.7978\n 1.94816    1.53011   1.6552    0.795328\n 0.955228   0.787446  1.43849   0.175546\n 0.714791   1.05514   0.124099  1.51923\n 0.0911338  1.22735   1.55351   1.15741"
+},
+
+{
+    "location": "extend/#Developer-Advice-1",
+    "page": "Extending SeisNoise",
+    "title": "Developer Advice",
+    "category": "section",
+    "text": "We recommend first writing kernel functions that accept AbstractArrays, as shown with double!, then writing a wrapper function that accepts RawData, FFTData, or CorrData objects. Writing code in this way leads to 1) faster code 2) code reuse and 3) type-stability. If you are interested in writing high-performance code, we recommend having a look at the Julia Performance Tips."
+},
+
+{
+    "location": "extend/#Adding-Methods-to-SeisNoise-1",
+    "page": "Extending SeisNoise",
+    "title": "Adding Methods to SeisNoise",
+    "category": "section",
+    "text": "If you have a method/routine for processing ambient noise cross-correlations that you think would be helpful for the community, feel free to let us know. Check out the Contributor\'s Guide to learn how to add your code/ideas to SeisNoise. "
+},
+
+{
+    "location": "examples/#",
+    "page": "Examples",
+    "title": "Examples",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "examples/#Examples-1",
+    "page": "Examples",
+    "title": "Examples",
+    "category": "section",
+    "text": "Coming soon to a doc page near you!"
+},
+
+{
+    "location": "contributing/#",
+    "page": "Contributer\'s Guide",
+    "title": "Contributer\'s Guide",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "contributing/#Contributor\'s-Guide-1",
+    "page": "Contributer\'s Guide",
+    "title": "Contributor\'s Guide",
+    "category": "section",
+    "text": "Thank you for considering contributing to SeisNoise! This short guide will give you ideas on how you can contribute and help you make a contribution.Please feel free to ask us questions and chat with us at any time if you\'re unsure about anything."
+},
+
+{
+    "location": "contributing/#What-can-I-do?-1",
+    "page": "Contributer\'s Guide",
+    "title": "What can I do?",
+    "category": "section",
+    "text": "Try to using SeisNoise process one or two days of cross-correlations. If you run into any problems or find it difficult to use or understand, please open an issue!\nWrite up an example or tutorial on how to do something useful with SeisNoise, like processing cross-correlation results on the GPU.\nImprove documentation or comments if you found something hard to use.\nImplement a new feature if you need it to use SeisNoise.If you\'re interested in working on something, let us know by commenting on existing issues or by opening a new issue if. This is to make sure no one else is working on the same issue and so we can help and guide you in case there is anything you need to know beforehand."
+},
+
+{
+    "location": "contributing/#Ground-Rules-1",
+    "page": "Contributer\'s Guide",
+    "title": "Ground Rules",
+    "category": "section",
+    "text": "Each pull request should consist of a logical collection of changes. You can include multiple bug fixes in a single pull request, but they should be related. For unrelated changes, please submit multiple pull requests.\nDo not commit changes to files that are irrelevant to your feature or bugfix (eg: .gitignore).\nBe willing to accept criticism and work on improving your code; we don\'t want to break other users\' code, so care must be taken not to introduce bugs. We discuss pull requests and keep working on them until we believe we\'ve done a good job.\nBe aware that the pull request review process is not immediate, and is generally proportional to the size of the pull request."
+},
+
+{
+    "location": "contributing/#Reporting-a-bug-1",
+    "page": "Contributer\'s Guide",
+    "title": "Reporting a bug",
+    "category": "section",
+    "text": "The easiest way to get involved is to report issues you encounter when using SeisNoise or by requesting something you think is missing.Head over to the issues page.\nSearch to see if your issue already exists or has even been solved previously.\nIf you indeed have a new issue or request, click the \"New Issue\" button.\nPlease be as specific as possible. Include the version of the code you were using, as well as what operating system you are running. The output of Julia\'s versioninfo() and ] status is helpful to include. If possible, include complete, minimal example code that reproduces the problem."
+},
+
+{
+    "location": "contributing/#Setting-up-your-development-environment-1",
+    "page": "Contributer\'s Guide",
+    "title": "Setting up your development environment",
+    "category": "section",
+    "text": "Install Julia on your system.\nInstall git on your system if it is not already there (install XCode command line tools on a Mac or git bash on Windows).\nLogin to your GitHub account and make a fork of the SeisNoise repository by clicking the \"Fork\" button.\nClone your fork of the SeisNoise repository (in terminal on Mac/Linux or git shell/ GUI on Windows) in the location you\'d like to keep it.\ngit clone https://github.com/your-user-name/SeisNoise.jl.git\nNavigate to that folder in the terminal or in Anaconda Prompt if you\'re on Windows.\nConnect your repository to the upstream (main project).\ngit remote add SeisNoise https://github.com/tclements/SeisNoise.jl.git\nCreate the development environment by opening Julia via julia --project then typing in ] instantiate. This will install all the dependencies in the Project.toml file.\nYou can test to make sure SeisNoise works by typing in ] test which will run all the tests (this can take a while).Your development environment is now ready!"
+},
+
+{
+    "location": "contributing/#Pull-Requests-1",
+    "page": "Contributer\'s Guide",
+    "title": "Pull Requests",
+    "category": "section",
+    "text": "Changes and contributions should be made via GitHub pull requests against the master branch.When you\'re done making changes, commit the changes you made. Chris Beams has written a guide on how to write good commit messages.When you think your changes are ready to be merged into the main repository, push to your fork and submit a pull request.Working on your first Pull Request? You can learn how from this free video series How to Contribute to an Open Source Project on GitHub, Aaron Meurer\'s tutorial on the git workflow, or the guide “How to Contribute to Open Source\"."
+},
+
+{
+    "location": "contributing/#Documentation-1",
+    "page": "Contributer\'s Guide",
+    "title": "Documentation",
+    "category": "section",
+    "text": "Now that you\'ve made your awesome contribution, it\'s time to tell the world how to use it. Writing documentation strings is really important to make sure others use your functionality properly. Didn\'t write new functions? That\'s fine, but be sure that the documentation for the code you touched is still in great shape. It is not uncommon to find some strange wording or clarification that you can take care of while you are here."
+},
+
+{
+    "location": "contributing/#Credits-1",
+    "page": "Contributer\'s Guide",
+    "title": "Credits",
+    "category": "section",
+    "text": "This contributor\'s guide is heavily based on the Oceananigans contributor\'s guide, which is based upon the MetPy contributor\'s guide."
+},
+
+{
+    "location": "func_index/#",
+    "page": "Function Index",
+    "title": "Function Index",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "func_index/#Index-1",
+    "page": "Function Index",
+    "title": "Index",
+    "category": "section",
+    "text": ""
 },
 
 ]}
