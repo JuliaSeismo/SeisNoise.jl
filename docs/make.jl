@@ -5,7 +5,7 @@ makedocs(
     modules = [SeisNoise],
     sitename = "SeisNoise.jl",
     # Uncomment below for local build
-    format = Documenter.HTML(prettyurls = false),
+    # format = Documenter.HTML(prettyurls = false),
     authors = "Tim Clements",
     pages = Any[
         "Home" => "index.md",
