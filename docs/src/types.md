@@ -3,11 +3,7 @@
 `SeisNoise` is designed around array-based cross-correlation. `SeisNoise` uses three custom data structures: `RawData` for storing windows ambient noise, `FFTData` for
 storing Fourier transforms of ambient noise, and `CorrData` for storing
 cross-correlations. SeisNoise types extend `SeisIO`'s `SeisChannel` type
-for 2D-array ambient noise processing. SeisNoise's modular functions work on `RawData`, `FFTData`, and `CorrData` objects *in-place* through Julia's
-[multiple-dispatch](https://en.wikipedia.org/wiki/Multiple_dispatch). Functions in
-SeisNoise that end in ! (e.g. `onebit!(R)`) by convention modify their arguments,
-while functions that do not end in ! (e.g. `onebit(R)`) allocate new arrays or
-objects.
+for 2D-array ambient noise processing.
 
 ![dataflow](assets/SeisNoise-DataFlow.png)
 
@@ -15,7 +11,63 @@ objects.
 
       By convention in Julia, array data is stored *column-wise*. Noise windows in
       `RawData` objects, ffts in `FFTData` objects, and cross-corrleations in
-      `CorrData` objects are all stored column-wise. To access data one or more time windows, use column-based indexing, e.g. `R[:,1]`, `F[:,2]`, or `C[:,3:5]`.
+      `CorrData` objects are all stored column-wise. To access data one or more
+      time windows, use column-based indexing, e.g. `R[:,1]`, `F[:,2]`, or `C[:,3:5]`.
+
+## Timing
+SeisNoise stores the start time of each window stored in `RawData`, `FFTData` and
+`CorrData` objects in the `.t` field as a 1D array. Timestamps are stored according
+to [Unix Time](https://en.wikipedia.org/wiki/Unix_time) in double-precision floating-point format
+(`Float64`). SeisNoise uses the [`Dates` module](https://docs.julialang.org/en/v1/stdlib/Dates/)
+for all timing. For instance, January 1st, 2020 in Unix time is given by
+
+```julia
+using Dates
+datetime2unix(DateTime(2020,1,1))
+1.5778368e9
+```
+
+where `datetime2unix` is a function in the `Dates` module for converting between
+Unix Time and `DateTime` structures. `Dates` also provides a `unix2datetime` for
+converting from Unix Time to `DateTime` structures. Let's say we have an array
+of timestamps, `t`, with hourly samples between `01/01/2020` and `01/02/2020`:
+
+```julia
+t = 1.5778368e9 .+ collect(0:3600:3600*24)
+25-element Array{Float64,1}:
+ 1.5778368e9
+ 1.5778404e9
+ 1.577844e9
+ 1.5778476e9
+ 1.5778512e9
+ 1.5778548e9
+ ⋮
+ 1.5779088e9
+ 1.5779124e9
+ 1.577916e9
+ 1.5779196e9
+ 1.5779232e9
+```
+
+to convert to timestamps, we would use the `unix2datetime` function along with
+the Julia broadcast operator, `.`, as shown below:
+
+```julia
+timestamps = unix2datetime.(t)
+25-element Array{DateTime,1}:
+ 2020-01-01T00:00:00
+ 2020-01-01T01:00:00
+ 2020-01-01T02:00:00
+ 2020-01-01T03:00:00
+ 2020-01-01T04:00:00
+ 2020-01-01T05:00:00
+ ⋮
+ 2020-01-01T20:00:00
+ 2020-01-01T21:00:00
+ 2020-01-01T22:00:00
+ 2020-01-01T23:00:00
+ 2020-01-02T00:00:00
+```
 
 ## `RawData` - Objects for windowed raw data
 `RawData` objects store windows of ambient noise. `RawData` have very similar structure to `SeisChannel` objects, except with added fields for:
@@ -23,7 +75,7 @@ objects.
 - `cc_step`: the step length between successive correlation windows (in seconds).
 - `freqmin`: minimum frequency `RawData` has been filtered (in Hz).
 - `freqmax`: maximum frequency `RawData` has been filtered (in Hz).
-- `time_norm`: One-bit whitening or phase-whitening applied.
+- `time_norm`: Type of amplitude normalization applied (`onebit`, `clipping`, etc..).
 - `t`: Starttime of each noise window (number of seconds since the unix epoch 1970-01-01T00:00:00 as
   a Float64).
 - `x`: Raw data stored in columns (2d-array).
@@ -85,7 +137,7 @@ SeisData with 1 channels (1 shown)
         (nx = 24001)                       
      C: 0 open, 0 total
 
-julia> cc_len, cc_step = 100,50 # specify window length and step (in seconds)
+julia> cc_len, cc_step = 100.,50. # specify window length and step (in seconds)
 (100, 50)
 
 julia> R = RawData(S,cc_len,cc_step)
@@ -97,8 +149,8 @@ RawData with 11 windows
       GAIN: 5.03883e8
    FREQMIN: 0.01
    FREQMAX: 20.0
-    CC_LEN: 100                                
-   CC_STEP: 50                                 
+    CC_LEN: 100.                                
+   CC_STEP: 50.                                 
  TIME_NORM: false                              
       RESP: a0 8.32666e17, f0 0.2, 6z, 11p
       MISC: 4 entries                          
@@ -174,8 +226,7 @@ FFTData with 0 ffts
        FFT: …
 
 ```
-The only difference between an `FFTData` and a `RawData` object is the addition
-of the `whitened` parameter and the swap of the `x` data field to the `fft` data
+The only difference between an `FFTData` and a `RawData` is the swapping of the `x` data field to the `fft` data
 field.
 
 `FFTData` more naturally flow from `RawData` input to the
@@ -191,8 +242,8 @@ FFTData with 11 ffts
       GAIN: 5.03883e8
    FREQMIN: 0.01
    FREQMAX: 20.0
-    CC_LEN: 100                                
-   CC_STEP: 50                                 
+    CC_LEN: 100.                                
+   CC_STEP: 50.                                 
   WHITENED: false                              
  TIME_NORM: false                              
       RESP: a0 8.32666e17, f0 0.2, 6z, 11p
@@ -302,8 +353,8 @@ CorrData with 11 Corrs
       GAIN: 5.03883e8
    FREQMIN: 0.01
    FREQMAX: 20.0
-    CC_LEN: 100                                
-   CC_STEP: 50                                 
+    CC_LEN: 100.                                
+   CC_STEP: 50.                                 
   WHITENED: false                              
  TIME_NORM: false                              
       RESP: a0 8.32666e17, f0 0.2, 6z, 11p
@@ -339,6 +390,16 @@ julia> C.corr
  2.57688e9  2.57981e9  2.52313e9     2.53812e9  2.55982e9  2.52244e9
  2.53042e9  2.54303e9  2.52005e9  …  2.53713e9  2.55813e9  2.51694e9
 ```
+
+## SeisNoise Functions
+
+SeisNoise's modular functions work on `RawData`, `FFTData`, and `CorrData` objects *in-place* through Julia's
+[multiple-dispatch](https://en.wikipedia.org/wiki/Multiple_dispatch). Functions in
+SeisNoise that end in ! (e.g. `onebit!(R)`) by convention modify their arguments,
+while functions that do not end in ! (e.g. `onebit(R)`) allocate new arrays or
+objects. Have a look at the [Pre-Processing](@ref), [Computing FFTs](@ref) and
+[Cross-Correlating](@ref) sections to learn how to apply functions to `NoiseData`
+objects.
 
 ### Type Documentation
 ```@docs

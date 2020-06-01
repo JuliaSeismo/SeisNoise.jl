@@ -5,7 +5,7 @@ makedocs(
     modules = [SeisNoise],
     sitename = "SeisNoise.jl",
     # Uncomment below for local build
-    # format = Documenter.HTML(prettyurls = false),
+    format = Documenter.HTML(prettyurls = false),
     authors = "Tim Clements",
     pages = Any[
         "Home" => "index.md",
@@ -14,6 +14,10 @@ makedocs(
         "Pre-Processing" => "preprocessing.md",
         "Computing FFTs" => "fft.md",
         "Correlation" => "correlation.md",
+        "Extending SeisNoise" => "extend.md",
+        "Examples" => "examples.md",
+        "Contributer's Guide" => "contributing.md",
+        "Function Index" => "func_index.md",
         ],
 )
 

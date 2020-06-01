@@ -1,4 +1,4 @@
-# `Pre-Processing` - methods for cleaning raw noise data.
+# Pre-Processing
 
 The pre-processing functions get raw data ready for correlation. Many of these
 rely on [SeisIO's processing](https://seisio.readthedocs.io/en/latest/src/Processing/processing.html). A typical workflow includes the following steps:

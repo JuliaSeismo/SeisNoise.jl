@@ -1,4 +1,4 @@
-# `Computing FFTs` - methods for computing FFTs raw noise data.
+# Computing FFTs
 
 All correlation in SeisNoise.jl is done in the frequency domain, which can be represented
 by:
@@ -14,59 +14,66 @@ in the frequency domain. For time and memory efficiency, the real Fourier transf
 (`rfft`) is used as opposed to the regular Fourier transform (`fft`). This gives
 a speedup of about a factor of 3. A typical workflow for computing `fft`'s can include:
 
-- Spectral whitening (removing spectral amplitude information)
-- One-bit normalization
-- Phase normalization
 - Real Fourier Transform
+- Spectral whitening (removing spectral amplitude information)
+- Hilbert Transform (for phase-correlation)
 
-## Computing FFTs
+## Creating FFTData Structures
 
-The `compute_fft` function provides the typical workflow for computing `fft`s.
+The `rfft` function provides the typical workflow for computing `fft`s in SeisNoise.
 
 ```julia
-julia> using SeisNoise, SeisIO
-julia> S = get_data("IRIS","TA.V04C..BHZ",s="2006-02-01T00:00:00",t="2006-02-01T01:00:00")
-julia> freqmin, freqmax = 1.,10.
-julia> fs = 20.
-julia> cc_step, cc_len = 100, 100
-julia> F = compute_fft(S,freqmin,freqmax,fs,cc_step,cc_len,time_norm=false,
-                       to_whiten=false)
-
-FFTData with 36 ffts
+using SeisNoise, SeisIO
+S = get_data("IRIS","TA.V04C..BHZ",s="2006-02-01T00:00:00",t="2006-02-01T01:00:00")
+cc_step, cc_len = 100., 100.
+R = RawData(S,cc_len,cc_step)
+F = rfft(R)
+FFTData with 35 ffts
       NAME: "TA.V04C..BHZ"                     
         ID: "2006-02-01"                       
        LOC: 0.0 N, 0.0 E, 0.0 m
-        FS: 20.0
+        FS: 40.0
       GAIN: 1.0
-   FREQMIN: 0.05
-   FREQMAX: 5.0
-    CC_LEN: 100                                
-   CC_STEP: 100                                
+   FREQMIN: 0.01
+   FREQMAX: 20.0
+    CC_LEN: 100.0
+   CC_STEP: 100.0
   WHITENED: false                              
- TIME_NORM: false                              
-      RESP: c = 0.0, 0 zeros, 0 poles
+ TIME_NORM: ""                                 
+      RESP: a0 1.0, f0 1.0, 0z, 0p
       MISC: 0 entries                          
      NOTES: 2 entries                          
-         T: 2006-02-01T00:00:00.000            …
-       FFT: 1001×36 Array{Complex{Float32},2}  
+         T: 2006-02-01T00:01:40                …
+       FFT: 2001×35 Array{Complex{Float32},2}  
 ```
 
-Underneath the hood, `compute_fft` applies pre-processing with `merge`, `ungap`,
-and `process_raw`. The `SeisData` object is then transformed into an Array `A` of
-sliding windows. The `process_fft` then applies spectral or time-domain normalization
-and returns `FFT`, the Fourier transform of `A`. An `FFTData` object is then created
-from the parameters of `S` and `FFT`.
+Underneath the hood, `rfft` applies a real Fourier transform to the `.x` field of a
+`RawData` structure, then allocates a new `FFTData` structure with the Fourier transform
+data stored in the `.fft` field.
 
-```julia                        
-merge!(S)
-ungap!(S)
-process_raw!(S,fs)
-A, starts, ends = slide(S[1], cc_len, cc_step)
-FFT = process_fft(A, freqmin, freqmax, fs, time_norm=time_norm,to_whiten=to_whiten)
-F = FFTData(S[1].id, Dates.format(u2d(starts[1]),"Y-mm-dd"),
-                       S[1].loc, S[1].fs, S[1].gain, freqmin, freqmax,
-                       cc_len, cc_step, to_whiten, time_norm, S[1].resp,
-                       S[1].misc, S[1].notes, starts, FFT)
+## Whitening FFTData
+
+SeisNoise provides three methods for normalizing the spectrum of an FFTData structure.
+The `whiten!` method, sets the complex amplitude of frequencies between `freqmin`
+and `freqmax` to 1. This preserves only the phase component of the signal.  
+
+```julia
+freqmin, freqmax = 10., 20.
+whiten!(F,freqmin,freqmax)
+```
+
+The `coherence` method smooths an the spectrum of an `FFTData` by the smoothed
+absolute value of itself.
+
+```julia
+coherence!(F,20)
+```
+
+The `deconvolution` method smooths an the spectrum of an `FFTData` by the smoothed
+absolute value squared of itself.
+
+```julia
+deconvolution!(F,20)
 ```
 
 ## Saving/Loading FFTs
@@ -94,7 +101,7 @@ To read an `FFTData` on disk, use the `load_fft` function:
 
 ```julia
 julia> F = load_fft("~/TEST/FFT/TA.V04C.BHZ.jld2","BHZ")
-FFTData with 36 ffts
+FFTData with 35 ffts
       NAME: "TA.V04C..BHZ"                     
         ID: "2006-02-01"                       
        LOC: 0.0 N, 0.0 E, 0.0 m
@@ -110,7 +117,7 @@ FFTData with 36 ffts
       MISC: 0 entries                          
      NOTES: 2 entries                          
          T: 2006-02-01T00:00:00.000            …
-       FFT: 1001×36 Array{Complex{Float32},2}
+       FFT: 2001×35 Array{Complex{Float32},2}
 ```
 
 Note that it is necessary to specify the channel when using `load_fft`.
