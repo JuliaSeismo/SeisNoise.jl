@@ -9,7 +9,7 @@ SeisNoise.jl is designed for fast and easy ambient noise cross-correlation on th
  ![Noise.jl Logo](/docs/src/assets/logo.png)
 
 ## Installation
-You can install the latest version of SeisNoise using the Julia package manager (Press `]` to enter `pkg`). 
+You can install the latest version of SeisNoise using the Julia package manager (Press `]` to enter `pkg`).
 From the Julia command prompt:
 
 ```julia
@@ -25,7 +25,7 @@ julia> import Pkg; Pkg.add("SeisNoise")
 
 We recommend using the latest version of SeisNoise by updating with the Julia package manager:
 
-```julia 
+```julia
 (@v1.4) pkg> update SeisNoise
 ```
 
@@ -69,7 +69,7 @@ will produce this figure:
 
 ## Cross-correlation on the GPU
 
-SeisNoise can process data and compute cross-correlations on the GPU with CUDA. The [JuliaGPU](https://github.com/JuliaGPU) suite provides a high-level interface for CUDA programming through the CuArrays.jl and CUDAnative.jl packages. CuArrays.jl provides an array type for storing data on the GPU. Data in SeisNoise structures (`R.x`, `F.fft`, and `C.corr` fields, for `RawData`, `FFTData`, and `CorrData`, respectively) can move between an `Array` on the CPU to a `CuArray` on the GPU using the `gpu` and `cpu` functions, as shown below.   
+SeisNoise can process data and compute cross-correlations on the GPU with CUDA. The [JuliaGPU](https://github.com/JuliaGPU) suite provides a high-level interface for CUDA programming through the CUDA.jl package. CUDA.jl provides an the `CuArray` type for storing data on the GPU. Data in SeisNoise structures (`R.x`, `F.fft`, and `C.corr` fields, for `RawData`, `FFTData`, and `CorrData`, respectively) can move between an `Array` on the CPU to a `CuArray` on the GPU using the `gpu` and `cpu` functions, as shown below.   
 
 > :warning: Only **Nvidia** GPUs are suported at the moment. Hold in there for AMD/OpenCL support...
 
@@ -77,7 +77,7 @@ SeisNoise can process data and compute cross-correlations on the GPU with CUDA. 
 # create raw data and send to GPU
 R = RawData(S1, cc_len, cc_step) |> gpu
 R.x
-72000×188 CuArrays.CuArray{Float32,2,Nothing}
+72000×188 CUDA.CuArray{Float32,2,Nothing}
 
 # send data back to the CPU
 R = R |> cpu
@@ -117,6 +117,6 @@ C = correlate(FFT[1],FFT[2],maxlag) |> cpu
   - `correlate`, `cross-coherence`, `deconvolution`
 - Post-processing:
   - `stack`, `filter`s, etc..
-  
+
 ## Contributing
-We welcome folks interested in contributing to SeisNoise. Please [open an issue](https://github.com/tclements/SeisNoise.jl/issues/new) to let us know about bug reports, new methods/code, and or feature requests/usage cases. If you would like to submit a pull request (PR), please include accompanying [tests](https://github.com/tclements/SeisNoise.jl/tree/master/test). 
+We welcome folks interested in contributing to SeisNoise. Please [open an issue](https://github.com/tclements/SeisNoise.jl/issues/new) to let us know about bug reports, new methods/code, and or feature requests/usage cases. If you would like to submit a pull request (PR), please include accompanying [tests](https://github.com/tclements/SeisNoise.jl/tree/master/test).
