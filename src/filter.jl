@@ -361,8 +361,8 @@ function gpufilter!(A::AbstractGPUArray,responsetype::FilterType,designmethod::Z
     # get filter coefficients in Float64 to avoid divide by zero
     b = coefb(tf)
     a = coefa(tf)
-    newb = CuArrays.zeros(T,N)
-    newa = CuArrays.zeros(T,N)
+    newb = CUDA.zeros(T,N)
+    newa = CUDA.zeros(T,N)
     copyto!(newb,b)
     copyto!(newa,a)
     bafft = rfft(newb) ./ rfft(newa)
