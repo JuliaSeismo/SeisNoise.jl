@@ -6,10 +6,15 @@ export save_fft, load_fft, load_corr, save_corr
 Save FFTData `F` to JLD2.
 """
 function save_fft(F::FFTData, FFTOUT::String)
-    # check if FFT DIR exists
+    # check if FFTDIR exists
     FFTOUT = expanduser(FFTOUT)
     if isdir(FFTOUT) == false
         mkpath(FFTOUT)
+    end
+
+    # check if F is on the GPU 
+    if isa(F.fft,AbstractGPUArray)
+        F = F |> cpu
     end
 
     # create JLD2 file and save FFT
@@ -75,10 +80,15 @@ end
 Save CorrData `C` to JLD2.
 """
 function save_corr(C::CorrData, CORROUT::String)
-    # check if FFT DIR exists
+    # check if CORRDIR exists
     CORROUT = expanduser(CORROUT)
     if isdir(CORROUT) == false
         mkpath(CORROUT)
+    end
+
+    # check if C is on the GPU
+    if isa(C.corr,AbstractGPUArray)
+        C = C |> cpu
     end
 
     # create JLD2 file and save correlation
