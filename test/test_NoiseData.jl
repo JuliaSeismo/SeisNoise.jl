@@ -209,7 +209,7 @@ F1 = FFTData()
 end
 ## test CorrData
 # test empty allocator
-@testset "FFTData creation" begin
+@testset "CorrData creation" begin
 @test !isa(try CorrData() catch ex ex end, Exception)    # Passes
 C = CorrData()
 @test isempty(C)
@@ -286,7 +286,7 @@ end
     @test all(R2.t .== R1.t[ind])
 
     # test indexing with DateTime
-    ind = u2d(R1.t[begin]):Hour(1):u2d(R1.t[end])
+    ind = u2d(R1.t[1]):Hour(1):u2d(R1.t[end])
     R2 = R1[ind]
     @test length(R2) == length(ind)
     @test size(R2.x,2) == length(ind)
