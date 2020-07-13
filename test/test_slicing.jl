@@ -108,7 +108,7 @@ end
     cc_step = 100
     R = RawData(C,cc_step,cc_len)
 
-    starttime = u2d(R.t[begin])
+    starttime = u2d(R.t[1])
     endtime = u2d(R.t[end])
     R1 = sync(R,starttime,endtime)
     @test R1 == R
