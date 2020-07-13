@@ -254,3 +254,51 @@ C1 = CorrData()
 @test append!(C1,C) == C + C
 @test size(C1.corr,2) == 2 * size(C.corr,2)
 end
+
+## test indexing
+@testset "Indexing" begin
+    cc_len = cc_step = 1800.
+    R1 = RawData(S[1],cc_len,cc_step)
+
+    # test length
+    @test length(R1) == length(R1.t)
+
+    # test firstindex
+    @test firstindex(R1) == 1
+
+    # test lastindex
+    @test lastindex(R1) == length(R1.t)
+
+    # test indexing
+    ind = [1,2,4,8,16,32]
+    R2 = R1[ind]
+    @test length(R2) == length(ind)
+    @test size(R2.x,2) == length(ind)
+    @test all(R2.x .== R1.x[:,ind])
+    @test all(R2.t .== R1.t[ind])
+
+    # test indexing with collection
+    ind = 1:2:10
+    R2 = R1[ind]
+    @test length(R2) == length(ind)
+    @test size(R2.x,2) == length(ind)
+    @test all(R2.x .== R1.x[:,ind])
+    @test all(R2.t .== R1.t[ind])
+
+    # test indexing with DateTime
+    ind = u2d(R1.t[begin]):Hour(1):u2d(R1.t[end])
+    R2 = R1[ind]
+    @test length(R2) == length(ind)
+    @test size(R2.x,2) == length(ind)
+
+    # test setindex
+    ind = 1:2:48
+    R3 = deepcopy(R1)
+    setindex!(R3,R2,ind)
+    # test
+    @test R3[ind] == R2
+
+    # test sorting
+    R4 = sort(R1[1:2:48] + R1[2:2:48])
+    @test R4 == R1
+end

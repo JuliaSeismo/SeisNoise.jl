@@ -1,9 +1,11 @@
 # test slicing of Data
 
-C = SeisIO.RandSeis.randSeisChannel(s=true,c=false)
-S = SeisIO.RandSeis.randSeisData(s=1.,c=0.)[1:1]
+C = SeisIO.RandSeis.randSeisChannel(s=true,c=false,nx=100000,fs_min=1.)
+S = SeisIO.RandSeis.randSeisData(s=1.,c=0.,nx=100000,fs_min=1.)[1:1]
 ungap!(C)
 ungap!(S)
+C.loc = GeoLoc()
+S.loc[1] = GeoLoc()
 
 @testset "start_end" begin
 @test eltype(start_end(C)) == DateTime
@@ -99,4 +101,23 @@ startslice, endslice = nearest_start_end(C,cc_len,cc_step)
 # or 28 seconds + 1 sample == 281 samples
 # endtime is 00:16:39.9 or 15:27.9 or 9280 samples
 @test slide_ind(startslice,endslice,fs,C.t) == (281,9280)
+end
+
+@testset "sync NoiseData" begin
+    cc_len = 100
+    cc_step = 100
+    R = RawData(C,cc_step,cc_len)
+
+    starttime = u2d(R.t[begin])
+    endtime = u2d(R.t[end])
+    R1 = sync(R,starttime,endtime)
+    @test R1 == R
+    e = starttime + Minute(10)
+    R2 = sync(R,starttime,e)
+    @test length(R2) == 7
+
+    # test sync with dates outside R.t
+    starttime = DateTime(1,2,3)
+    endtime = DateTime(1456,7,8)
+    @test_throws ArgumentError sync(R,starttime,endtime)
 end

@@ -1,15 +1,12 @@
-import Base:in, +, -, *, ==, convert, isempty, isequal, length, push!, sizeof, append!
+import Base: in, +, -, *, ==, convert, isempty, isequal, length, push!, sizeof, append!
+import Base: lastindex, firstindex, getindex, setindex!, sort, sort!
 import SeisIO: GeoLoc, PZResp, InstrumentResponse
-export RawData, FFTData, CorrData, gpu, cpu
+export RawData, FFTData, CorrData, gpu, cpu, sort, sort!, append!
+export isequal, isempty, length, +, ==
 
-const rawfields = [:name, :loc, :fs, :gain, :freqmin, :freqmax, :cc_step,
-                   :cc_len, :whitened, :time_norm, :resp, :x]
-const fftfields = [:name, :loc, :fs, :gain, :freqmin, :freqmax, :cc_step,
-                   :cc_len, :whitened, :time_norm, :resp, :fft]
+# Many thanks to SeisIO for inspiration for NoiseData objects
 
-const corrfields = [:name, :loc, :comp, :rotated, :corr_type, :fs, :gain,
-                   :freqmin, :freqmax, :cc_len, :cc_step, :whitened, :time_norm, :resp,
-                   :maxlag, :dist, :azi, :baz, :corr]
+const datafields = (:x,:fft,:corr)
 
 abstract type NoiseData end
 
@@ -391,6 +388,63 @@ CorrData(F1::FFTData, F2::FFTData, comp::String, rotated::Bool, corr_type::Strin
 
 
 in(s::String, A::NoiseData) = A.id==s
+length(N::NoiseData) = length(getfield(N,:t))
+firstindex(N::NoiseData) = 1
+lastindex(N::NoiseData) = length(N)
+
+function getindex(N::NoiseData, J::Array{Int,1})
+  n = length(N)
+  T = typeof(N)
+  U = T()
+  F = fieldnames(T)
+  for f in F
+     if f in datafields
+        setfield!(U, f, getindex(getfield(N,f),:,J))
+     elseif f == :t
+        setfield!(U, f, getindex(getfield(N,f),J))
+     else
+        setfield!(U, f, getfield(N,f))
+     end
+  end
+  return U
+end
+
+function getindex(N::NoiseData, J::Array{DateTime,1})
+   n = length(N)
+   T = typeof(N)
+   U = T()
+   F = fieldnames(T)
+   t = d2u.(J)
+   ind = findall(in(t),N.t)
+   for f in F
+      if f in datafields
+         setfield!(U, f, getindex(getfield(N,f),:,ind))
+      elseif f == :t
+         setfield!(U, f, getindex(getfield(N,f),ind))
+      else
+         setfield!(U, f, getfield(N,f))
+      end
+   end
+   return U
+ end
+getindex(N::NoiseData, J::AbstractRange) = getindex(N, collect(J))
+
+function setindex!(N::T, U::T, J::Array{Int,1}) where {T<:NoiseData}
+  typeof(N) == typeof(U) || throw(MethodError)
+  length(J) == length(U) || throw(BoundsError)
+  length(N) >= maximum(J) || throw(BoundsError)
+  F = fieldnames(T)
+  for f in F
+     if f in datafields
+        setindex!(getfield(N, f), getfield(U, f), :,J)
+     elseif f == :t
+        setindex!(getfield(N,f),getfield(U,f),J)
+     end
+  end
+  # ([(getfield(S, f))[J] = getfield(U, f) for f in datafields])
+  return nothing
+end
+setindex!(N::NoiseData, U::NoiseData, J::AbstractRange) = setindex!(N, U, collect(J))
 
 isempty(R::RawData) = min(R.name=="",R.id == "",isempty(R.loc),
                           R.fs == zero(typeof(R.fs)),
@@ -429,45 +483,39 @@ isempty(C::CorrData) = min(C.name=="",C.id == "",isempty(C.loc), C.comp=="",
                         C.maxlag == zero(typeof(C.maxlag)), isempty(C.t),
                         isempty(C.corr))
 
-isequal(R::RawData, U::RawData) = minimum([hash(getfield(R,i))==hash(getfield(U,i)) for i in rawfields]::Array{Bool,1})
-==(R::RawData, U::RawData) = isequal(R,U)::Bool
+function isequal(N::T,U::T) where {T<:NoiseData}
+   return minimum([hash(getfield(N,i))==hash(getfield(U,i)) for i in fieldnames(T)]::Array{Bool,1})
+end
+==(N::T,U::T) where {T<:NoiseData} = isequal(N,U)
 
-isequal(F::FFTData, U::FFTData) = minimum([hash(getfield(F,i))==hash(getfield(U,i)) for i in fftfields]::Array{Bool,1})
-==(F::FFTData, U::FFTData) = isequal(F,U)::Bool
+function append!(N::T, U::T) where {T<:NoiseData}
+   F = fieldnames(T)
+   if N.name == U.name
+      d = intersect(datafields,F)[1]
+      setfield!(N, :t, vcat(getfield(N,:t), getfield(U,:t)))
+      setfield!(N, d, hcat(getfield(N,d), getfield(U,d)))
+   elseif isempty(N)
+      [setfield!(N, f, getfield(U,f)) for f in F]
+   end
+   return N
+end
 
-isequal(C::CorrData, U::CorrData) = minimum([hash(getfield(C,i))==hash(getfield(U,i)) for i in corrfields]::Array{Bool,1})
-==(C::CorrData, U::CorrData) = isequal(C,U)::Bool
+function sort!(N::T; rev=false::Bool) where {T<:NoiseData}
+  j = sortperm(getfield(N, :t), rev=rev)
+  F = fieldnames(T)
+  d = intersect(datafields,F)[1]
+  setfield!(N, d, getfield(N,d)[:,j])
+  setfield!(N, :t, getfield(N,:t)[j])
+  return nothing
+end
 
-append!(R::RawData, U::RawData)  = (if R.name == U.name;
-   setfield!(R, :t, vcat(getfield(R,:t), getfield(U,:t)));
-   setfield!(R, :x, hcat(getfield(R,:x), getfield(U,:x)))
-   elseif isempty(R);
-   [setfield!(R, i, getfield(U,i)) for i in rawfields];
-   [setfield!(R, i, getfield(U,i)) for i in [:t,:x]];
-   end;
-   return R)
+function sort(N::T; rev=false::Bool) where {T<:NoiseData}
+  U = deepcopy(N)
+  sort!(U, rev=rev)
+  return U
+end
 
-append!(F::FFTData, U::FFTData)  = (if F.name == U.name;
-   setfield!(F, :t, vcat(getfield(F,:t), getfield(U,:t)));
-   setfield!(F, :fft, hcat(getfield(F,:fft), getfield(U,:fft)))
-   elseif isempty(F);
-   [setfield!(F, i, getfield(U,i)) for i in fftfields];
-   [setfield!(F, i, getfield(U,i)) for i in [:t,:fft]];
-   end;
-   return F)
-
- append!(C::CorrData, U::CorrData)  = (if C.name == U.name;
-   setfield!(C, :t, vcat(getfield(C,:t), getfield(U,:t)));
-   setfield!(C, :corr, hcat(getfield(C,:corr), getfield(U,:corr)))
-   elseif isempty(C)
-   [setfield!(C, i, getfield(U,i)) for i in corrfields];
-   [setfield!(C, i, getfield(U,i)) for i in [:t,:corr]];
-   end;
-   return C)
-
-+(R::RawData, U::RawData) = (T = deepcopy(R); return append!(T, U))
-+(F::FFTData, U::FFTData) = (T = deepcopy(F); return append!(T, U))
-+(C::CorrData, U::CorrData) = (T = deepcopy(C); return append!(T, U))
++(N::T, U::T) where {T<:NoiseData} = (Z = deepcopy(N); return append!(Z, U))
 
 # Allow for transfer from CPU to GPU
 

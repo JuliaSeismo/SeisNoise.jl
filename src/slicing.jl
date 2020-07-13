@@ -1,4 +1,5 @@
-export start_end, slide, nearest_start_end, slide_ind
+import SeisIO: sync
+export start_end, slide, nearest_start_end, slide_ind, sync
 const μs = 1.0e-6
 const sμ = 1000000.0
 """
@@ -18,20 +19,20 @@ end
 Return start and endtimes of SeisChannel in DateTime format.
 """
 function start_end(S::SeisData)
-  irr = falses(S.n)
-  non_ts = findall(S.fs .== 0)
-  irr[non_ts] .= true
-  z = zero(Int64)
-  start_times = Array{DateTime}(undef,S.n)
-  end_times =  Array{DateTime}(undef,S.n)
-  for i = 1:S.n
-    start_times[i] = u2d(S.t[i][1,2] * μs)
-    end_times[i] = u2d(S.t[i][end,2] + (irr[i] ? z : S.t[i][1,2] + sum(S.t[i][2:end,2]) +
+    irr = falses(S.n)
+    non_ts = findall(S.fs .== 0)
+    irr[non_ts] .= true
+    z = zero(Int64)
+    start_times = Array{DateTime}(undef,S.n)
+    end_times =  Array{DateTime}(undef,S.n)
+    for i = 1:S.n
+        start_times[i] = u2d(S.t[i][1,2] * μs)
+        end_times[i] = u2d(S.t[i][end,2] + (irr[i] ? z : S.t[i][1,2] + sum(S.t[i][2:end,2]) +
         round(Int64, (length(S.x[i])-1)/(μs*S.fs[i]))) * μs)
         # ts data: start time in μs from epoch + sum of time gaps in μs + length of trace in μs
         # non-ts data: time of last sample
-  end
-  return start_times,end_times
+    end
+    return start_times,end_times
 end
 
 """
@@ -100,13 +101,13 @@ slide(C::SeisChannel, cc_len::Float64, cc_step::Float64) = slide(C.x,cc_len,cc_s
 Return best possible start, end times for data in `C` given the `cc_step` and `cc_len`.
 """
 function nearest_start_end(C::SeisChannel, cc_len::Float64, cc_step::Float64)
-  su,eu = SeisIO.t_win(C.t,C.fs) * μs
-  su = round(su,digits=4) # round due to numerical roundoff error
-  eu = round(eu,digits=4) # round due to numerical roundoff error
-  ideal_start = d2u(DateTime(Date(u2d(su)))) # midnight of same day
-  starts = Array(range(ideal_start,stop=eu,step=cc_step))
-  ends = starts .+ cc_len .- 1. / C.fs
-  return starts[findfirst(x -> x >= su, starts)], ends[findlast(x -> x <= eu,ends)]
+    su,eu = SeisIO.t_win(C.t,C.fs) * μs
+    su = round(su,digits=4) # round due to numerical roundoff error
+    eu = round(eu,digits=4) # round due to numerical roundoff error
+    ideal_start = d2u(DateTime(Date(u2d(su)))) # midnight of same day
+    starts = Array(range(ideal_start,stop=eu,step=cc_step))
+    ends = starts .+ cc_len .- 1. / C.fs
+    return starts[findfirst(x -> x >= su, starts)], ends[findlast(x -> x <= eu,ends)]
 end
 
 """
@@ -115,15 +116,35 @@ end
 Return best possible start, end times for given starttime `S` and endtime `E`.
 """
 function nearest_start_end(S::DateTime, E::DateTime, fs::Float64, cc_len::Float64, cc_step::Float64)
-  ideal_start = DateTime(Date(S)) # midnight of same day
-  starts = Array(ideal_start:Second(cc_step):E)
-  ends = starts .+ Second(cc_len) .- Millisecond(convert(Int,1. / fs * 1e3))
-  return d2u(starts[findfirst(x -> x >= S, starts)]), d2u(ends[findlast(x -> x <= E,ends)])
+    ideal_start = DateTime(Date(S)) # midnight of same day
+    starts = Array(ideal_start:Second(cc_step):E)
+    ends = starts .+ Second(cc_len) .- Millisecond(convert(Int,1. / fs * 1e3))
+    return d2u(starts[findfirst(x -> x >= S, starts)]), d2u(ends[findlast(x -> x <= E,ends)])
 end
 
 function slide_ind(startslice::AbstractFloat,endslice::AbstractFloat,fs::AbstractFloat,t::AbstractArray)
-  starttime = t[1,2] * 1e-6
-  startind = convert(Int,round((startslice - starttime) * fs,digits=4)) + 1
-  endind = convert(Int,round((endslice - starttime) * fs,digits=4)) + 1
-  return startind,endind
+    starttime = t[1,2] * 1e-6
+    startind = convert(Int,round((startslice - starttime) * fs,digits=4)) + 1
+    endind = convert(Int,round((endslice - starttime) * fs,digits=4)) + 1
+    return startind,endind
+end
+
+"""
+  sync(N,starttime,endtime)
+
+Return all data in `N` that starts no earlier than `starttime` and terminates no later than `endtime`.
+
+# Arguments
+- `N::NoiseData`: NoiseData structure (`RawData`, `FFTData`, `CorrData`).
+- `starttime::TimeType`: Earliest time to start.
+- `endtime::TimeType`: Latest time to start.
+"""
+function sync(N::NoiseData,starttime::TimeType,endtime::TimeType)
+    starttime = DateTime(starttime)
+    endtime = DateTime(endtime)
+    ind = findall(d2u(starttime) .<= N.t .<= d2u(endtime))
+    if length(ind) == 0
+        throw(ArgumentError("No data in $(typeof(N)) between $starttime and $endtime."))
+    end
+    return N[ind]
 end
