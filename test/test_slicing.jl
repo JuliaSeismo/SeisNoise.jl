@@ -1,9 +1,16 @@
 # test slicing of Data
 
-C = SeisIO.RandSeis.randSeisChannel(s=true,c=false,nx=100000,fs_min=1.)
-S = SeisIO.RandSeis.randSeisData(s=1.,c=0.,nx=100000,fs_min=1.)[1:1]
-ungap!(C)
-ungap!(S)
+C = SeisChannel()
+S = SeisData(1)
+C.x = rand(100000)
+starttime = d2u(DateTime(Date(now())))
+endtime = starttime + length(C.x) / fs - 1 / fs
+fs = 10.
+C.fs = fs
+S.fs[1] = fs
+S.x[1] = rand(100000)
+C.t = [1 starttime * 1e6;length(C.x) 0]
+S.t[1] = [1 starttime * 1e6;length(C.x) 0]
 C.loc = GeoLoc()
 S.loc[1] = GeoLoc()
 
