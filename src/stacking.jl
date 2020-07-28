@@ -12,11 +12,11 @@ correlations. To use phase-weighted stack, specify the amount of
 
 # Arguments
 - `C::CorrData`: Correlation data.
-- `interval::Union{Month,Day,Hour,Second}`: Interval over which to stack `C`.
+- `interval::Period`: Interval over which to stack `C`.
 - `allstack::Bool`: If `true`, stack all data.
 - `stack_type::Function`: Type of stacking. Options are mean, pws, robuststack, etc..
 """
-function stack!(C::CorrData; interval::Union{Month,Day,Hour,Second}=Day(1),
+function stack!(C::CorrData; interval::Period=Day(1),
                 allstack::Bool=false,stacktype::Function=mean)
 
     if allstack == true
@@ -46,7 +46,7 @@ function stack!(C::CorrData; interval::Union{Month,Day,Hour,Second}=Day(1),
     end
     return C
 end
-stack(C::CorrData; interval::Union{Month,Day,Hour,Second}=Day(1),
+stack(C::CorrData; interval::Period=Day(1),
       allstack::Bool=false,stacktype::Function=mean) = (U = deepcopy(C);
       stack!(U,interval=interval,allstack=allstack,
              stacktype=stacktype);return U)
@@ -136,7 +136,7 @@ where N is number of traces used, v is sharpness of phase-weighted stack
 - `pow::Int`: Sharpness of transition from phase similarity to dissimilarity.
 """
 function pws(A::AbstractArray{T}; pow::Real=2) where T <: AbstractFloat
-    # preserve type-stability 
+    # preserve type-stability
     if !isa(pow,Int)
         pow = T(pow)
     end
