@@ -14,7 +14,7 @@ From the Julia command prompt:
 
 ```julia
 julia>]
-(@v1.4) pkg> add SeisNoise
+(@v1.5) pkg> add SeisNoise
 ```
 
 Or, equivalently, via the `Pkg` API:
@@ -26,10 +26,13 @@ julia> import Pkg; Pkg.add("SeisNoise")
 We recommend using the latest version of SeisNoise by updating with the Julia package manager:
 
 ```julia
-(@v1.4) pkg> update SeisNoise
+(@v1.5) pkg> update SeisNoise
 ```
 
 ## Package Features
+
+![flow](/docs/src/assets/SeisNoise-DataFlow.jpg)
+
   - Built upon [SeisIO](https://seisio.readthedocs.io/en/latest/) for easy and fast I/O.
   - Custom structures for storing Raw Data, Fourier Transforms of data, and cross-correlations
   - CPU/GPU compatible functions for cross-correlation.
@@ -107,6 +110,12 @@ C = correlate(FFT[1],FFT[2],maxlag) |> cpu
 ```
 
 ### Routines Implemented on the GPU
+
+![gpu times](/docs/src/assets/Fig2.jpg)
+
+Processing times for a selection of routines on the GPU with Julia + GPU (white), Julia + CPU (black), and Python (grey). Currently these operations are implemented in SeisNoise on the GPU: 
+
+
 - Preprocessing:
   - `detrend`,`demean`, `taper`, `onebit`, `smooth`
 - Filtering:
