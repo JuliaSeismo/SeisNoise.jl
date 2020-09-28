@@ -15,9 +15,9 @@ Pre-process raw seismic data.
 
 # Arguments
 - `S::SeisData`: SeisData structure.
-- `fs::Float64`: Sampling rate to downsample `S`.
+- `fs::Real`: Sampling rate to downsample `S`.
 """
-function process_raw!(S::SeisData, fs::Float64; ϕshift::Bool=true)
+function process_raw!(S::SeisData, fs::Real; ϕshift::Bool=true)
     merge!(S)
     ungap!(S)
 	detrend!(S)         # remove mean & trend from channel
@@ -30,7 +30,7 @@ function process_raw!(S::SeisData, fs::Float64; ϕshift::Bool=true)
     phase_shift!(S, ϕshift=ϕshift) # timing offset from sampling period
     return nothing
 end
-process_raw(S::SeisData, fs::Float64;
+process_raw(S::SeisData, fs::Real;
            ϕshift::Bool=true) = (U = deepcopy(S);
            process_raw!(U,fs, ϕshift=ϕshift); return U)
 
@@ -46,9 +46,9 @@ Pre-process raw SeisChannel.
 
 # Arguments
 - `C::SeisChannel`: SeisChannel structure.
-- `fs::Float64`: Sampling rate to downsample `C`.
+- `fs::Real`: Sampling rate to downsample `C`.
 """
-function process_raw!(C::SeisChannel, fs::Float64; ϕshift::Bool=true)
+function process_raw!(C::SeisChannel, fs::Real; ϕshift::Bool=true)
 	ungap!(C)
     detrend!(C)         # remove mean & trend from channel
     taper!(C)         # taper channel ends
@@ -60,7 +60,7 @@ function process_raw!(C::SeisChannel, fs::Float64; ϕshift::Bool=true)
 	phase_shift!(C, ϕshift=ϕshift) # timing offset from sampling period
 	return nothing
 end
-process_raw(C::SeisChannel, fs::Float64;
+process_raw(C::SeisChannel, fs::Real;
         ϕshift::Bool=true) = (U = deepcopy(C);
         process_raw!(U,fs, ϕshift=ϕshift); return U)
 
@@ -186,7 +186,7 @@ clamp(R::RawData,lo::Real,hi::Real) = (U = deepcopy(R); clamp!(U,lo,hi);return U
 
 Filter raw data based on amplitude.
 """
-function remove_amp!(R::RawData; max_std::Float64=10.)
+function remove_amp!(R::RawData; max_std::Real=10.)
     # remove nonzero columns
     zeroind = nonzero(R.x)
     if length(zeroind) == 0
@@ -206,7 +206,7 @@ function remove_amp!(R::RawData; max_std::Float64=10.)
     end
     return nothing
 end
-remove_amp(R::RawData; max_std::Float64=10.) = (U = deepcopy(R);remove_amp!(U,
+remove_amp(R::RawData; max_std::Real=10.) = (U = deepcopy(R);remove_amp!(U,
           max_std=max_std); return U)
 
 """

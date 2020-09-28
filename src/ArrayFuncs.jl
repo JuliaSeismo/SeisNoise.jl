@@ -61,13 +61,13 @@ or `max_length`.
 
 # Arguments
 - `A::AbstractArray`: Time series.
-- `fs::Float64`: Sampling rate of time series `A`.
+- `fs::AbstractFloat`: Sampling rate of time series `A`.
 - `max_percentage::float`: Decimal percentage of taper at one end (ranging
    from 0. to 0.5).
-- `max_length::Float64`: Length of taper at one end in seconds.
+- `max_length::Real`: Length of taper at one end in seconds.
 """
-function taper!(A::AbstractArray{<:AbstractFloat}, fs::Float64;
-                max_percentage::Float64=0.05, max_length::Float64=20.)
+function taper!(A::AbstractArray{<:AbstractFloat}, fs::Real;
+                max_percentage::AbstractFloat=0.05, max_length::Real=20.)
    Nrows = size(A,1)
    T = eltype(A)
    wlen = min(Int(floor(Nrows * max_percentage)), Int(floor(max_length * fs)), Int(
@@ -77,20 +77,20 @@ function taper!(A::AbstractArray{<:AbstractFloat}, fs::Float64;
    A[end-wlen:end,:] .*= taper_sides[wlen:end]
    return nothing
 end
-taper(A::AbstractArray{<:AbstractFloat}, fs::Float64;
-       max_percentage::Float64=0.05,max_length::Float64=20.) = (U = deepcopy(A);
+taper(A::AbstractArray{<:AbstractFloat}, fs::Real;
+       max_percentage::AbstractFloat=0.05,max_length::Real=20.) = (U = deepcopy(A);
        taper!(U,fs,max_percentage=max_percentage,max_length=max_length);return U)
-taper!(R::RawData; max_percentage::Float64=0.05,
-       max_length::Float64=20.) = taper!(R.x,R.fs,max_percentage=max_percentage,
+taper!(R::RawData; max_percentage::AbstractFloat=0.05,
+       max_length::Real=20.) = taper!(R.x,R.fs,max_percentage=max_percentage,
        max_length=max_length)
-taper(R::RawData; max_percentage::Float64=0.05,
-       max_length::Float64=20.) = (U = deepcopy(R); taper!(U.x,U.fs,
+taper(R::RawData; max_percentage::AbstractFloat=0.05,
+       max_length::Real=20.) = (U = deepcopy(R); taper!(U.x,U.fs,
        max_percentage=max_percentage,max_length=max_length); return U)
-taper!(C::CorrData; max_percentage::Float64=0.05,
-      max_length::Float64=20.) = taper!(C.corr,C.fs,max_percentage=max_percentage,
+taper!(C::CorrData; max_percentage::AbstractFloat=0.05,
+      max_length::Real=20.) = taper!(C.corr,C.fs,max_percentage=max_percentage,
       max_length=max_length)
-taper(C::CorrData; max_percentage::Float64=0.05,
-      max_length::Float64=20.) = (U = deepcopy(C); taper!(U.corr,U.fs,
+taper(C::CorrData; max_percentage::AbstractFloat=0.05,
+      max_length::Real=20.) = (U = deepcopy(C); taper!(U.corr,U.fs,
       max_percentage=max_percentage,max_length=max_length); return U)
 
 

@@ -9,39 +9,39 @@ Demean, detrend, taper and filter time series.
 
 # Arguments
 - `A::AbstractArray`: Time series.
-- `fs::Float64`: Sampling rate of time series `A` in Hz.
-- `freqmin::Float64`: Pass band low corner frequency in Hz.
-- `freqmax::Float64`: Pass band high corner frequency in Hz.
+- `fs::Real`: Sampling rate of time series `A` in Hz.
+- `freqmin::Real`: Pass band low corner frequency in Hz.
+- `freqmax::Real`: Pass band high corner frequency in Hz.
 """
 function clean_up!(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
-                   corners::Int=4,zerophase::Bool=true,max_length::Float64=20.)
+                   corners::Int=4,zerophase::Bool=true,max_length::Real=20.)
     detrend!(A)
     taper!(A,fs,max_length=max_length)
     bandpass!(A,freqmin,freqmax,fs,corners=corners,zerophase=zerophase)
     return nothing
 end
 clean_up(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
-         corners::Int=4, zerophase::Bool=true,max_length::Float64=20.) =
+         corners::Int=4, zerophase::Bool=true,max_length::Real=20.) =
          (U = deepcopy(A); clean_up!(U,freqmin,freqmax, fs,
          corners=corners, zerophase=zerophase, max_length=max_length); return U)
 
-clean_up!(C::CorrData,freqmin::Float64,freqmax::Float64; corners::Int=4,
-          zerophase::Bool=true,max_length::Float64=20.) = (clean_up!(C.corr,
+clean_up!(C::CorrData,freqmin::Real,freqmax::Real; corners::Int=4,
+          zerophase::Bool=true,max_length::Real=20.) = (clean_up!(C.corr,
           freqmin,freqmax,C.fs,corners=corners,zerophase=zerophase,
           max_length=max_length);C.freqmin=freqmin;C.freqmax=freqmax;return nothing)
 
-clean_up(C::CorrData,freqmin::Float64,freqmax::Float64; corners::Int=4,
-         zerophase::Bool=true,max_length::Float64=20.) = (U = deepcopy(C);
+clean_up(C::CorrData,freqmin::Real,freqmax::Real; corners::Int=4,
+         zerophase::Bool=true,max_length::Real=20.) = (U = deepcopy(C);
          clean_up!(U,freqmin,freqmax,corners=corners,zerophase=zerophase,
          max_length=max_length);return U)
 
-clean_up!(R::RawData,freqmin::Float64,freqmax::Float64; corners::Int=4,
-          zerophase::Bool=true,max_length::Float64=20.) = (clean_up!(R.x,freqmin,
+clean_up!(R::RawData,freqmin::Real,freqmax::Real; corners::Int=4,
+          zerophase::Bool=true,max_length::Real=20.) = (clean_up!(R.x,freqmin,
           freqmax,R.fs,corners=corners,zerophase=true, max_length=max_length);
           R.freqmin=freqmin;R.freqmax=freqmax;return nothing)
 
-clean_up(R::RawData,freqmin::Float64,freqmax::Float64; corners::Int=4,
-       zerophase::Bool=true,max_length::Float64=20.) = (U = deepcopy(R);
+clean_up(R::RawData,freqmin::Real,freqmax::Real; corners::Int=4,
+       zerophase::Bool=true,max_length::Real=20.) = (U = deepcopy(R);
        clean_up!(U,freqmin,freqmax,corners=corners,zerophase=zerophase,
        max_length=max_length);return U)
 
@@ -119,11 +119,11 @@ Cross-correlation can be done using one of two options:
 # Arguments
 - `FFT1::FFTData`: FFTData object of fft'd ambient noise data.
 - `FFT2::FFTData`: FFTData object of fft'd ambient noise data.
-- `maxlag::Float64`: Maximum lag time (in seconds) in cross-correlation to save,
+- `maxlag::Real`: Maximum lag time (in seconds) in cross-correlation to save,
                      e.g. `maxlag = 20.` will save lag times = -20.:20. s.
 - `corr_type::String`: Type of correlation: `CC` or `PCC`.
 """
-function correlate(FFT1::FFTData, FFT2::FFTData, maxlag::Float64;corr_type::String="CC")
+function correlate(FFT1::FFTData, FFT2::FFTData, maxlag::Real;corr_type::String="CC")
 
     comp = FFT1.name[end] * FFT2.name[end]
     # get intersect of dates; return nothing if no intersect
@@ -164,8 +164,8 @@ Returns the whitened rfft of the time series.
 - `N::Int`: Number of input time domain samples for each rfft.
 - `pad::Int`: Number of tapering points outside whitening band.
 """
-function whiten!(A::AbstractArray{Complex{Float32}}, freqmin::Float64,
-                 freqmax::Float64, fs::Float64,N::Int;pad::Int=50)
+function whiten!(A::AbstractArray{Complex{Float32}}, freqmin::Real,
+                 freqmax::Real, fs::Real,N::Int;pad::Int=50)
    T = real(eltype(A))
    Nrows,Ncols = size(A)
 
@@ -200,7 +200,7 @@ function whiten!(A::AbstractArray{Complex{Float32}}, freqmin::Float64,
    A[high:end,:] .= compzero
    return nothing
 end
-whiten(A::AbstractArray, freqmin::Float64, freqmax::Float64, fs::Float64, N::Int;
+whiten(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real, N::Int;
     pad::Int=50) = (U = deepcopy(A);
     whiten!(U,freqmin,freqmax,fs,N,pad=pad);
     return U)
@@ -217,7 +217,7 @@ Returns the whitened (single-sided) fft of the time series.
 - `freqmax::Real`: Pass band high corner frequency.
 - `pad::Int`: Number of tapering points outside whitening band.
 """
-function whiten!(F::FFTData, freqmin::Float64, freqmax::Float64;pad::Int=50)
+function whiten!(F::FFTData, freqmin::Real, freqmax::Real;pad::Int=50)
     if freqmin < F.freqmin && freqmax > F.freqmax
         @warn "Whitening frequencies ($freqmin, $freqmax Hz) are wider than frequencies
         in FFTData ($(F.freqmin),$(F.freqmax) Hz). Whitening in ($(F.freqmin),$(F.freqmax) Hz) band."
@@ -238,10 +238,10 @@ function whiten!(F::FFTData, freqmin::Float64, freqmax::Float64;pad::Int=50)
     F.freqmax = freqmax
     return nothing
 end
-whiten(F::FFTData, freqmin::Float64, freqmax::Float64;pad::Int=50) =
+whiten(F::FFTData, freqmin::Real, freqmax::Real;pad::Int=50) =
       (U = deepcopy(F); whiten!(U,freqmin,freqmax,pad=pad);return U)
 
-function whiten!(R::RawData,freqmin::Float64, freqmax::Float64; pad::Int=50)
+function whiten!(R::RawData,freqmin::Real, freqmax::Real; pad::Int=50)
     if freqmin < R.freqmin && freqmax > R.freqmax
         @warn "Whitening frequencies ($freqmin, $freqmax Hz) are wider than frequencies
         in RawData ($(R.freqmin),$(R.freqmax) Hz). Whitening in ($(R.freqmin),$(R.freqmax) Hz) band."
@@ -264,7 +264,7 @@ function whiten!(R::RawData,freqmin::Float64, freqmax::Float64; pad::Int=50)
     R.whitened = true
     return nothing
 end
-whiten(R::RawData,freqmin::Float64, freqmax::Float64; pad::Int=50) =
+whiten(R::RawData,freqmin::Real, freqmax::Real; pad::Int=50) =
       (U = deepcopy(R); whiten!(U,freqmin,freqmax,pad=pad);return U)
 
 """
@@ -336,7 +336,7 @@ in parallel.
 
 # Arguments
 - `A::AbstractArray`: Array of FFTData objects.
-- `maxlag::Float64`: Maximum lag time (in seconds) in cross-correlation to save,
+- `maxlag::Real`: Maximum lag time (in seconds) in cross-correlation to save,
                    e.g. `maxlag = 20.` will save lag times = -20.:20. s.
 - `corr_type::String`: Type of correlation: `CC` or `PCC`.
 - `smoothing_half_win::Int`: Number of points to smooth spectrum of
@@ -345,7 +345,7 @@ in parallel.
                  `deconvolution`.
 - `OUTDIR::String`: Path to save correlation, e.g. "/home/ubuntu/CORR/".
 """
-function corrmap(A::Array{FFTData,1},maxlag::Float64,OUTDIR::String;
+function corrmap(A::Array{FFTData,1},maxlag::Real,OUTDIR::String;
                corr_type::String="CC",interval::DatePeriod=Day(0),
                smooth_type::String="none",smoothing_half_win::Int=5,
                water_level::Union{Nothing,AbstractFloat}=nothing)
@@ -379,7 +379,7 @@ Correlates `FFT1` and `FFT2`.
 # Arguments
 - `FFT1::FFTData`: FFTData object of fft'd ambient noise data.
 - `FFT2::FFTData`: FFTData object of fft'd ambient noise data.
-- `maxlag::Float64`: Maximum lag time (in seconds) in cross-correlation to save,
+- `maxlag::Real`: Maximum lag time (in seconds) in cross-correlation to save,
                e.g. `maxlag = 20.` will save lag times = -20.:20. s.
 - `smooth_type::String`: Type of smoothing to apply: `cross-correlation`, `coherence` or
                  `deconv`.
@@ -387,7 +387,7 @@ Correlates `FFT1` and `FFT2`.
 -`interval::DatePeriod`:
 
 """
-function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Float64,
+function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Real,
               corr_type::String,OUTDIR::String,
               interval::DatePeriod)
     println("Correlation $(FFT1.name), $(FFT2.name)")

@@ -83,7 +83,7 @@ end
 
     # test in-place
     robuststack!(C)
-    @test Cnew.corr == C.corr
+    @test isapprox(Cnew.corr,C.corr)
     @test Cnew.t == C.t
 end
 
@@ -110,7 +110,7 @@ end
 
     # test in-place
     pws!(C,pow=2.)
-    @test Cnew.corr == C.corr
+    @test isapprox(Cnew.corr,C.corr)
     @test Cnew.t == C.t
 end
 

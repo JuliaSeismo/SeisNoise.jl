@@ -180,7 +180,7 @@ remove_nan(C::CorrData) = (U = deepcopy(C);remove_nan!(U);return U)
 
 Clip CorrData `C` from lags τ = 0 to abs(maxlag).
 """
-function shorten!(C::CorrData, maxlag::Float64)
+function shorten!(C::CorrData, maxlag::Real)
       if maxlag >= C.maxlag || maxlag <= 0.
             return C
       end
@@ -192,7 +192,7 @@ function shorten!(C::CorrData, maxlag::Float64)
       C.corr = C.corr[ind,:]
       return nothing
 end
-shorten(C::CorrData,maxlag::Float64) = (U = deepcopy(C); shorten!(U,maxlag);return U)
+shorten(C::CorrData,maxlag::Real) = (U = deepcopy(C); shorten!(U,maxlag);return U)
 
 """
 
@@ -207,12 +207,12 @@ and `P` is the filter. `P` is constructed by using the temporal covariance matri
 # Arguments
 - `A::AbstractArray`: Array of daily/hourly cross-correlation functions
 - `window::AbstractFloat`: Window length to apply adaptive filter [s].
-- `fs::Float64`: Sampling rate of time series `A`.
+- `fs::Real`: Sampling rate of time series `A`.
 - `g::Int`: Positive number to adjust the filter harshness
 - `overlap::AbstractFloat`: Percent overlap between windows
 """
 function adaptive_filter!(A::AbstractArray{T}, window::AbstractFloat,
-                          fs::Float64; g::AbstractFloat=2., overlap::AbstractFloat=0.9) where T <: AbstractFloat
+                          fs::Real; g::AbstractFloat=2., overlap::AbstractFloat=0.9) where T <: AbstractFloat
     if ndims(A) == 1
         return nothing
     end
@@ -233,7 +233,7 @@ function adaptive_filter!(A::AbstractArray{T}, window::AbstractFloat,
     # loop through each window
     for ii in eachindex(minind)
         Ain = taper(A[minind[ii]:minind[ii]+window_samples-1,:],fs,
-                    max_percentage=Float64(overlap_factor/2))
+                    max_percentage=T(overlap_factor/2))
         Aout[minind[ii]:minind[ii]+window_samples-1,:] .+= ACF_kernel(@view(Ain[:,:]),g=g) .* overlap_factor
     end
 
@@ -241,7 +241,7 @@ function adaptive_filter!(A::AbstractArray{T}, window::AbstractFloat,
     reverseind = Nrows:-window_step:Nrows-window_samples
     for ii in eachindex(reverseind)
         Ain = taper(A[reverseind[ii]-window_samples+1:reverseind[ii],:],fs,
-                    max_percentage=Float64(overlap_factor/2))
+                    max_percentage=T(overlap_factor/2))
         Aout[reverseind[ii]-window_samples+1:reverseind[ii],:] .+= ACF_kernel(@view(Ain[:,:]),g=g) .* overlap_factor
     end
 
@@ -249,7 +249,7 @@ function adaptive_filter!(A::AbstractArray{T}, window::AbstractFloat,
     return nothing
 end
 
-adaptive_filter(A::AbstractArray{T}, window::AbstractFloat, fs::Float64; g::AbstractFloat=2.,
+adaptive_filter(A::AbstractArray{T}, window::AbstractFloat, fs::Real; g::AbstractFloat=2.,
                 overlap::AbstractFloat=0.9) where T <: AbstractFloat = (U = deepcopy(A);
                 adaptive_filter!(U,window,fs,g=g,overlap=overlap);
                 return U)

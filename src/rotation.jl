@@ -7,10 +7,10 @@ Rotate cross-correlations from E,N,Z to R,T,Z coordinate system.
 # Arguments
 - `corrs::Array{CorrData,1}`: Array of EE, EN, EZ, NE, NN, NZ, ZE, ZN, ZZ CorrData
           for a single station-pair.
-- `azi::Float64`: Azimuth (in radians) from station 1 to station 2
-- `baz::Float64`: Back azimuth (in radians) from station 1 to station 2
+- `azi::Real`: Azimuth (in radians) from station 1 to station 2
+- `baz::Real`: Back azimuth (in radians) from station 1 to station 2
 """
-function rotate!(corrs::Array{CorrData,1},azi::Float64,baz::Float64)
+function rotate!(corrs::Array{CorrData,1},azi::Real,baz::Real)
     T = eltype(corrs[1].corr)
     azi = T(azi)
     baz = T(baz)
@@ -75,7 +75,7 @@ function rotate!(corrs::Array{CorrData,1},azi::Float64,baz::Float64)
 
     return nothing
 end
-rotate(corrs::Array{CorrData,1},azi::Float64,baz::Float64) =
+rotate(corrs::Array{CorrData,1},azi::Real,baz::Real) =
                       (U = deepcopy(corrs);rotate!(U,azi,baz);return U)
 
 """
