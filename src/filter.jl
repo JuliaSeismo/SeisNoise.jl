@@ -64,33 +64,33 @@ bandpass(A::AbstractArray{<:AbstractFloat},freqmin::Real,
           zerophase=zerophase);return U)
 bandpass!(R::RawData,freqmin::Real,freqmax::Real;
           corners::Int=4,zerophase::Bool=true) = (bandpass!(R.x,freqmin,freqmax,
-          R.fs,corners=corners,zerophase=zerophase);setfield!(R,:freqmin,freqmin);
-          setfield!(R,:freqmax,min(freqmax,R.fs/2));return nothing)
+          R.fs,corners=corners,zerophase=zerophase);setfield!(R,:freqmin,Float64(freqmin));
+          setfield!(R,:freqmax,Float64(min(freqmax,R.fs/2)));return nothing)
 bandpass(R::RawData,freqmin::Real,freqmax::Real;
         corners::Int=4,zerophase::Bool=true) = (U = deepcopy(R);bandpass!(U.x,
         freqmin,freqmax,U.fs,corners=corners,zerophase=zerophase);
-        setfield!(U,:freqmin,freqmin);
-        setfield!(U,:freqmax,min(freqmax,U.fs/2));return U)
+        setfield!(U,:freqmin,Float64(freqmin));
+        setfield!(U,:freqmax,Float64(min(freqmax,U.fs/2)));return U)
 bandpass!(C::CorrData,freqmin::Real,freqmax::Real;
           corners::Int=4,zerophase::Bool=true) = (bandpass!(C.corr,freqmin,freqmax,
-          C.fs,corners=corners,zerophase=zerophase);setfield!(C,:freqmin,freqmin);
-          setfield!(C,:freqmax,min(freqmax,C.fs/2));return nothing)
+          C.fs,corners=corners,zerophase=zerophase);setfield!(C,:freqmin,Float64(freqmin));
+          setfield!(C,:freqmax,Float64(min(freqmax,C.fs/2)));return nothing)
 bandpass(C::CorrData,freqmin::Real,freqmax::Real;
         corners::Int=4,zerophase::Bool=true) = (U = deepcopy(C);bandpass!(U.corr,
         freqmin,freqmax,U.fs,corners=corners,zerophase=zerophase);
-        setfield!(U,:freqmin,freqmin);
-        setfield!(U,:freqmax,min(freqmax,U.fs/2));return U)
+        setfield!(U,:freqmin,Float64(freqmin));
+        setfield!(U,:freqmax,Float64(min(freqmax,U.fs/2)));return U)
 bandpass!(C::SeisChannel, freqmin::Real, freqmax::Real;
                    corners::Int=4, zerophase::Bool=true) = filtfilt!(C,
-                   fl=freqmin,fh=freqmax,np=corners,rt="Bandpass")
+                   fl=Float64(freqmin),fh=Float64(freqmax),np=corners,rt="Bandpass")
 bandpass(C::SeisChannel,freqmin::Real, freqmax::Real; corners::Int=4,
          zerophase::Bool=true) = (U = deepcopy(C);bandpass!(U,freqmin,freqmax,
                                   corners=corners,zerophase=zerophase);return U)
 bandpass!(S::SeisData, freqmin::Real, freqmax::Real;
                    corners::Int=4, zerophase::Bool=true) = filtfilt!(S,
-                   fl=freqmin,fh=freqmax,np=corners,rt="Bandpass")
+                   fl=Float64(freqmin),fh=Float64(freqmax),np=corners,rt="Bandpass")
 bandpass(S::SeisData, freqmin::Real, freqmax::Real; corners::Int=4,
-         zerophase::Bool=true) = filtfilt(S,fl=freqmin,fh=freqmax,np=corners,rt="Bandpass")
+         zerophase::Bool=true) = filtfilt(S,fl=Float64(freqmin),fh=Float64(freqmax),np=corners,rt="Bandpass")
 
 """
   bandstop!(A,freqmin,freqmax,fs,corners=4,zerophase=true)
@@ -165,16 +165,16 @@ corners::Int=4,zerophase::Bool=true) = (U = deepcopy(C);bandstop!(U.corr,
 freqmin,freqmax,U.fs,corners=corners,zerophase=zerophase);return U)
 bandstop!(C::SeisChannel, freqmin::Real, freqmax::Real;
                    corners::Int=4, zerophase::Bool=true) = filtfilt!(C,
-                   fl=freqmin,fh=freqmax,np=corners,rt="Bandstop")
+                   fl=Float64(freqmin),fh=Float64(freqmax),np=corners,rt="Bandstop")
 bandstop(C::SeisChannel,freqmin::Real, freqmax::Real; corners::Int=4,
          zerophase::Bool=true) = filtfilt(C,
-         fl=freqmin,fh=freqmax,np=corners,rt="Bandstop")
+         fl=Float64(freqmin),fh=Float64(freqmax),np=corners,rt="Bandstop")
 bandstop!(S::SeisData, freqmin::Real, freqmax::Real;
                    corners::Int=4, zerophase::Bool=true) = filtfilt!(S,
-                   fl=freqmin,fh=freqmax,np=corners,rt="Bandstop")
+                   fl=Float64(freqmin),fh=Float64(freqmax),np=corners,rt="Bandstop")
 bandstop(S::SeisData,freqmin::Real, freqmax::Real; corners::Int=4,
          zerophase::Bool=true) = filtfilt(S,
-         fl=freqmin,fh=freqmax,np=corners,rt="Bandstop")
+         fl=Float64(freqmin),fh=Float64(freqmax),np=corners,rt="Bandstop")
 
 """
 lowpass(A,freq,fs,corners=4,zerophase=true)
@@ -228,28 +228,28 @@ lowpass(A::AbstractArray{<:AbstractFloat},freq::Real, fs::Real;
       lowpass!(U,freq,fs,corners=corners,zerophase=zerophase);return U)
 lowpass!(R::RawData,freq::Real; corners::Int=4,
        zerophase::Bool=true) = (lowpass!(R.x,freq,R.fs,corners=corners,
-       zerophase=zerophase);setfield!(R,:freqmax,min(freq,R.fs/2));
+       zerophase=zerophase);setfield!(R,:freqmax,Float64(min(freq,R.fs/2)));
        return nothing)
 lowpass(R::RawData,freq::Real; corners::Int=4,
        zerophase::Bool=true) = (U = deepcopy(R);lowpass!(U.x,freq,U.fs,
        corners=corners,zerophase=zerophase);
-       setfield!(U,:freqmax,min(freq,U.fs/2));return U)
+       setfield!(U,:freqmax,Float64(min(freq,U.fs/2)));return U)
 lowpass!(C::CorrData,freq::Real; corners::Int=4,
       zerophase::Bool=true) = (lowpass!(C.corr,freq,C.fs,corners=corners,
-      zerophase=zerophase);setfield!(C,:freqmax,min(freq,C.fs/2));
+      zerophase=zerophase);setfield!(C,:freqmax,Float64(min(freq,C.fs/2)));
       return nothing)
 lowpass(C::CorrData,freq::Real; corners::Int=4,
       zerophase::Bool=true) = (U = deepcopy(C);lowpass!(U.corr,freq,U.fs,
       corners=corners,zerophase=zerophase);
-      setfield!(U,:freqmax,min(freq,U.fs/2));return U)
+      setfield!(U,:freqmax,Float64(min(freq,U.fs/2)));return U)
 lowpass!(C::SeisChannel, freq::Real;corners::Int=4, zerophase::Bool=true) =
-    filtfilt!(C,fh=freq,np=corners,rt="Lowpass")
+    filtfilt!(C,fh=Float64(freq),np=corners,rt="Lowpass")
 lowpass(C::SeisChannel,freq::Real; corners::Int=4,zerophase::Bool=true) =
-    filtfilt(C,fh=freq,np=corners,rt="Lowpass")
+    filtfilt(C,fh=Float64(freq),np=corners,rt="Lowpass")
 lowpass!(S::SeisData, freq::Real;corners::Int=4, zerophase::Bool=true) =
-    filtfilt!(S,fh=freq,np=corners,rt="Lowpass")
+    filtfilt!(S,fh=Float64(freq),np=corners,rt="Lowpass")
 lowpass(S::SeisData,freq::Real; corners::Int=4,zerophase::Bool=true) =
-    filtfilt(S,fh=freq,np=corners,rt="Lowpass")
+    filtfilt(S,fh=Float64(freq),np=corners,rt="Lowpass")
 
 """
    highpass(A,freq,fs,corners=4,zerophase=true)
@@ -301,26 +301,26 @@ highpass(A::AbstractArray{<:AbstractFloat},freq::Real,fs::Real;
         highpass!(U,freq,fs,corners=corners,zerophase=zerophase);return U)
 highpass!(R::RawData,freq::Real; corners::Int=4,
         zerophase::Bool=true) = (highpass!(R.x,freq,R.fs,corners=corners,
-        zerophase=zerophase);setfield!(R,:freqmin,freq);return nothing)
+        zerophase=zerophase);setfield!(R,:freqmin,Float64(freq));return nothing)
 highpass(R::RawData,freq::Real; corners::Int=4,
         zerophase::Bool=true) = (U = deepcopy(R);highpass!(U.x,freq,U.fs,
-        corners=corners,zerophase=zerophase);setfield!(U,:freqmin,freq);
+        corners=corners,zerophase=zerophase);setfield!(U,:freqmin,Float64(freq));
         return U)
 highpass!(C::CorrData,freq::Real; corners::Int=4,
         zerophase::Bool=true) = (highpass!(C.corr,freq,C.fs,corners=corners,
-        zerophase=zerophase);setfield!(C,:freqmin,freq);return nothing)
+        zerophase=zerophase);setfield!(C,:freqmin,Float64(freq));return nothing)
 highpass(C::CorrData,freq::Real; corners::Int=4,
         zerophase::Bool=true) = (U = deepcopy(C);highpass!(U.corr,freq,U.fs,
-        corners=corners,zerophase=zerophase);setfield!(U,:freqmin,freq);
+        corners=corners,zerophase=zerophase);setfield!(U,:freqmin,Float64(freq));
         return U)
 highpass!(C::SeisChannel, freq::Real;corners::Int=4, zerophase::Bool=true) =
-    filtfilt!(C,fl=freq,np=corners,rt="Highpass")
+    filtfilt!(C,fl=Float64(freq),np=corners,rt="Highpass")
 highpass(C::SeisChannel,freq::Real; corners::Int=4,zerophase::Bool=true) =
-    filtfilt(C,fl=freq,np=corners,rt="Highpass")
+    filtfilt(C,fl=Float64(freq),np=corners,rt="Highpass")
 highpass!(S::SeisData, freq::Real;corners::Int=4, zerophase::Bool=true) =
-    filtfilt!(S,fl=freq,np=corners,rt="Highpass")
+    filtfilt!(S,fl=Float64(freq),np=corners,rt="Highpass")
 highpass(S::SeisData,freq::Real; corners::Int=4,zerophase::Bool=true) =
-    filtfilt(S,fl=freq,np=corners,rt="Highpass")
+    filtfilt(S,fl=Float64(freq),np=corners,rt="Highpass")
 
 """
     envelope(A)

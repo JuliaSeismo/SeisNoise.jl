@@ -20,13 +20,17 @@ rand_id() = string(rand_net(), ".", rand_sta(), ".", rand_loc(), ".HH", rand('A'
 @testset "clean up" begin
     A = rand(T,N,Nwin)
     B = clean_up(A,freqmin,freqmax,fs)
+    C = clean_up(A,Int(freqmin),Int(freqmax),Int(fs))
     @test size(B) == size(A)
-    @test eltype(B) == eltype(B)
+    @test eltype(B) == eltype(A)
+    @test eltype(C) == eltype(A)
     @test B != A
+    @test C == B
 
     # test in-place
     clean_up!(A,freqmin,freqmax,fs)
     @test A == B
+    @test A == C
 
     # test RawData
     R = RawData()
@@ -34,15 +38,21 @@ rand_id() = string(rand_net(), ".", rand_sta(), ".", rand_loc(), ".HH", rand('A'
     R.fs = fs
     R.t = collect(0.:3600.:(Nwin-1)*3600.) .+ starttime
     Rclean = clean_up(R,freqmin,freqmax)
+    RInt = clean_up(R,Int(freqmin),Int(freqmax))
     @test size(Rclean.x) == size(R.x)
     @test eltype(Rclean.x) == eltype(R.x)
+    @test size(RInt.x) == size(R.x)
+    @test eltype(RInt.x) == eltype(R.x)
     @test Rclean.x != R.x
     @test Rclean.freqmin == freqmin
     @test Rclean.freqmax == freqmax
+    @test RInt.freqmin == freqmin
+    @test RInt.freqmax == freqmax
 
     # test in-place
     clean_up!(R,freqmin,freqmax)
     @test R.x == Rclean.x
+    @test R.x == RInt.x
     @test R.freqmin == freqmin
     @test R.freqmax == freqmax
 
@@ -52,15 +62,19 @@ rand_id() = string(rand_net(), ".", rand_sta(), ".", rand_loc(), ".HH", rand('A'
     C.fs = fs
     C.t = collect(0.:3600.:(Nwin-1)*3600.) .+ starttime
     Cclean = clean_up(C,freqmin,freqmax)
+    CInt = clean_up(C,Int(freqmin),Int(freqmax))
     @test size(Cclean.corr) == size(C.corr)
     @test eltype(Cclean.corr) == eltype(C.corr)
     @test Cclean.corr != C.corr
     @test Cclean.freqmin == freqmin
     @test Cclean.freqmax == freqmax
+    @test CInt.freqmin == freqmin
+    @test CInt.freqmax == freqmax 
 
     # test in-place
     clean_up!(C,freqmin,freqmax)
     @test C.corr == Cclean.corr
+    @test C.corr == CInt.corr
     @test C.freqmin == freqmin
     @test C.freqmax == freqmax
 end
@@ -102,6 +116,7 @@ end
     R = RawData(Ch,cc_len,cc_step)
     F = rfft(R)
     C = correlate(F,F,maxlag)
+    CInt = correlate(F,F,Int(maxlag))
     @test isa(C,CorrData) # test return type
     @test C.comp == repeat(Ch.id[end],2) # test component name
     @test size(C.corr) == (Int(2 * maxlag * fs) + 1,Nwin) # test size
@@ -110,6 +125,8 @@ end
     @test all([t[maxinds[ii][1]] == 0 for ii in length(maxinds)]) # test max args
     @test C.rotated == false # test rotation
     @test C.corr_type == "CC" # test cross-correlation
+    @test C.maxlag == CInt.maxlag 
+    @test C.corr == CInt.corr
 
     # test windows that do not overlap
     F1 = deepcopy(F)
@@ -169,9 +186,13 @@ end
     Fhigh = whiten(F,freqmin,fs/2,fs,N,pad=pad)
     @test all(abs.(Fhigh[end-pad:end,:]) .< 1.)
 
+    # test with integer arguments 
+    FInt = whiten(F,Int(freqmin),Int(freqmax),Int(fs),N,pad=pad)
+
     # test in-place
     whiten!(F,freqmin,freqmax,fs,N,pad=pad)
     @test F == Fwhite
+    @test F == FInt
 
     # test FFTData
     Ch = SeisIO.RandSeis.randSeisChannel(c=false,s=true)
@@ -209,12 +230,18 @@ end
     @test Fhigh.freqmin == freqmin
     @test Fhigh.freqmax == F.freqmax
 
+    # test with integer input 
+    FInt = whiten(F,Int(freqmin),Int(freqmax))
+    @test FInt.freqmin == freqmin
+    @test FInt.freqmax == freqmax
+
     # test in-place
     whiten!(F,freqmin,freqmax)
     @test F.fft == Fwhite.fft
     @test F.whitened == true
     @test F.freqmin == freqmin
     @test F.freqmax == freqmax
+    @test FInt == F
 
     # test RawData
     Rwhite = whiten(R,freqmin,freqmax)
@@ -243,12 +270,18 @@ end
     @test Rhigh.freqmin == freqmin
     @test Rhigh.freqmax == R.freqmax
 
+    # test with integer input 
+    RInt = whiten(R,Int(freqmin),Int(freqmax))
+    @test RInt.freqmin == freqmin 
+    @test RInt.freqmax == freqmax
+
     # test in-place
     whiten!(R,freqmin,freqmax)
     @test R.x == Rwhite.x
     @test R.whitened == true
     @test R.freqmin == freqmin
     @test R.freqmax == freqmax
+    @test RInt == R
 
     # test coherence with smoothing
     R = RawData(Ch,cc_len,cc_step)

@@ -176,23 +176,21 @@ remove_nan(C::CorrData) = (U = deepcopy(C);remove_nan!(U);return U)
 
 """
 
-  shorten!(C)
+  shorten!(C,newlag)
 
-Clip CorrData `C` from lags τ = 0 to abs(maxlag).
+Clip CorrData `C` from lags [in s] τ = -`newlag` to `newlag`.
 """
-function shorten!(C::CorrData, maxlag::Real)
-      if maxlag >= C.maxlag || maxlag <= 0.
-            return C
-      end
+function shorten!(C::CorrData, newlag::Real)
+    @assert newlag < C.maxlag && newlag > 0 "newlag must satisfy 0 < newlag < C.maxlag"
 
-      # get timearray
-      lags = -C.maxlag:1/C.fs:C.maxlag
-      ind = findall(x -> abs(x) <= maxlag, lags)
-      C.maxlag = maxlag
-      C.corr = C.corr[ind,:]
-      return nothing
+    # get timearray
+    lags = -C.maxlag:1/C.fs:C.maxlag
+    ind = findall(x -> abs(x) <= newlag, lags)
+    C.maxlag = Float64(newlag)
+    C.corr = C.corr[ind,:]
+    return nothing
 end
-shorten(C::CorrData,maxlag::Real) = (U = deepcopy(C); shorten!(U,maxlag);return U)
+shorten(C::CorrData,newlag::Real) = (U = deepcopy(C); shorten!(U,newlag);return U)
 
 """
 

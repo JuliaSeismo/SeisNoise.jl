@@ -28,7 +28,8 @@ clean_up(A::AbstractArray, freqmin::Real, freqmax::Real, fs::Real;
 clean_up!(C::CorrData,freqmin::Real,freqmax::Real; corners::Int=4,
           zerophase::Bool=true,max_length::Real=20.) = (clean_up!(C.corr,
           freqmin,freqmax,C.fs,corners=corners,zerophase=zerophase,
-          max_length=max_length);C.freqmin=freqmin;C.freqmax=freqmax;return nothing)
+          max_length=max_length);C.freqmin=Float64(freqmin);
+          C.freqmax=Float64(freqmax);return nothing)
 
 clean_up(C::CorrData,freqmin::Real,freqmax::Real; corners::Int=4,
          zerophase::Bool=true,max_length::Real=20.) = (U = deepcopy(C);
@@ -38,7 +39,7 @@ clean_up(C::CorrData,freqmin::Real,freqmax::Real; corners::Int=4,
 clean_up!(R::RawData,freqmin::Real,freqmax::Real; corners::Int=4,
           zerophase::Bool=true,max_length::Real=20.) = (clean_up!(R.x,freqmin,
           freqmax,R.fs,corners=corners,zerophase=true, max_length=max_length);
-          R.freqmin=freqmin;R.freqmax=freqmax;return nothing)
+          R.freqmin=Float64(freqmin);R.freqmax=Float64(freqmax);return nothing)
 
 clean_up(R::RawData,freqmin::Real,freqmax::Real; corners::Int=4,
        zerophase::Bool=true,max_length::Real=20.) = (U = deepcopy(R);
@@ -147,7 +148,7 @@ function correlate(FFT1::FFTData, FFT2::FFTData, maxlag::Real;corr_type::String=
 
     rotated = false
 
-    return CorrData(FFT1, FFT2, comp, rotated, corr_type,maxlag, inter, corr)
+    return CorrData(FFT1, FFT2, comp, rotated, corr_type, Float64(maxlag), inter, corr)
 end
 
 """
@@ -234,8 +235,8 @@ function whiten!(F::FFTData, freqmin::Real, freqmax::Real;pad::Int=50)
     freqmax = min(freqmax,max(F.freqmax,1 / F.cc_len)) # check for freqmax = 0
     whiten!(F.fft, freqmin, freqmax, F.fs, N, pad=pad)
     F.whitened = true
-    F.freqmin = freqmin
-    F.freqmax = freqmax
+    F.freqmin = Float64(freqmin)
+    F.freqmax = Float64(freqmax)
     return nothing
 end
 whiten(F::FFTData, freqmin::Real, freqmax::Real;pad::Int=50) =
@@ -259,8 +260,8 @@ function whiten!(R::RawData,freqmin::Real, freqmax::Real; pad::Int=50)
     FFT = rfft(R.x,1)
     whiten!(FFT,freqmin,freqmax,R.fs, N, pad=pad)
     R.x .= irfft(FFT,N,1)
-    R.freqmin = freqmin
-    R.freqmax = freqmax
+    R.freqmin = Float64(freqmin)
+    R.freqmax = Float64(freqmax)
     R.whitened = true
     return nothing
 end

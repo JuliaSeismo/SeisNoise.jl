@@ -23,9 +23,9 @@ function process_raw!(S::SeisData, fs::Real; ϕshift::Bool=true)
 	detrend!(S)         # remove mean & trend from channel
 	taper!(S)                      # taper channel ends
 	if fs ∉ S.fs
-		filtfilt!(S,fh=fs/2,rt="Lowpass")    # lowpass filter before downsampling
+		filtfilt!(S,fh=Float64(fs/2),rt="Lowpass")    # lowpass filter before downsampling
 	end
-	resample!(S,fs=fs) # downsample to lower fs
+	resample!(S,fs=Float64(fs)) # downsample to lower fs
 	taper!(S)
     phase_shift!(S, ϕshift=ϕshift) # timing offset from sampling period
     return nothing
@@ -53,9 +53,9 @@ function process_raw!(C::SeisChannel, fs::Real; ϕshift::Bool=true)
     detrend!(C)         # remove mean & trend from channel
     taper!(C)         # taper channel ends
     if fs != C.fs
-    	filtfilt!(C,fh=fs/2,rt="Lowpass")    # lowpass filter before downsampling
+    	filtfilt!(C,fh=Float64(fs/2),rt="Lowpass")    # lowpass filter before downsampling
 	end
-	resample!(C,fs) # downsample to lower fs
+	resample!(C,Float64(fs)) # downsample to lower fs
 	taper!(C)
 	phase_shift!(C, ϕshift=ϕshift) # timing offset from sampling period
 	return nothing
@@ -129,12 +129,12 @@ isweird(x) =  isnan(x) .| isinf(x)
 
 """
 
-  mute(A,factor=factor)
+  mute(A,factor)
 
 Set high amplitudes in array `A` to zero.
 Uses median of envelope of `A` to find outliers.
 """
-function mute!(A::AbstractArray;factor::Int=3)
+function mute!(A::AbstractArray,factor::Real=3)
     T = eltype(A)
     envelope = abs.(hilbert(A))
     levels = mean(envelope,dims=1)
@@ -142,10 +142,10 @@ function mute!(A::AbstractArray;factor::Int=3)
     A[envelope .> level] .= T(0)
     return nothing
 end
-mute(A::AbstractArray;factor::Int=3) = (U = deepcopy(A); mute!(U,factor=factor);
+mute(A::AbstractArray,factor::Real=3) = (U = deepcopy(A); mute!(U,factor);
      return U)
-mute!(R::RawData;factor::Int=3) = mute!(R.x,factor=factor)
-mute(R::RawData;factor::Int=3) = (U = deepcopy(R); mute!(U,factor=factor);
+mute!(R::RawData,factor::Real=3) = mute!(R.x,factor)
+mute(R::RawData,factor::Real=3) = (U = deepcopy(R); mute!(U,factor);
      return U)
 
 """
