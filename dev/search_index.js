@@ -281,7 +281,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "preprocessing/#SeisIO.demean!-Tuple{AbstractArray{#s38,N} where N where #s38<:AbstractFloat}",
+    "location": "preprocessing/#SeisIO.demean!-Tuple{AbstractArray{var\"#s41\",N} where N where var\"#s41\"<:AbstractFloat}",
     "page": "Pre-Processing",
     "title": "SeisIO.demean!",
     "category": "method",
@@ -289,7 +289,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "preprocessing/#SeisIO.detrend!-Tuple{AbstractArray{#s41,N} where N where #s41<:AbstractFloat}",
+    "location": "preprocessing/#SeisIO.detrend!-Tuple{AbstractArray{var\"#s45\",N} where N where var\"#s45\"<:AbstractFloat}",
     "page": "Pre-Processing",
     "title": "SeisIO.detrend!",
     "category": "method",
@@ -297,11 +297,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "preprocessing/#SeisIO.taper!-Tuple{AbstractArray{#s38,N} where N where #s38<:AbstractFloat,Float64}",
+    "location": "preprocessing/#SeisIO.taper!-Tuple{AbstractArray{var\"#s41\",N} where N where var\"#s41\"<:AbstractFloat,Real}",
     "page": "Pre-Processing",
     "title": "SeisIO.taper!",
     "category": "method",
-    "text": "taper!(A,fs; maxpercentage=0.05, maxlength=20.)\n\nTaper a time series A with samplingrate fs. Defaults to \'hann\' window. Uses smallest of `maxpercentage*fsormax_length`.\n\nArguments\n\nA::AbstractArray: Time series.\nfs::Float64: Sampling rate of time series A.\nmax_percentage::float: Decimal percentage of taper at one end (ranging  from 0. to 0.5).\nmax_length::Float64: Length of taper at one end in seconds.\n\n\n\n\n\n"
+    "text": "taper!(A,fs; maxpercentage=0.05, maxlength=20.)\n\nTaper a time series A with samplingrate fs. Defaults to \'hann\' window. Uses smallest of `maxpercentage*fsormax_length`.\n\nArguments\n\nA::AbstractArray: Time series.\nfs::AbstractFloat: Sampling rate of time series A.\nmax_percentage::float: Decimal percentage of taper at one end (ranging  from 0. to 0.5).\nmax_length::Real: Length of taper at one end in seconds.\n\n\n\n\n\n"
 },
 
 {
@@ -313,19 +313,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "preprocessing/#SeisNoise.bandpass!-Tuple{AbstractArray{#s38,N} where N where #s38<:AbstractFloat,Float64,Float64,Float64}",
+    "location": "preprocessing/#SeisNoise.bandpass!-Tuple{AbstractArray{var\"#s41\",N} where N where var\"#s41\"<:AbstractFloat,Real,Real,Real}",
     "page": "Pre-Processing",
     "title": "SeisNoise.bandpass!",
     "category": "method",
-    "text": "bandpass!(A,freqmin,freqmax,fs,corners=4,zerophase=true)\n\nButterworth-Bandpass Filter.\n\nFilter data A from freqmin to freqmax using corners corners.\n\nArguments\n\nA::AbstractArray: Data to filter\nfreqmin::Float64: Pass band low corner frequency.\nfreqmax::Float64: Pass band high corner frequency.\nfs::Float64: Sampling rate in Hz.\nfs::Int: Filter corners / order.\nzerophase::Bool: If True, apply filter once forwards and once backwards.\n\nThis results in twice the filter order but zero phase shift in the resulting filtered trace.\n\n\n\n\n\n"
+    "text": "bandpass!(A,freqmin,freqmax,fs,corners=4,zerophase=true)\n\nButterworth-Bandpass Filter.\n\nFilter data A from freqmin to freqmax using corners corners.\n\nArguments\n\nA::AbstractArray: Data to filter\nfreqmin::Real: Pass band low corner frequency.\nfreqmax::Real: Pass band high corner frequency.\nfs::Real: Sampling rate in Hz.\nfs::Int: Filter corners / order.\nzerophase::Bool: If True, apply filter once forwards and once backwards.\n\nThis results in twice the filter order but zero phase shift in the resulting filtered trace.\n\n\n\n\n\n"
 },
 
 {
-    "location": "preprocessing/#SeisNoise.bandstop!-Tuple{AbstractArray{#s38,N} where N where #s38<:AbstractFloat,Float64,Float64,Float64}",
+    "location": "preprocessing/#SeisNoise.bandstop!-Tuple{AbstractArray{var\"#s41\",N} where N where var\"#s41\"<:AbstractFloat,Real,Real,Real}",
     "page": "Pre-Processing",
     "title": "SeisNoise.bandstop!",
     "category": "method",
-    "text": "bandstop!(A,freqmin,freqmax,fs,corners=4,zerophase=true)\n\nButterworth-Bandstop Filter.\n\nFilter data A removing data between frequencies freqmin to freqmax using corners corners.\n\nArguments\n\nA::AbstractArray: Data to filter\nfreqmin::Float64: Stop band low corner frequency.\nfreqmax::Float64: Stop band high corner frequency.\nfs::Float64: Sampling rate in Hz.\nfs::Int: Filter corners / order.\nzerophase::Bool: If True, apply filter once forwards and once backwards.\n\nThis results in twice the filter order but zero phase shift in the resulting filtered trace.\n\n\n\n\n\n"
+    "text": "bandstop!(A,freqmin,freqmax,fs,corners=4,zerophase=true)\n\nButterworth-Bandstop Filter.\n\nFilter data A removing data between frequencies freqmin to freqmax using corners corners.\n\nArguments\n\nA::AbstractArray: Data to filter\nfreqmin::Real: Stop band low corner frequency.\nfreqmax::Real: Stop band high corner frequency.\nfs::Real: Sampling rate in Hz.\nfs::Int: Filter corners / order.\nzerophase::Bool: If True, apply filter once forwards and once backwards.\n\nThis results in twice the filter order but zero phase shift in the resulting filtered trace.\n\n\n\n\n\n"
 },
 
 {
@@ -337,19 +337,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "preprocessing/#SeisNoise.highpass!-Tuple{AbstractArray{#s38,N} where N where #s38<:AbstractFloat,Float64,Float64}",
+    "location": "preprocessing/#SeisNoise.highpass!-Tuple{AbstractArray{var\"#s41\",N} where N where var\"#s41\"<:AbstractFloat,Real,Real}",
     "page": "Pre-Processing",
     "title": "SeisNoise.highpass!",
     "category": "method",
-    "text": "highpass(A,freq,fs,corners=4,zerophase=true)\n\nButterworth-Highpass Filter.\n\nFilter data A removing data below certain frequency freq using corners corners.\n\nArguments\n\nA::AbstractArray: Data to filter\nfreq::Float64: Filter corner frequency.\nfs::Float64: Sampling rate in Hz.\nfs::Int: Filter corners / order.\nzerophase::Bool: If True, apply filter once forwards and once backwards.\n\nThis results in twice the filter order but zero phase shift in the resulting filtered trace.\n\n\n\n\n\n"
+    "text": "highpass(A,freq,fs,corners=4,zerophase=true)\n\nButterworth-Highpass Filter.\n\nFilter data A removing data below certain frequency freq using corners corners.\n\nArguments\n\nA::AbstractArray: Data to filter\nfreq::Real: Filter corner frequency.\nfs::Real: Sampling rate in Hz.\nfs::Int: Filter corners / order.\nzerophase::Bool: If True, apply filter once forwards and once backwards.\n\nThis results in twice the filter order but zero phase shift in the resulting filtered trace.\n\n\n\n\n\n"
 },
 
 {
-    "location": "preprocessing/#SeisNoise.lowpass!-Tuple{AbstractArray{#s38,N} where N where #s38<:AbstractFloat,Float64,Float64}",
+    "location": "preprocessing/#SeisNoise.lowpass!-Tuple{AbstractArray{var\"#s41\",N} where N where var\"#s41\"<:AbstractFloat,Real,Real}",
     "page": "Pre-Processing",
     "title": "SeisNoise.lowpass!",
     "category": "method",
-    "text": "lowpass(A,freq,fs,corners=4,zerophase=true)\n\nButterworth-Lowpass Filter.\n\nFilter data A over certain frequency freq using corners corners.\n\nArguments\n\nA::AbstractArray: Data to filter\nfreq::Float64: Filter corner frequency.\nfs::Float64: Sampling rate in Hz.\nfs::Int: Filter corners / order.\nzerophase::Bool: If True, apply filter once forwards and once backwards.\n\nThis results in twice the filter order but zero phase shift in the resulting filtered trace.\n\n\n\n\n\n"
+    "text": "lowpass(A,freq,fs,corners=4,zerophase=true)\n\nButterworth-Lowpass Filter.\n\nFilter data A over certain frequency freq using corners corners.\n\nArguments\n\nA::AbstractArray: Data to filter\nfreq::Real: Filter corner frequency.\nfs::Real: Sampling rate in Hz.\nfs::Int: Filter corners / order.\nzerophase::Bool: If True, apply filter once forwards and once backwards.\n\nThis results in twice the filter order but zero phase shift in the resulting filtered trace.\n\n\n\n\n\n"
 },
 
 {
@@ -485,7 +485,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Correlation",
     "title": "SeisNoise.clean_up!",
     "category": "function",
-    "text": "clean_up!(A,freqmin,freqmax,fs)\n\nDemean, detrend, taper and filter time series.\n\nArguments\n\nA::AbstractArray: Time series.\nfs::Float64: Sampling rate of time series A in Hz.\nfreqmin::Float64: Pass band low corner frequency in Hz.\nfreqmax::Float64: Pass band high corner frequency in Hz.\n\n\n\n\n\n"
+    "text": "clean_up!(A,freqmin,freqmax,fs)\n\nDemean, detrend, taper and filter time series.\n\nArguments\n\nA::AbstractArray: Time series.\nfs::Real: Sampling rate of time series A in Hz.\nfreqmin::Real: Pass band low corner frequency in Hz.\nfreqmax::Real: Pass band high corner frequency in Hz.\n\n\n\n\n\n"
 },
 
 {
@@ -493,7 +493,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Correlation",
     "title": "SeisNoise.correlate",
     "category": "function",
-    "text": "correlate(FFT1, FFT2, N, maxlag, corr_type=\'cross-correlation\')\n\nCross-correlate ambient noise data in the frequency domain.\n\nCross-correlation can be done using one of three options:\n\nCross-correlation: C_AB(ω) = u_A(ω) u^_B(ω)\nCoherence: C_AB(ω) = racu_A(ω) u^_B(ω) u_A(ω)    u_B(ω) \nDeconvolution: C_AB(ω) = racu_A(ω) u^_B(ω) u_B(ω) ^2\n\nSmoothing of FFTs for coherence and deconvolution should be done before cross-correlating.\n\nArguments\n\nFFT1::AbstractArray: Complex Array of fourier transform of ambient noise data.\nFFT2::AbstractArray: Complex Array of fourier transform of ambient noise data.\nN::Int: Number of input data points in time domain, equal to cc_len * fs.\nmaxlag::Int: Number of data points in cross-correlation to save,                e.g. maxlag = 2000 will save lag times = -2000/fs:2000/fs s.\ncorr_type::String: Type of correlation: cross-correlation, coherence or                      deconv.\n\n\n\n\n\ncorrelate(FFT1, FFT2, maxlag,corr_type=\"CC\")\n\nCross-correlate ambient noise data in the frequency domain.\n\nCross-correlation can be done using one of two options:\n\nCC: Cross-correlation, i.e. C_AB(ω) = u_A(ω) u^_B(ω)\nPCC: Phase cross-correlation, see [Ventosa et al., 2019]\n\nArguments\n\nFFT1::FFTData: FFTData object of fft\'d ambient noise data.\nFFT2::FFTData: FFTData object of fft\'d ambient noise data.\nmaxlag::Float64: Maximum lag time (in seconds) in cross-correlation to save,                    e.g. maxlag = 20. will save lag times = -20.:20. s.\ncorr_type::String: Type of correlation: CC or PCC.\n\n\n\n\n\n"
+    "text": "correlate(FFT1, FFT2, N, maxlag, corr_type=\'cross-correlation\')\n\nCross-correlate ambient noise data in the frequency domain.\n\nCross-correlation can be done using one of three options:\n\nCross-correlation: C_AB(ω) = u_A(ω) u^_B(ω)\nCoherence: C_AB(ω) = racu_A(ω) u^_B(ω) u_A(ω)    u_B(ω) \nDeconvolution: C_AB(ω) = racu_A(ω) u^_B(ω) u_B(ω) ^2\n\nSmoothing of FFTs for coherence and deconvolution should be done before cross-correlating.\n\nArguments\n\nFFT1::AbstractArray: Complex Array of fourier transform of ambient noise data.\nFFT2::AbstractArray: Complex Array of fourier transform of ambient noise data.\nN::Int: Number of input data points in time domain, equal to cc_len * fs.\nmaxlag::Int: Number of data points in cross-correlation to save,                e.g. maxlag = 2000 will save lag times = -2000/fs:2000/fs s.\ncorr_type::String: Type of correlation: cross-correlation, coherence or                      deconv.\n\n\n\n\n\ncorrelate(FFT1, FFT2, maxlag,corr_type=\"CC\")\n\nCross-correlate ambient noise data in the frequency domain.\n\nCross-correlation can be done using one of two options:\n\nCC: Cross-correlation, i.e. C_AB(ω) = u_A(ω) u^_B(ω)\nPCC: Phase cross-correlation, see [Ventosa et al., 2019]\n\nArguments\n\nFFT1::FFTData: FFTData object of fft\'d ambient noise data.\nFFT2::FFTData: FFTData object of fft\'d ambient noise data.\nmaxlag::Real: Maximum lag time (in seconds) in cross-correlation to save,                    e.g. maxlag = 20. will save lag times = -20.:20. s.\ncorr_type::String: Type of correlation: CC or PCC.\n\n\n\n\n\n"
 },
 
 {
