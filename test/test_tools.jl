@@ -112,4 +112,5 @@ end
 A = rand(T,1000,10)
 A[100,1] = T(1000)
 @test std_threshold(A,5.) == collect(2:10)
+@test std_threshold(A,5) == collect(2:10)
 end

@@ -83,7 +83,7 @@ end
 
     # test in-place
     robuststack!(C)
-    @test Cnew.corr == C.corr
+    @test isapprox(Cnew.corr,C.corr)
     @test Cnew.t == C.t
 end
 
@@ -110,7 +110,7 @@ end
 
     # test in-place
     pws!(C,pow=2.)
-    @test Cnew.corr == C.corr
+    @test isapprox(Cnew.corr,C.corr)
     @test Cnew.t == C.t
 end
 
@@ -165,23 +165,23 @@ end
     @test eltype(Cnew.corr) == eltype(C.corr)
     @test Cnew.maxlag == newlag
 
+    # test with Int 
+    CInt = shorten(C,Int(newlag))
+    @test size(CInt.corr) == (Int(newlag * fs * 2 + 1),Nwin)
+    @test eltype(CInt.corr) == eltype(C.corr)
+    @test CInt.maxlag == newlag
+
     # test newlag > maxlag
     newlag = 100.
-    Cnew = shorten(C,newlag)
-    @test Cnew.corr == C.corr
-    @test Cnew.maxlag == C.maxlag
+    @test_throws AssertionError shorten(C,newlag)
 
     # test newlag =  0
     newlag = 0.
-    Cnew = shorten(C,newlag)
-    @test Cnew.corr == C.corr
-    @test Cnew.maxlag == C.maxlag
+    @test_throws AssertionError shorten(C,newlag)
 
     # test newlag <=  0
     newlag = -5.
-    Cnew = shorten(C,newlag)
-    @test Cnew.corr == C.corr
-    @test Cnew.maxlag == C.maxlag
+    @test_throws AssertionError shorten(C,newlag)
 
     # test in-place
     newlag = 40.

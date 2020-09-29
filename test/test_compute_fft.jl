@@ -33,6 +33,16 @@ starttime = d2u(DateTime(Date(now()))) # starttime for SeisChanel / SeisData
     @test Snew.t[1] == S.t[1]
     @test Snew.t[2][1,2] == S.t[2][1,2] - 0.004 * 1e6 # test phase shift
 
+    # test with integer sampling rate
+    SInt = process_raw(S,Int(fs))
+    @test size(SInt.x[1]) == size(S.x[1])
+    @test eltype(SInt.x[1]) == eltype(S.x[1])
+    @test size(SInt.x[2]) == size(S.x[2])
+    @test eltype(SInt.x[2]) == eltype(S.x[2])
+    @test SInt.fs == S.fs
+    @test SInt.t[1] == S.t[1]
+    @test SInt.t[2][1,2] == S.t[2][1,2] - 0.004 * 1e6 # test phase shift
+
     # test with downsampling
     Snew = process_raw(S,20.)
     @test size(Snew.x[1]) != size(S.x[1])
@@ -67,6 +77,13 @@ starttime = d2u(DateTime(Date(now()))) # starttime for SeisChanel / SeisData
     @test eltype(Cnew.x) == eltype(C.x)
     @test Cnew.fs == C.fs
     @test Cnew.t[1,2] == C.t[1,2] - 0.004 * 1e6 # test phase shift
+
+    # test with int sampling rate
+    CInt = process_raw(C,Int(fs))
+    @test size(CInt.x) == size(C.x)
+    @test eltype(CInt.x) == eltype(C.x)
+    @test CInt.fs == C.fs
+    @test CInt.t[1,2] == C.t[1,2] - 0.004 * 1e6 # test phase shift
 
     # test downsample
     Cnew = process_raw(C,20.)

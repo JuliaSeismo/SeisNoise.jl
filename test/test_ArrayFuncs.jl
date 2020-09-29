@@ -227,6 +227,14 @@ taper!(taperA,fs,max_length=max_length)
 @test all(taperA[end-Nlength:end,:] .!= 1)
 @test all(taperA[Nlength+1:end-Nlength-1,:] .== 1)
 
+
+# test using Real for fs and max_length
+taperA = deepcopy(A)
+taper!(taperA,Int(fs),max_length=Int(max_length))
+@test all(taperA[1:Nlength,:] .!= 1)
+@test all(taperA[end-Nlength:end,:] .!= 1)
+@test all(taperA[Nlength+1:end-Nlength-1,:] .== 1)
+
 # test RawData
 # test in-place
 R = RawData()
@@ -254,6 +262,12 @@ Rnew = taper(R)
 @test all(Rnew.x[1:min(Nperc,Nlength),:] .!= 1)
 @test all(Rnew.x[end-min(Nperc,Nlength):end,:] .!= 1)
 @test all(Rnew.x[min(Nperc,Nlength)+1:end-min(Nperc,Nlength)-1,:] .== 1)
+@test all(Rnew.x[1:min(Nperc,Nlength),:] .!= 1)
+@test all(Rnew.x[end-min(Nperc,Nlength):end,:] .!= 1)
+@test all(Rnew.x[min(Nperc,Nlength)+1:end-min(Nperc,Nlength)-1,:] .== 1)
+
+# test with integers 
+Rnew = taper(R,max_length=Int(max_length))
 
 ## test CorrData
 # test in-place
@@ -273,6 +287,12 @@ C.corr = A
 @test !isa(try taper(C) catch ex ex end, Exception)    # Passes
 @test isa(taper(C),CorrData)
 Cnew = taper(C)
+@test all(Cnew.corr[1:min(Nperc,Nlength),:] .!= 1)
+@test all(Cnew.corr[end-min(Nperc,Nlength):end,:] .!= 1)
+@test all(Cnew.corr[min(Nperc,Nlength)+1:end-min(Nperc,Nlength)-1,:] .== 1)
+
+# test with Integers 
+Cnew = taper(C,max_length=Int(max_length))
 @test all(Cnew.corr[1:min(Nperc,Nlength),:] .!= 1)
 @test all(Cnew.corr[end-min(Nperc,Nlength):end,:] .!= 1)
 @test all(Cnew.corr[min(Nperc,Nlength)+1:end-min(Nperc,Nlength)-1,:] .== 1)

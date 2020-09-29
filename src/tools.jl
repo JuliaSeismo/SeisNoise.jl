@@ -86,7 +86,7 @@ mad(C::CorrData) = mad(C.corr)
 
 Returns indices of cols of `A` where max(abs.A[:,col]))/std(A[:,col]) < `max_std`.
 """
-function std_threshold(A::AbstractArray, max_std::Float64)
+function std_threshold(A::AbstractArray, max_std::Real)
     stds = std(A,dims=1)[1,:]
     maxs = maximum(abs.(A),dims=1)[1,:]
     threshs = maxs ./ stds
