@@ -39,6 +39,8 @@ We recommend using the latest version of SeisNoise by updating with the Julia pa
   - Methods for [*dv/v* measurements](https://github.com/tclements/SeisDvv.jl).
   - Coming soon: Dispersion analysis.
 
+Check out the SeisNoise [GPU tutorial on NextJournal](https://nextjournal.com/thclements/seisnoisejl-gpu-computing-tutorial)!
+
 ## SeisNoise Cross-Correlation Example
 Once you have installed the package you can type `using SeisNoise` to start
 cross-correlating. SeisNoise uses a functional syntax to implement cross-correlation. For example
