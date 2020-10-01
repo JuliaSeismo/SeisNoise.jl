@@ -129,5 +129,22 @@ Processing times for a selection of routines on the GPU with Julia + GPU (white)
 - Post-processing:
   - `stack`, `filter`s, etc..
 
+## Cite SeisNoise 
+If you use SeisNoise in your work, please star the package and cite our work [DOI: 10.1785/0220200192](https://doi.org/10.1785/0220200192): 
+
+```bib
+@article{SeisNoise.jl-2020,
+  author = {Clements, Timothy and Denolle, Marine A.},
+  title = {SeisNoise.jl: Ambient Seismic Noise Cross Correlation on the CPU and GPU in Julia},
+  journal = {Seismological Research Letters},
+  year = {2020},
+  month = {09},
+  issn = {0895-0695},
+  doi = {10.1785/0220200192},
+  url = {https://doi.org/10.1785/0220200192},
+  eprint = {https://pubs.geoscienceworld.org/srl/article-pdf/doi/10.1785/0220200192/5156069/srl-2020192.1.pdf},
+}
+```
+
 ## Contributing
 We welcome folks interested in contributing to SeisNoise. Please [open an issue](https://github.com/tclements/SeisNoise.jl/issues/new) to let us know about bug reports, new methods/code, and or feature requests/usage cases. If you would like to submit a pull request (PR), please include accompanying [tests](https://github.com/tclements/SeisNoise.jl/tree/master/test).
