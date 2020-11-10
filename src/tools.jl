@@ -28,11 +28,17 @@ Smooth array `A` with half-window `half_win` (defaults to 3).
 function smooth!(A::AbstractArray, half_win::Int=3, dims::Int=1)
     T = eltype(A)
     window_len = 2 * half_win + 1
-    csumsize = tuple(collect(size(A)) .+ [i==1 for i in 1:ndims(A)]...)
+    csumsize = tuple(collect(size(A)) .+ [i==1 ? 2 * (window_len - 1) + 1 : 0 for i in 1:ndims(A)]...)
     csum = similar(A,T,csumsize)
-    csum[1,:] .= zero(T)
-    csum[2:end,:] = cumsum(A,dims=dims)
-    A[half_win+1:end-half_win,:] .= (csum[window_len+1:end,:] .- csum[1:end-window_len,:]) ./ window_len
+    csum[1:window_len,:] .= zero(T)
+    csum[end - window_len + 1:end,:] .= zero(T)
+    csum[window_len+1:end-window_len + 1,:] .= A
+    csum .= cumsum(csum,dims=dims)
+    weight = similar(A,T,size(A,1))
+    weight[1:half_win] = T.(window_len ÷ 2 + 1:window_len - 1)
+    weight[half_win + 1: end - half_win] .= T(window_len)
+    weight[end-half_win:end] = T.(window_len:-1:window_len ÷ 2 + 1)
+    A[:,:] .= (csum[window_len+half_win+1:end-half_win,:] .- csum[half_win+1:end-window_len-half_win,:]) ./ weight
     return nothing
 end
 smooth(A::AbstractArray,half_win::Int=3, dims::Int=1) =
