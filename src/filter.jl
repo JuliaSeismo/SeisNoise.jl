@@ -69,9 +69,12 @@ bandpass!(R::RawData,freqmin::Real,freqmax::Real;
 bandpass(R::RawData,freqmin::Real,freqmax::Real;
         corners::Int=4,zerophase::Bool=true) = (U = deepcopy(R);bandpass!(U.x,
         freqmin,freqmax,U.fs,corners=corners,zerophase=zerophase);
-        setfield!(U,:freqmin,Float64(freqmin)setfield!(U,:freqmin,Float64(freqmin));
-          C.fs,corners=corners,zerophase=zerophase);setfield!(C,:freqmin,Float64(freqmin));
-          setfield!(C,:freqmax,Float64(min(freqmax,C.fs/2)));return nothing)
+        setfield!(U,:freqmin,Float64(freqmin));
+        setfield!(U,:freqmax,Float64(min(freqmax,U.fs/2)));return U)
+bandpass!(C::CorrData,freqmin::Real,freqmax::Real;
+        corners::Int=4,zerophase::Bool=true) = (bandpass!(C.corr,freqmin,freqmax,
+        C.fs,corners=corners,zerophase=zerophase);setfield!(C,:freqmin,Float64(freqmin));
+        setfield!(C,:freqmax,Float64(min(freqmax,C.fs/2)));return nothing)
 bandpass(C::CorrData,freqmin::Real,freqmax::Real;
         corners::Int=4,zerophase::Bool=true) = (U = deepcopy(C);bandpass!(U.corr,
         freqmin,freqmax,U.fs,corners=corners,zerophase=zerophase);
