@@ -268,6 +268,18 @@ end
 whiten(R::RawData,freqmin::Real, freqmax::Real; pad::Int=50) =
       (U = deepcopy(R); whiten!(U,freqmin,freqmax,pad=pad);return U)
 
+function whiten!(N::NodalData,freqmin::Real, freqmax::Real; pad::Int=50)
+    @assert freqmin > 0 "Whitening frequency must be greater than zero."
+    @assert freqmax <= N.fs[1] / 2 "Whitening frequency must be less than or equal to Nyquist frequency."
+    Npts = size(N.data,1) # number of data points
+    FFT = rfft(N.data,1)
+    whiten!(FFT,freqmin,freqmax,N.fs[1], Npts, pad=pad)
+    N.data .= irfft(FFT,Npts,1)
+    return nothing
+end
+whiten(N::NodalData,freqmin::Real, freqmax::Real; pad::Int=50) =
+    (U = deepcopy(N); whiten!(U,freqmin,freqmax,pad=pad);return U)
+
 """
 
   coherence!(F,half_win, water_level)

@@ -374,3 +374,22 @@ function get_loc(C::CorrData)
 
     return C.loc, loc2
 end
+
+function get_azi(loc1::NodalLoc,loc2::NodalLoc)
+    azi = atan(loc2.y - loc1.y, loc2.x - loc1.x) * 180 / π 
+    if azi <= 90 
+        azi = 90 - azi 
+    else
+        azi = 450 - azi 
+    end
+    return azi  
+end
+
+function get_azi(N::NodalData)
+    out = zeros(N.n)
+    for ii = 1:N.n-1
+        out[ii] = get_azi(N.loc[ii],N.loc[ii+1])
+    end
+    out[end] = out[end-1]
+    return out
+end

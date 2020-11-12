@@ -33,6 +33,8 @@ detrend!(R::RawData) = detrend!(R.x)
 detrend(R::RawData) = (U = deepcopy(R); detrend!(U.x); return U)
 detrend!(C::CorrData) = detrend!(C.corr)
 detrend(C::CorrData) = (U = deepcopy(C); detrend!(U.corr); return U)
+detrend!(N::NodalData) = detrend!(N.data)
+detrend(N::NodalData) = (U = deepcopy(N); detrend!(U.data); return U)
 
 
 """
@@ -51,6 +53,8 @@ demean!(R::RawData) = demean!(R.x)
 demean(R::RawData) = (U = deepcopy(R); demean!(U.x); return U)
 demean!(C::CorrData) = demean!(C.corr)
 demean(C::CorrData) = (U = deepcopy(C); demean!(U.corr); return U)
+demean!(N::NodalData) = demean!(N.data)
+demean(N::NodalData) = (U = deepcopy(N); demean!(U.data); return U)
 
 """
    taper!(A,fs; max_percentage=0.05, max_length=20.)
@@ -91,6 +95,12 @@ taper!(C::CorrData; max_percentage::AbstractFloat=0.05,
       max_length=max_length)
 taper(C::CorrData; max_percentage::AbstractFloat=0.05,
       max_length::Real=20.) = (U = deepcopy(C); taper!(U.corr,U.fs,
+      max_percentage=max_percentage,max_length=max_length); return U)
+taper!(N::NodalData; max_percentage::AbstractFloat=0.05,
+      max_length::Real=20.) = taper!(N.data,N.fs[1],max_percentage=max_percentage,
+      max_length=max_length)
+taper(N::NodalData; max_percentage::AbstractFloat=0.05,
+      max_length::Real=20.) = (U = deepcopy(N); taper!(U.data,U.fs[1],
       max_percentage=max_percentage,max_length=max_length); return U)
 
 
