@@ -140,7 +140,7 @@ mutable struct RawData <: NoiseData
     # get starting and ending indices
     startind, endind = slide_ind(startslice, endslice, C.fs,C.t)
     x, starts = slide(@view(C.x[startind:endind]), cc_len, cc_step, C.fs, startslice,endslice)
-    return new(C.id,Dates.format(u2d(starts[1],"Y-mm-dd"),C.loc,C.fs,
+    return new(C.id,Dates.format(u2d(starts[1]),"Y-mm-dd"),C.loc,C.fs,
                C.gain,1. / cc_len,C.fs/2,cc_len,cc_step,false,"", C.resp,
                C.misc,C.notes,starts,x)
    end
