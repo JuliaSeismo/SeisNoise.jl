@@ -152,22 +152,21 @@ function correlate(FFT1::FFTData, FFT2::FFTData, maxlag::Real;corr_type::String=
 end
 
 """
-   whiten!(A, freqmin, freqmax, fs, pad=50)
+   whiten!(A, freqmin, freqmax, fs, N; pad=50)
 
 Whiten spectrum of rfft `A` between frequencies `freqmin` and `freqmax`.
 Returns the whitened rfft of the time series.
 
 # Arguments
 - `A::AbstractArray`: Time series.
-- `fs::Real`: Sampling rate of time series `A`.
 - `freqmin::Real`: Pass band low corner frequency.
 - `freqmax::Real`: Pass band high corner frequency.
+- `fs::Real`: Sampling rate of time series `A`.
 - `N::Int`: Number of input time domain samples for each rfft.
 - `pad::Int`: Number of tapering points outside whitening band.
 """
-function whiten!(A::AbstractArray{Complex{Float32}}, freqmin::Real,
-                 freqmax::Real, fs::Real,N::Int;pad::Int=50)
-   T = real(eltype(A))
+function whiten!(A::AbstractArray{Complex{T}}, freqmin::Real,
+                 freqmax::Real, fs::Real,N::Int;pad::Int=50) where T <: AbstractFloat
    Nrows,Ncols = size(A)
 
    # get whitening frequencies
