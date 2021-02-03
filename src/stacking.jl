@@ -186,7 +186,7 @@ function shorten!(C::CorrData, newlag::Real)
     # get timearray
     lags = -C.maxlag:1/C.fs:C.maxlag
     ind = findall(x -> abs(x) <= newlag, lags)
-    C.maxlag = Float64(newlag)
+    C.maxlag = Float64(lags[ind[end]])
     C.corr = C.corr[ind,:]
     return nothing
 end
