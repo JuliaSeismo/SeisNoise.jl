@@ -1,7 +1,11 @@
-export compute_fft, compute_cc
+export compute_fft, compute_cc, corrplot
 
 @deprecate compute_fft() rfft()
 @deprecate compute_cc() correlate()
+
+function corrplot(C::CorrData)
+  @warn "corrplot has been deprecated. Please use: `using Plots;plot(C)` to plot CorrData."
+end
 
 """
 

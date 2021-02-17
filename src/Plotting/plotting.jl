@@ -1,17 +1,33 @@
-export corrplot
+@recipe function f(C::CorrData)
+    # set up the subplots
+    grid := false
+    layout := (2,1)
 
-"""
-
-  corrplot(C)
-
-Plot a CorrData matrix.
-"""
-function corrplot(C::CorrData)
     lags = -C.maxlag:1/C.fs:C.maxlag
     times = Dates.format.(Dates.unix2datetime.(C.t),"yyyy/m/d HH:MM")
-    Cstack = stack(C,allstack=true)
-    plot(
-         heatmap(lags,times,C.corr',c=:balance,legend=:none),
-         plot(lags,Cstack.corr,c=:black,linewidth=1.5,legend=:none,xlabel="Lag [s]"),
-         layout = grid(2,1,heights=[0.75,0.25]), link=:x,dpi=1000)
+
+    # main heatmap
+    @series begin
+        legend := false
+        seriestype := :heatmap
+        ytickfontsize --> 10 
+        xtickfontsize --> 8
+        subplot := 1
+        seriescolor --> :balance
+        lags,times,C.corr'
+    end
+
+    # bottom stack
+    @series begin
+        subplot := 2
+        label := false
+        title --> C.name
+        xguide --> "Lag [s]"
+        titlefontsize --> 6 
+        ytickfontsize --> 10 
+        xtickfontsize --> 8
+        seriescolor --> :black
+        xlims --> (lags[1],lags[end])
+        lags,stack(C,allstack=true).corr
+    end
 end
