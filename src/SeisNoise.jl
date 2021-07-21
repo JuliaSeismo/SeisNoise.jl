@@ -1,8 +1,7 @@
 module SeisNoise
 
-using Dates, DataFrames, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO
-using Statistics, StatsBase, Plots, Distributed
-using CUDA, Adapt, GPUArrays
+using Dates, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO, SeisIO.Nodal
+using Statistics, StatsBase, Distributed, CUDA, Adapt, GPUArrays, RecipesBase
 
 # check use of cuda
 const use_cuda = Ref(false)
@@ -13,6 +12,7 @@ end
 
 # import types first
 include("Types/NoiseData.jl")
+include("Types/NodalData.jl")
 include("Types/show.jl")
 
 # import pre and post processing tools
@@ -28,6 +28,7 @@ include("stacking.jl")
 # import  routines for doin' stuff
 include("compute_fft.jl")
 include("correlation.jl")
+include("nodalcorrelation.jl")
 include("rotation.jl")
 include("Plotting/plotting.jl")
 

@@ -183,6 +183,11 @@ end
     newlag = -5.
     @test_throws AssertionError shorten(C,newlag)
 
+    # test where newlag % (1/C.fs) != 0 
+    newlag = π
+    Cpi = shorten(C,π)
+    @test Cpi.maxlag == 3.14
+
     # test in-place
     newlag = 40.
     Cnew = shorten(C,newlag)
