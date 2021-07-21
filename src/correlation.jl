@@ -1,5 +1,5 @@
 # cross-correlation module
-export clean_up!, clean_up, correlate, map_cc, corrmap, phasecorrelate
+export clean_up!, clean_up, correlate, phasecorrelate
 export coherence!, coherence, deconvolution!, deconvolution, whiten, whiten!
 
 """
@@ -334,79 +334,3 @@ deconvolution(F::FFTData,half_win::Int,
               water_level::Union{Nothing,AbstractFloat}=nothing) =
               (U = deepcopy(F);deconvolution!(U,half_win,water_level);
               return U)
-
-"""
-  corrmap(A,maxlag,corr_type,OUTDIR)
-
-Compute cross-correlations using a parallel map.
-
-`corrmap` takes in an array of FFT's and cross-correlates using full parallism.
-For a list of `N` `FFT`s, there are `N * (N - 1) / 2` total possible
-cross-correlations. To avoid parallel I/O issues, `corrmap` copies the current
-correlation `F`, then maps the correlation of `F` against all other correlations
-in parallel.
-
-# Arguments
-- `A::AbstractArray`: Array of FFTData objects.
-- `maxlag::Real`: Maximum lag time (in seconds) in cross-correlation to save,
-                   e.g. `maxlag = 20.` will save lag times = -20.:20. s.
-- `corr_type::String`: Type of correlation: `CC` or `PCC`.
-- `smoothing_half_win::Int`: Number of points to smooth spectrum of
-                  cross-correlations if using deconvolution or coherence.
-- `smooth_type::String`: Type of smoothing to apply: `cross-correlation`, `coherence` or
-                 `deconvolution`.
-- `OUTDIR::String`: Path to save correlation, e.g. "/home/ubuntu/CORR/".
-"""
-function corrmap(A::Array{FFTData,1},maxlag::Real,OUTDIR::String;
-               corr_type::String="CC",interval::DatePeriod=Day(0),
-               smooth_type::String="none",smoothing_half_win::Int=5,
-               water_level::Union{Nothing,AbstractFloat}=nothing)
-    N = size(A,1)
-
-    if smooth_type == "coherence"
-        A = pmap(coherence,A,fill(smoothing_half_win,N),fill(water_level,N))
-    end
-
-    # copy the current FFT and correlate against all remaining
-    for ii = 1:N-1
-        FFT = pop!(A)
-        out = fill(deepcopy(FFT),length(A))
-        if smooth_type == "deconvolution"
-            deconvolution!(FFT,smoothing_half_win,water_level)
-        end
-        pmap(map_cc,out,A,fill(maxlag,length(A)),
-        fill(corr_type,length(A)),fill(OUTDIR,length(A)),
-        fill(interval,length(A)))
-    end
-end
-
-
-"""
-map_cc(FFT1,FFT2,maxlag,OUTDIR)
-
-Input function for corrmap.
-
-Correlates `FFT1` and `FFT2`.
-
-# Arguments
-- `FFT1::FFTData`: FFTData object of fft'd ambient noise data.
-- `FFT2::FFTData`: FFTData object of fft'd ambient noise data.
-- `maxlag::Real`: Maximum lag time (in seconds) in cross-correlation to save,
-               e.g. `maxlag = 20.` will save lag times = -20.:20. s.
-- `smooth_type::String`: Type of smoothing to apply: `cross-correlation`, `coherence` or
-                 `deconv`.
-- `OUTDIR::String`: Path to save correlation, e.g. "/home/ubuntu/CORR/".
--`interval::DatePeriod`:
-
-"""
-function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Real,
-              corr_type::String,OUTDIR::String,
-              interval::DatePeriod)
-    println("Correlation $(FFT1.name), $(FFT2.name)")
-    C = correlate(FFT1,FFT2,maxlag,corr_type=corr_type)
-    if interval > Second(0)
-        stack!(C,interval=interval)
-    end
-    save_corr(C,OUTDIR)
-    return nothing
-end

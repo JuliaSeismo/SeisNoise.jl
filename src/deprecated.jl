@@ -1,4 +1,18 @@
-export compute_fft, compute_cc, corrplot
+export compute_fft, compute_cc, corrplot, map_cc, corrmap
+
+function corrmap(A::Array{FFTData,1},maxlag::Real,OUTDIR::String;
+               corr_type::String="CC",interval::DatePeriod=Day(0),
+               smooth_type::String="none",smoothing_half_win::Int=5,
+               water_level::Union{Nothing,AbstractFloat}=nothing)
+    @warn "corrmap has been deprecated. Please define this method externally."
+end
+
+function map_cc(FFT1::FFTData,FFT2::FFTData,maxlag::Real,
+              corr_type::String,OUTDIR::String,
+              interval::DatePeriod)
+    @warn "map_cc has been deprecated. Please define this method externally."
+end
+
 
 @deprecate compute_fft() rfft()
 @deprecate compute_cc() correlate()
