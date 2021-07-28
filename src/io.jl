@@ -28,6 +28,7 @@ function save_fft(F::FFTData, FFTOUT::String)
         file[chan][F.id] = F
     end
     close(file)
+    return filename
 end
 
 """
@@ -101,6 +102,7 @@ function save_corr(C::CorrData, CORROUT::String)
         file[C.comp][C.id] = C
     end
     close(file)
+    return filename
 end
 
 """
