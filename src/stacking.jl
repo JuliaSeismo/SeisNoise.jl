@@ -1,6 +1,6 @@
 export stack, stack!, remove_nan, remove_nan!, shorten, shorten!
 export pws, pws!, robuststack, robuststack!, adaptive_filter!, adaptive_filter
-export robustpws, robustpws!
+export robustpws, robustpws!, medianmute, medianmute!
 """
 
   stack!(C)
@@ -116,6 +116,43 @@ robuststack(C::CorrData;ϵ::AbstractFloat=eps(Float32),maxiter::Int=10)  =
        (U = deepcopy(C); U.corr = robuststack(U.corr,ϵ=ϵ,maxiter=maxiter); U.t = U.t[1:1];
        return U)
 
+function medianmuteind(A::AbstractArray, high::Real = 10.0, low::Real=0.)
+    @assert low < high "low must be less than high"
+    maxamp = vec(maximum(abs.(A), dims=1))
+    # remove Nans
+    maxamp[isnan.(maxamp)] .= Inf
+    medianmax = median(maxamp)
+    ind = findall(x-> low * medianmax <= x <= high * medianmax, maxamp)
+    return ind
+end
+
+"""
+  medianmute!(C::CorrData, high, low)
+
+Remove correlations with amplitude `high` times greater than the median maximum amplitude.
+
+Optional argument `low` removes correlations with amplitude less than `low` times the 
+median of all absolute amplitudes. 
+
+# Arguments 
+- `C::CorrData`: Correlation data. 
+- `high::Real`: High amplitude threshold value. 
+
+# Optional 
+- `low::Real`: Low amplitude threshold value. 
+"""
+function medianmute!(C::CorrData, high::Real=10., low::Real=0.)
+    ind = medianmuteind(C.corr,high,low)
+    C.corr = C.corr[:,ind]
+    C.t = C.t[ind]
+    return nothing
+end
+medianmute(C, high::Real=10., low::Real=0.) = (
+    U = deepcopy(C);
+    medianmute!(U, high, low);
+    return U;
+)
+
 """
 
   pws(A)
@@ -173,6 +210,48 @@ function remove_nan!(C::CorrData)
       return nothing
 end
 remove_nan(C::CorrData) = (U = deepcopy(C);remove_nan!(U);return U)
+
+"""
+
+  smooth!(C,interval)
+
+Smooth CorrData `C` over time period 'interval`. Works in similar fashion to 
+`stack!` but preserves number of correlations. 
+
+# Arguments
+- `C::CorrData`: Correlation data.
+- `interval::Period`: Interval over which to smooth `C`.
+
+"""
+function smooth!(C::CorrData, interval::Period=Day(1))
+
+    Nrows,Ncols = size(C.corr)
+    stack_out = similar(C.corr)
+
+    # sort correlations if not in chronological order 
+    ind = sortperm(C.t)
+    if ind != 1:length(C.t)
+        C.t = C.t[ind]
+        C.corr = C.corr[:,ind]
+    end
+
+    # convert stacking interval to seconds 
+    smoothsec = convert(Second,interval).value
+
+    # smooth all waveforms within smoothsec window  
+    for ii in 1:Ncols
+        firstind = findfirst(C.t[1:ii] .+ smoothsec .> C.t[ii])
+        stack_out[:,ii] = mean(C.corr[:,firstind:ii],dims=2)
+    end
+    C.corr = stack_out
+    return nothing 
+end
+
+smooth(C::CorrData, interval::Period=Day(1)) = (
+    U = deepcopy(C);
+    smooth!(U, interval);
+    return U
+)
 
 """
 
