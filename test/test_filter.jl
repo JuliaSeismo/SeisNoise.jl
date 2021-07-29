@@ -648,5 +648,78 @@ up, down = envelope(A)
 @test eltype(down) == eltype(A)
 @test all(up .- A .> -1e-6)
 @test all(A .- down .> -1e-6)
+end
 
+@testset "resample" begin
+    # test resample kernel 
+    A = rand(T,N,Nwin)
+
+    # test downsample by 2 
+    B = SeisNoise.resample_kernel(A, 0.5)
+    @test size(B,1) == size(A,1) ÷ 2
+
+    # test downsample by 3 
+    B = SeisNoise.resample_kernel(A, 1.0 / 3.0)
+    @test size(B,1) == ceil(Int,size(A,1) / 3)
+
+    # test upsample 
+    B = SeisNoise.resample_kernel(A, 2.0)
+    @test size(B,1) == size(A,1) * 2
+
+    # test upsample by 3.4 
+    B = SeisNoise.resample_kernel(A, 3.4)
+    @test size(B,1) == ceil(Int,size(A,1) * 3.4)
+
+    # test upsample and downsample
+    B = SeisNoise.resample_kernel(A, 1.5)
+    C = SeisNoise.resample_kernel(B, 2.0)
+    D = SeisNoise.resample_kernel(C, 1.0 / 3.0)
+    @test size(D) == size(A)
+    @test cor(A[:,1],D[:,1]) > 0.99
+
+    # test RawData 
+    R = RawData()
+    R.x = deepcopy(A)
+    R.fs = fs
+
+    # downsample
+    downfs = 50.0
+    Rdown = resample(R,downfs)
+    @test size(R.x,1) == 2 * size(Rdown.x,1) 
+    @test Rdown.fs == downfs
+    @test Rdown.freqmax == downfs / 2.0
+
+    # upsample
+    upfs = 150.
+    Rup = resample(R,upfs)
+    @test size(R.x,1) * 1.5 == size(Rup.x,1)
+    @test Rup.fs == upfs
+    @test Rup.freqmax == 0.0 
+
+    # inplace 
+    resample!(R,downfs)
+    @test R == Rdown
+
+    # test CorrData 
+    C = CorrData()
+    C.corr = deepcopy(A)
+    C.fs = fs
+
+    # downsample
+    downfs = 50.0
+    Cdown = resample(C,downfs)
+    @test size(C.corr,1) == 2 * size(Cdown.corr,1) 
+    @test Cdown.fs == downfs
+    @test Cdown.freqmax == downfs / 2.0
+
+    # upsample
+    upfs = 150.
+    Cup = resample(C,upfs)
+    @test size(C.corr,1) * 1.5 == size(Cup.corr,1)
+    @test Cup.fs == upfs
+    @test Cup.freqmax == 0.0 
+
+    # inplace 
+    resample!(C,downfs)
+    @test C == Cdown
 end
