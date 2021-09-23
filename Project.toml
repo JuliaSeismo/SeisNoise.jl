@@ -1,7 +1,7 @@
 name = "SeisNoise"
 uuid = "8cc7c3c0-6b5d-11e9-39fe-c9cd0236e08b"
 authors = ["timclements <thclements@g.harvard.edu>"]
-version = "0.5.1"
+version = "0.5.2"
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
@@ -22,12 +22,12 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 [compat]
 Adapt = "1.0.1, 2.0, 3.0"
 CUDA = "2, 3"
-DSP = "0.6"
-FFTW = "1.1"
-GPUArrays = "3.1, 4.0, 5.0, 6.2"
+DSP = "0.6, 0.7"
+FFTW = "1.1, 1.2, 1.3, 1.4"
+GPUArrays = "3.1, 4.0, 5.0, 6.2, 7.0, 8.0"
 Glob = "1.2"
 JLD2 = "0.1, 0.2"
 RecipesBase = "1.1"
-SeisIO = "1.0"
+SeisIO = "1.0, 1.1, 1.2"
 StatsBase = "0.32,0.33"
 julia = "1"
