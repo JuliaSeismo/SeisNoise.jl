@@ -14,7 +14,7 @@ correlations. To use phase-weighted stack, specify the amount of
 - `C::CorrData`: Correlation data.
 - `interval::Period`: Interval over which to stack `C`.
 - `allstack::Bool`: If `true`, stack all data.
-- `stack_type::Function`: Type of stacking. Options are mean, pws, robuststack, etc..
+- `stacktype::Function`: Type of stacking. Options are mean, pws, robuststack, etc..
 """
 function stack!(C::CorrData; interval::Period=Day(1),
                 allstack::Bool=false,stacktype::Function=mean)

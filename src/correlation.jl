@@ -117,6 +117,8 @@ Cross-correlation can be done using one of two options:
 - CC: Cross-correlation, i.e. ``C_{AB}(ω) = u_A(ω) u^∗_B(ω)``
 - PCC: Phase cross-correlation, see [Ventosa et al., 2019]
 
+When using `PCC`, use the `phase` function to create `FFTData`. 
+
 # Arguments
 - `FFT1::FFTData`: FFTData object of fft'd ambient noise data.
 - `FFT2::FFTData`: FFTData object of fft'd ambient noise data.

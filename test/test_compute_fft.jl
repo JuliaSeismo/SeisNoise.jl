@@ -132,13 +132,22 @@ end
     A = rand(T,N,Nwin)
     A[:,1] .= T(0)
     p = phase(A)
-    @test all(.!SeisNoise.isweird.(p)) # test no NaNs
+    @test all(SeisNoise.isweird.(p[:,1])) # test NaNs
+    @test all(.!SeisNoise.isweird.(p[:,2:end])) # test NaNs
+
+    # test hilberttransform 
+    H = SeisNoise.hilberttransform(A)
+    @test all(isa.(H, Complex))
+
+    # test analytic 
+    s = SeisNoise.analytic(A)
+    @test isapprox(real(s),A)
+    @test isapprox(imag(s), real(H))
 
     # test phase
     A = rand(T,N,Nwin)
     p = phase(A)
     @test size(A) == size(p)
-    @test all(p[N ÷ 2 + 2 + isodd(N),1] .== T(0))
 
     # test phase RawData
     R = RawData()

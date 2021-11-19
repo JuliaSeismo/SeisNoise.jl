@@ -94,18 +94,31 @@ For more information on Phase Cross-Correlation, see:
 [Ventosa et al., 2019](https://pubs.geoscienceworld.org/ssa/srl/article-standard/570273/towards-the-processing-of-large-data-volumes-with).
 """
 function phase(A::AbstractArray)
-	Nrows = size(A,1)
-    T = eltype(A)
-    f = similar(A,fftouttype(T))
-    fill!(f,fftouttype(T)(0))
-    f[1:Nrows÷2 + 1 + isodd(Nrows),:] .= rfft(A,1)
-    f[2:Nrows÷2  + isodd(Nrows),:] .*= T(2.)
-	f[1:Nrows÷2 + 1 + isodd(Nrows),:] ./= abs.(f[1:Nrows÷2 + 1 + isodd(Nrows),:])
-	ind = findall(isweird.(f[1:Nrows÷2 + isodd(Nrows) + 1,:]))
-	if length(ind) > 0
-		fill!(@view(f[ind]),fftouttype(T)(0))
-	end
-    return f
+    # the analytic signal 
+    s =  analytic(A)
+    return s ./ abs.(s)
+end
+
+function analytic(A::AbstractArray)
+    # the analytic signal 
+    T = real(eltype(A))
+    return hilberttransform(A) .* Complex(T(0),T(1)) .+ A
+end
+
+function hilberttransform(A::AbstractArray)
+    Nrows = size(A,1)
+    T = real(eltype(A))
+    f = fft(A,1)
+    f[1,:] .*= Complex(T(0),T(0))
+    if iseven(Nrows)
+        f[2:Nrows÷2 + Nrows % 2,:] .*= Complex(T(0),T(-1))
+        f[Nrows÷2 + Nrows % 2 + 1,:] .*= Complex(T(0),T(0))
+        f[Nrows÷2 + Nrows % 2 + 2: end,:] .*= Complex(T(0),T(1))
+    else
+        f[2:Nrows÷2 + Nrows % 2,:] .*= Complex(T(0),T(-1))
+        f[Nrows÷2 + Nrows % 2 + 1 : end,:] .*= Complex(T(0),T(1))
+    end
+    return ifft(f,1)
 end
 
 """
