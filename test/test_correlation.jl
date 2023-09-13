@@ -69,7 +69,7 @@ rand_id() = string(rand_net(), ".", rand_sta(), ".", rand_loc(), ".HH", rand('A'
     @test Cclean.freqmin == freqmin
     @test Cclean.freqmax == freqmax
     @test CInt.freqmin == freqmin
-    @test CInt.freqmax == freqmax 
+    @test CInt.freqmax == freqmax
 
     # test in-place
     clean_up!(C,freqmin,freqmax)
@@ -107,7 +107,7 @@ end
     @test all([t[maxinds[ii][1]] == 0 for ii in length(maxinds)])
 
     # test correlation with FFTData
-    Ch = SeisIO.RandSeis.randSeisChannel(c=false,s=true)
+    Ch = SeisBase.RandSeis.randSeisChannel(c=false,s=true)
     ungap!(Ch)
     Ch.x = rand(T,Int(cc_len*Nwin*fs +1)) .- T(0.5)
     Ch.fs = fs
@@ -125,7 +125,7 @@ end
     @test all([t[maxinds[ii][1]] == 0 for ii in length(maxinds)]) # test max args
     @test C.rotated == false # test rotation
     @test C.corr_type == "CC" # test cross-correlation
-    @test C.maxlag == CInt.maxlag 
+    @test C.maxlag == CInt.maxlag
     @test C.corr == CInt.corr
 
     # test windows that do not overlap
@@ -186,7 +186,7 @@ end
     Fhigh = whiten(F,freqmin,fs/2,fs,N,pad=pad)
     @test all(abs.(Fhigh[end-pad:end,:]) .< 1.)
 
-    # test with integer arguments 
+    # test with integer arguments
     FInt = whiten(F,Int(freqmin),Int(freqmax),Int(fs),N,pad=pad)
 
     # test in-place
@@ -195,7 +195,7 @@ end
     @test F == FInt
 
     # test FFTData
-    Ch = SeisIO.RandSeis.randSeisChannel(c=false,s=true)
+    Ch = SeisBase.RandSeis.randSeisChannel(c=false,s=true)
     Ch.loc = GeoLoc()
     ungap!(Ch)
     Ch.x = rand(T,Int(cc_len*Nwin*fs +1)) .- T(0.5)
@@ -230,7 +230,7 @@ end
     @test Fhigh.freqmin == freqmin
     @test Fhigh.freqmax == F.freqmax
 
-    # test with integer input 
+    # test with integer input
     FInt = whiten(F,Int(freqmin),Int(freqmax))
     @test FInt.freqmin == freqmin
     @test FInt.freqmax == freqmax
@@ -270,9 +270,9 @@ end
     @test Rhigh.freqmin == freqmin
     @test Rhigh.freqmax == R.freqmax
 
-    # test with integer input 
+    # test with integer input
     RInt = whiten(R,Int(freqmin),Int(freqmax))
-    @test RInt.freqmin == freqmin 
+    @test RInt.freqmin == freqmin
     @test RInt.freqmax == freqmax
 
     # test in-place

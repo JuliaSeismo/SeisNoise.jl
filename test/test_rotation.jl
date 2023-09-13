@@ -13,7 +13,7 @@ starttime = d2u(DateTime(Date(now()))) # starttime for SeisChanel / SeisData
 
 @testset "rotation" begin
 
-    Ch = SeisIO.RandSeis.randSeisChannel(c=false,s=true)
+    Ch = SeisBase.RandSeis.randSeisChannel(c=false,s=true)
     ungap!(Ch)
     Ch.x = rand(T,Int(cc_len*Nwin*fs +1)) .- T(0.5)
     Ch.fs = fs
