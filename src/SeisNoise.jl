@@ -1,6 +1,6 @@
 module SeisNoise
 
-using Dates, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisIO, SeisIO.Nodal
+using Dates, DSP, FFTW, Glob, JLD2, LinearAlgebra, SeisBase, SeisBase.Nodal
 using Statistics, StatsBase, CUDA, Adapt, GPUArrays, RecipesBase
 
 # check use of cuda

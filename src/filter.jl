@@ -1,5 +1,5 @@
 import DSP: resample
-import SeisIO: resample, resample!
+import SeisBase: resample, resample!
 export bandpass, bandpass!, bandstop, bandstop!, lowpass, lowpass!
 export highpass, highpass!, taper, taper!, envelope
 export resample, resample!
@@ -409,23 +409,23 @@ end
 """
     resample!(R, fs)
 
-Resample data in `RawData` R to new sampling rate `fs`. 
+Resample data in `RawData` R to new sampling rate `fs`.
 
 # Arguments
-- `R::RawData`: RawData to resample. 
+- `R::RawData`: RawData to resample.
 - `fs::Real`: New sampling frequency.
 """
 function resample!(R::RawData,fs::Real)
     @assert fs > 0 "New fs must be greater than 0!"
     if R.fs == fs
-        return nothing 
+        return nothing
     end
     T = eltype(R.x)
     rate = T(fs / R.fs)
     R.x = resample_kernel(R.x, rate)
     R.fs = Float64(fs)
     if (R.freqmax <  fs / 2) && (rate < 1.0)
-        R.freqmax = Float64(fs / 2) 
+        R.freqmax = Float64(fs / 2)
     end
     return nothing
 end
@@ -434,30 +434,30 @@ resample(R::RawData,fs::Real) = (U = deepcopy(R); resample!(U,fs); return U)
 """
     resample!(C, fs)
 
-Resample data in CorrData` C to new sampling rate `fs`. 
+Resample data in CorrData` C to new sampling rate `fs`.
 
 # Arguments
-- `C::CorrData`: CorrData to resample. 
+- `C::CorrData`: CorrData to resample.
 - `fs::Real`: New sampling frequency.
 """
 function resample!(C::CorrData,fs::Real)
     @assert fs > 0 "New fs must be greater than 0!"
-    if C.fs == fs 
-        return nothing 
+    if C.fs == fs
+        return nothing
     end
     T = eltype(C.corr)
     rate = T(fs / C.fs)
     C.corr = resample_kernel(C.corr, rate)
     C.fs = Float64(fs)
     if (C.freqmax <  fs / 2) && (rate < 1.0)
-        C.freqmax = Float64(fs / 2) 
+        C.freqmax = Float64(fs / 2)
     end
     return nothing
 end
 resample(C::CorrData,fs::Real) = (U = deepcopy(C); resample!(U,fs); return U)
 
 function resample_kernel(x::AbstractMatrix,rate::Real)
-    T = eltype(x) 
+    T = eltype(x)
     h = resample_filter(rate)
     self = FIRFilter(h, rate)
 
@@ -469,7 +469,7 @@ function resample_kernel(x::AbstractMatrix,rate::Real)
     #   b) set the ϕ index of the PFB (fractional part of τ)
     setphase!(self, τ)
 
-    # calculate number of zeros 
+    # calculate number of zeros
     Nrows, Ncols = size(x)
     outLen = ceil(Int, Nrows*rate)
     reqInlen = inputlength(self, outLen)

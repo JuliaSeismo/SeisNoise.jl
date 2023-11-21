@@ -1,10 +1,10 @@
 import Base: in, +, -, *, ==, convert, isempty, isequal, length, push!, sizeof, append!
 import Base: lastindex, firstindex, getindex, setindex!, sort, sort!
-import SeisIO: GeoLoc, PZResp, InstrumentResponse
+import SeisBase: GeoLoc, PZResp, InstrumentResponse
 export RawData, FFTData, CorrData, gpu, cpu, sort, sort!, append!
 export isequal, isempty, length, +, ==
 
-# Many thanks to SeisIO for inspiration for NoiseData objects
+# Many thanks to SeisBase for inspiration for NoiseData objects
 
 const datafields = (:x,:fft,:corr)
 
@@ -28,7 +28,7 @@ A structure for raw ambient noise data.
 | :cc_len     | Raw data window length in seconds. |
 | :cc_step    | Spacing between windows in seconds. |
 | :time_norm  | Apply one-bit whitening with "one_bit". |
-| :resp       | SeisIO InstrumentResponse object |
+| :resp       | SeisBase InstrumentResponse object |
 | :misc       | Dictionary for non-critical information. |
 | :notes      | Timestamped notes; includes automatically-logged acquisition and |
 |             | processing information. |
@@ -185,7 +185,7 @@ A structure for fourier transforms (FFT) of ambient noise data.
 | :cc_step    | Spacing between windows in number of points. |
 | :whitened   | Whitening applied.
 | :time_norm  | Apply one-bit whitening with "one_bit". |
-| :resp       | SeisIO InstrumentResponse object |
+| :resp       | SeisBase InstrumentResponse object |
 | :misc       | Dictionary for non-critical information. |
 | :notes      | Timestamped notes; includes automatically-logged acquisition and |
 |             | processing information. |
@@ -282,7 +282,7 @@ A structure for cross-correlations of ambient noise data.
 | :cc_step    | Spacing between windows in number of points. |
 | :whitened   | Whitening applied.
 | :time_norm  | Apply one-bit whitening with "one_bit". |
-| :resp       | SeisIO InstrumentResponse object |
+| :resp       | SeisBase InstrumentResponse object |
 | :misc       | Dictionary for non-critical information. |
 | :notes      | Timestamped notes; includes automatically-logged acquisition and |
 |             | processing information. |

@@ -1,4 +1,4 @@
-import SeisIO: sync
+import SeisBase: sync
 export start_end, slide, nearest_start_end, slide_ind, sync
 const μs = 1.0e-6
 const sμ = 1000000.0
@@ -9,7 +9,7 @@ const sμ = 1000000.0
 Return start and endtimes of SeisChannel in DateTime format.
 """
 function start_end(C::SeisChannel)
-    return u2d.(SeisIO.t_win(C.t,C.fs) * 1e-6)
+    return u2d.(SeisBase.t_win(C.t,C.fs) * 1e-6)
 end
 
 """
@@ -101,7 +101,7 @@ slide(C::SeisChannel, cc_len::Real, cc_step::Real) = slide(C.x,cc_len,cc_step,C.
 Return best possible start, end times for data in `C` given the `cc_step` and `cc_len`.
 """
 function nearest_start_end(C::SeisChannel, cc_len::Float64, cc_step::Float64)
-    su,eu = SeisIO.t_win(C.t,C.fs) * μs
+    su,eu = SeisBase.t_win(C.t,C.fs) * μs
     su = round(su,digits=4) # round due to numerical roundoff error
     eu = round(eu,digits=4) # round due to numerical roundoff error
     ideal_start = d2u(DateTime(Date(u2d(su)))) # midnight of same day

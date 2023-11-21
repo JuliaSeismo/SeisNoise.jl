@@ -1,4 +1,4 @@
-import SeisIO: demean, demean!, taper, taper!,detrend, detrend!
+import SeisBase: demean, demean!, taper, taper!,detrend, detrend!
 export detrend, detrend!, taper, taper!, demean, demean!, hanningwindow
 # Signal processing functions for arrays (rather than SeisData or SeisChannel)
 

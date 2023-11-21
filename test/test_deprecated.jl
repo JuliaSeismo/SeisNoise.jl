@@ -45,7 +45,7 @@ end
 @testset "compute cc" begin
     cc_len = 40.96 # length of noise window
     cc_step = 40.96 # step between windows
-    Ch = SeisIO.RandSeis.randSeisChannel(c=false,s=true)
+    Ch = SeisBase.RandSeis.randSeisChannel(c=false,s=true)
     ungap!(Ch)
     Ch.x = rand(T,Int(cc_len*Nwin*fs +1)) .- T(0.5)
     Ch.fs = fs

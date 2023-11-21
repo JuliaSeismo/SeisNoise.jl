@@ -1,11 +1,10 @@
-using Dates 
+using Dates
 using FFTW
 using Glob
-using SeisIO
+using SeisBase
 using SeisNoise
 using Statistics
 using Test
-import StatsBase: sample
 
 include("test_NoiseData.jl")
 include("test_show.jl")
