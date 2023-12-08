@@ -46,6 +46,18 @@ clean_up(R::RawData,freqmin::Real,freqmax::Real; corners::Int=4,
        clean_up!(U,freqmin,freqmax,corners=corners,zerophase=zerophase,
        max_length=max_length);return U)
 
+clean_up!(NC::NodalCorrData,freqmin::Real,freqmax::Real; corners::Int=4,
+         zerophase::Bool=true,max_length::Real=20.) = (clean_up!(NC.corr,
+         freqmin,freqmax,NC.fs[1],corners=corners,zerophase=zerophase,
+         max_length=max_length);NC.freqmin=Float64(freqmin);
+         NC.freqmax=Float64(freqmax);return nothing)
+
+clean_up(NC::NodalCorrData,freqmin::Real,freqmax::Real; corners::Int=4,
+         zerophase::Bool=true,max_length::Real=20.) = (U = deepcopy(NC);
+         clean_up!(NC.corr,freqmin,freqmax,NC.fs[1],corners=corners,zerophase=zerophase,
+         max_length=max_length);return U)
+
+
 """
     correlate(FFT1, FFT2, N, maxlag, corr_type='cross-correlation')
 
@@ -117,7 +129,7 @@ Cross-correlation can be done using one of two options:
 - CC: Cross-correlation, i.e. ``C_{AB}(ω) = u_A(ω) u^∗_B(ω)``
 - PCC: Phase cross-correlation, see [Ventosa et al., 2019]
 
-When using `PCC`, use the `phase` function to create `FFTData`. 
+When using `PCC`, use the `phase` function to create `FFTData`.
 
 # Arguments
 - `FFT1::FFTData`: FFTData object of fft'd ambient noise data.
@@ -280,6 +292,18 @@ function whiten!(N::NodalData,freqmin::Real, freqmax::Real; pad::Int=50)
 end
 whiten(N::NodalData,freqmin::Real, freqmax::Real; pad::Int=50) =
     (U = deepcopy(N); whiten!(U,freqmin,freqmax,pad=pad);return U)
+
+function whiten!(NF::NodalFFTData,freqmin::Real, freqmax::Real, pad::Int=50)
+    @assert freqmin > 0 "Whitening frequency must be greater than zero."
+    @assert freqmax <= N.fs[1] / 2 "Whitening frequency must be less than or equal to Nyquist frequency."
+    num_wins = size(NF.fft,3)
+    for i = 1:num_wins
+        NF.fft[:,:,i] .= whiten(NF.fft[:,:,i],freqmin,freqmax,NF.fs[1],NF.ns,pad=pad)
+    end
+    return nothing
+end
+whiten(NF::NodalFFTData,freqmin::Real, freqmax::Real; pad::Int=50) =
+    (U = deepcopy(NF); whiten!(U,freqmin,freqmax,pad=pad);return U)
 
 """
 

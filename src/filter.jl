@@ -456,6 +456,31 @@ function resample!(C::CorrData,fs::Real)
 end
 resample(C::CorrData,fs::Real) = (U = deepcopy(C); resample!(U,fs); return U)
 
+"""
+    resample!(N, fs)
+
+Resample data in NodalData` N to new sampling rate `fs`.
+
+# Arguments
+- `N::NodalData`: NodalData to resample.
+- `fs::Real`: New sampling frequency.
+"""
+
+# function to resample NodalData
+function resample!(N::NodalData,fs::Real)
+    @assert fs > 0 "New fs must be greater than 0!"
+    if N.fs[1] == fs
+        return nothing
+    end
+    T = eltype(N.data)
+    rate = T(fs / N.fs[1])
+    N.data = SeisNoise.resample_kernel(N.data, rate)
+    N.fs = ones(N.n)*Float64(fs)
+    return nothing
+end
+resample(N::NodalData,fs::Real) = (U = deepcopy(N); resample!(U,fs); return U)
+
+
 function resample_kernel(x::AbstractMatrix,rate::Real)
     T = eltype(x)
     h = resample_filter(rate)

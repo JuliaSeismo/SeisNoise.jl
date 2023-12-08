@@ -148,3 +148,26 @@ function sync(N::NoiseData,starttime::TimeType,endtime::TimeType)
     end
     return N[ind]
 end
+
+"""
+  slice(N,win_len)
+
+Return data in `N` sliced into equal windows of length win_len
+
+# Arguments
+- `N::NodalData`: NodalData.
+- `win_len::Int64: window size in seconds
+"""
+function slice(N::NodalData,win_len::Int64)
+    len = size(N.data)[1]
+    win_len = Int64(win_len * N.fs[1])
+    num_wins = len/win_len
+    if isinteger(num_wins)
+        sliced_data = reshape(N.data,(win_len,Int64(num_wins),N.n))
+        sliced_data = permutedims(sliced_data,(1,3,2))
+        return sliced_data
+    else
+        print("Window size must be a factor of the total data length!\n")
+        return nothing
+    end
+end
