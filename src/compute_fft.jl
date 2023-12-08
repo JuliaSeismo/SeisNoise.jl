@@ -65,7 +65,6 @@ process_raw(C::SeisChannel, fs::Real;
         process_raw!(U,fs, ϕshift=ϕshift); return U)
 
 """
-
  rfft(R)
 
 Computes windowed rfft of ambient noise data. Returns FFTData structure.
@@ -83,6 +82,155 @@ function rfft(R::RawData,dims::Int=1)
 end
 
 """
+ rfft(N)
+
+Computes windowed rfft of NodalData. Returns NodalFFTData structure.
+
+# Arguments
+- `N::NodalData`: NodalData structure
+- `dims::Vector{Int64}`: vector containing the dimensions to transform along
+"""
+function rfft(N::NodalData,dims::Vector{Int64}=[1])
+    FFT = rfft(N.data,dims)
+    ns = size(N.data)[1]
+    return NodalFFTData(N.n,ns,N.ox,N.oy,N.oz,N.info,N.id,N.name,N.loc,
+                        N.fs,N.gain,0.,0.,0,"N/A",N.resp,N.units,N.src,
+                        N.misc,N.notes,false,dims,N.t,FFT)
+end
+
+"""
+ fft(N)
+
+Computes fft of NodalData. Returns NodalFFTData structure.
+
+# Arguments
+- `N::NodalData`: NodalData structure
+- `dims::Vector{Int64}`: vector containing the dimensions to transform along
+"""
+function fft(N::NodalData,dims::Vector{Int64}=[1])
+    FFT = fft(N.data,dims)
+    ns = size(N.data)[1]
+    return NodalFFTData(N.n,ns,N.ox,N.oy,N.oz,N.info,N.id,N.name,N.loc,
+                        N.fs,N.gain,0.,0.,0,"N/A",N.resp,N.units,N.src,
+                        N.misc,N.notes,false,dims,N.t,FFT)
+end
+
+"""
+ rfft(N)
+
+Computes windowed rfft of NodalProcessedData. Returns NodalFFTData structure.
+
+# Arguments
+- `NP::NodalProcessedData`: NodalProcessedData structure
+- `dims::Vector{Int64}`: vector containing the dimensions to transform along
+"""
+function rfft(NP::NodalProcessedData,dims::Vector{Int64}=[1])
+    FFT = rfft(NP.data,dims)
+    ns = size(NP.data)[1]
+    return NodalFFTData(NP.n,ns,NP.ox,NP.oy,NP.oz,NP.info,NP.id,NP.name,
+                        NP.loc,NP.fs,NP.gain,NP.freqmin,NP.freqmax,NP.cc_len,
+                        NP.time_norm,NP.resp,NP.units,NP.src,NP.misc,NP.notes,
+                        true,dims,NP.t,FFT)
+end
+
+"""
+ irfft(NF)
+
+Computes irfft of NodalFFTData. Returns either NodalData, NodalProcessedData,
+or NodalFFTData structure depending on whether all transforms are inverted and
+whether preprocessing has been carried out.
+
+# Arguments
+- `NF::NodalFFTData`: NodalFFTData structure
+- `dims::Vector{Int64}`: vector containing the dimensions to transform along
+"""
+# ifft for NodalFFTData
+function irfft(NF::NodalFFTData,dims::Vector{Int64}=[1])
+
+    # if inverting all dimensions that have been transformed, return NodalProcessedData or NodalData
+    if dims == NF.dims
+        if dims == [1]
+            data = irfft(NF.fft,NF.ns,dims)
+        elseif dims == [2]
+            data = irfft(NF.fft,NF.n,dims)
+        elseif dims == [1,2]
+            data = irfft(NF.fft,NF.ns,dims)
+        end
+
+        # check out if input was preprocessed or not, which will determined what
+        # object is returned
+        if NF.preprocessed
+            return NodalProcessedData(NF.n,size(data)[1],NF.ox,NF.oy,NF.oz,NF.info,NF.id,NF.name,
+                    NF.loc,NF.fs,NF.gain,NF.freqmin,NF.freqmax,NF.cc_len,NF.time_norm,
+                    NF.resp,NF.units,NF.src,NF.misc,NF.notes,NF.t,data)
+        else
+            return NodalData(NF.n,NF.ox,NF.oy,NF.oz,NF.info,NF.id,NF.name,
+                    NF.loc,NF.fs,NF.gain,NF.resp,NF.units,NF.src,NF.misc,NF.notes,NF.t,data)
+        end
+
+    # if inverting space transform but not time
+    elseif dims == [2] && NF.dims == [1,2]
+        FFT = ifft(NF.fft,dims)
+        return NodalFFTData(NF.n,NF.ns,NF.ox,NF.oy,NF.oz,NF.info,NF.id,NF.name,
+                        NF.loc,NF.fs,NF.gain,NF.freqmin,NF.freqmax,NF.cc_len,
+                        NF.time_norm,NF.resp,NF.units,NF.src,NF.misc,NF.notes,
+                        NF.preprocessed,[1],NF.t,FFT)
+    # if attempting to invert time transform but not space
+    elseif dims == [1] && NF.dims == [1,2]
+        print("Cannot invert along first dimension before second dimension due to RFFT algorithm design.\n")
+        return nothing
+
+    # if inverting a non-transformed dimension
+    elseif (dims == [1] && NF.dims == [2]) || (dims == [2] && NF.dims == [1]) || (dims == [1,2] && NF.dims == [1]) || (dims == [1,2] && NF.dims == [2])
+        print("Cannot invert along a non-transformed dimension.\n")
+        return nothing
+    end
+end
+"""
+ ifft(NF)
+
+Computes ifft of NodalFFTData. Returns either NodalData, NodalProcessedData,
+or NodalFFTData structure depending on whether all transforms are inverted and
+whether preprocessing has been carried out.
+
+# Arguments
+- `NF::NodalFFTData`: NodalFFTData structure
+- `dims::Vector{Int64}`: vector containing the dimensions to transform along
+"""
+function ifft(NF::NodalFFTData,dims::Vector{Int64}=[1])
+
+    # if inverting all dimensions that have been transformed, return NodalProcessedData or NodalData
+    if dims == NF.dims
+        data = ifft(NF.fft,dims)
+        data = real(data)
+
+        # check out if input was preprocessed or not, which will determined what
+        # object is returned
+        if NF.preprocessed
+            return NodalProcessedData(NF.n,size(data)[1],NF.ox,NF.oy,NF.oz,NF.info,NF.id,NF.name,
+                    NF.loc,NF.fs,NF.gain,NF.freqmin,NF.freqmax,NF.cc_len,NF.time_norm,
+                    NF.resp,NF.units,NF.src,NF.misc,NF.notes,NF.t,data)
+        else
+            return NodalData(NF.n,NF.ox,NF.oy,NF.oz,NF.info,NF.id,NF.name,
+                    NF.loc,NF.fs,NF.gain,NF.resp,NF.units,NF.src,NF.misc,NF.notes,NF.t,data)
+        end
+
+    # if inverting one transform but not the other
+    elseif (dims == [2] && NF.dims == [1,2]) || (dims == [1] && NF.dims == [1,2])
+        FFT = ifft(NF.fft,dims)
+        return NodalFFTData(NF.n,NF.ns,NF.ox,NF.oy,NF.oz,NF.info,NF.id,NF.name,
+                        NF.loc,NF.fs,NF.gain,NF.freqmin,NF.freqmax,NF.cc_len,
+                        NF.time_norm,NF.resp,NF.units,NF.src,NF.misc,NF.notes,
+                        NF.preprocessed,[1],NF.t,FFT)
+
+    # if inverting a non-transformed dimension
+    elseif (dims == [1] && NF.dims == [2]) || (dims == [2] && NF.dims == [1]) || (dims == [1,2] && NF.dims == [1]) || (dims == [1,2] && NF.dims == [2])
+        print("Cannot invert along a non-transformed dimension.\n")
+        return nothing
+    end
+end
+
+"""
     phase(A::AbstractArray)
 
 Extract instantaneous phase from signal A.
@@ -94,13 +242,13 @@ For more information on Phase Cross-Correlation, see:
 [Ventosa et al., 2019](https://pubs.geoscienceworld.org/ssa/srl/article-standard/570273/towards-the-processing-of-large-data-volumes-with).
 """
 function phase(A::AbstractArray)
-    # the analytic signal 
+    # the analytic signal
     s =  analytic(A)
     return s ./ abs.(s)
 end
 
 function analytic(A::AbstractArray)
-    # the analytic signal 
+    # the analytic signal
     T = real(eltype(A))
     return hilberttransform(A) .* Complex(T(0),T(1)) .+ A
 end

@@ -60,6 +60,8 @@ end
 abs_max(A::AbstractArray) = (U = deepcopy(A);abs_max!(U);return U)
 abs_max!(C::CorrData) = abs_max!(C.corr)
 abs_max(C::CorrData) = (U = deepcopy(C);abs_max!(U);return U)
+abs_max!(NC::NodalCorrData) = abs_max!(NC.corr)
+abs_max(NC::NodalCorrData) = (U = deepcopy(NC);abs_max!(U);return U)
 
 """
     standardize!(A)
