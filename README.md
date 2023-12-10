@@ -11,7 +11,7 @@ From the Julia command prompt:
 
 ```julia
 julia>]
-(@v1.6) pkg> add SeisNoise
+(@v1.9) pkg> add SeisNoise
 ```
 
 Or, equivalently, via the `Pkg` API:
@@ -23,7 +23,7 @@ julia> import Pkg; Pkg.add("SeisNoise")
 We recommend using the latest version of SeisNoise by updating with the Julia package manager:
 
 ```julia
-(@v1.6) pkg> update SeisNoise
+(@v1.9) pkg> update SeisNoise
 ```
 
 ## Package Features
