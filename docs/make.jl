@@ -22,7 +22,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/tclements/SeisNoise.jl.git",
+    repo = "github.com/JuliaSeismo/SeisNoise.jl.git",
     target = "build",
     deps   = nothing,
     make   = nothing,

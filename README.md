@@ -30,7 +30,7 @@ We recommend using the latest version of SeisNoise by updating with the Julia pa
 
 ![flow](/docs/src/assets/SeisNoise-DataFlow.jpg)
 
-  - Built upon [SeisIO](https://seisio.readthedocs.io/en/latest/) for easy and fast I/O.
+  - Built upon [SeisBase](https://juliaseismo.github.io/SeisBase.jl/dev/) for easy and fast I/O.
   - Custom structures for storing Raw Data, Fourier Transforms of data, and cross-correlations
   - CPU/GPU compatible functions for cross-correlation.
   - Methods for [*dv/v* measurements](https://github.com/tclements/SeisDvv.jl).
@@ -144,4 +144,4 @@ If you use SeisNoise in your work, please star the package and cite our work [DO
 ```
 
 ## Contributing
-We welcome folks interested in contributing to SeisNoise. Please [open an issue](https://github.com/tclements/SeisNoise.jl/issues/new) to let us know about bug reports, new methods/code, and or feature requests/usage cases. If you would like to submit a pull request (PR), please include accompanying [tests](https://github.com/tclements/SeisNoise.jl/tree/master/test).
+We welcome folks interested in contributing to SeisNoise. Please [open an issue](https://github.com/JuliaSeismo/SeisNoise.jl/issues/new) to let us know about bug reports, new methods/code, and or feature requests/usage cases. If you would like to submit a pull request (PR), please include accompanying [tests](https://github.com/JuliaSeismo/SeisNoise.jl/tree/master/test).

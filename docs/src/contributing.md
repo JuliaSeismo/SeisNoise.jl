@@ -41,7 +41,7 @@ is anything you need to know beforehand.
 The easiest way to get involved is to report issues you encounter when using
 SeisNoise or by requesting something you think is missing.
 
-* Head over to the [issues](https://github.com/tclements/SeisNoise.jl/issues) page.
+* Head over to the [issues](https://github.com/JuliaSeismo/SeisNoise.jl/issues) page.
 * Search to see if your issue already exists or has even been solved previously.
 * If you indeed have a new issue or request, click the "New Issue" button.
 * Please be as specific as possible. Include the version of the code you were using, as
@@ -55,7 +55,7 @@ SeisNoise or by requesting something you think is missing.
 * Install git on your system if it is not already there (install XCode command line tools on
   a Mac or git bash on Windows).
 * Login to your GitHub account and make a fork of the
-  [SeisNoise repository](https://github.com/tclements/SeisNoise.jl) by
+  [SeisNoise repository](https://github.com/JuliaSeismo/SeisNoise.jl) by
   clicking the "Fork" button.
 * Clone your fork of the SeisNoise repository (in terminal on Mac/Linux or git shell/
   GUI on Windows) in the location you'd like to keep it.
@@ -65,7 +65,7 @@ SeisNoise or by requesting something you think is missing.
 * Navigate to that folder in the terminal or in Anaconda Prompt if you're on Windows.
 * Connect your repository to the upstream (main project).
   ```
-  git remote add SeisNoise https://github.com/tclements/SeisNoise.jl.git
+  git remote add SeisNoise https://github.com/JuliaSeismo/SeisNoise.jl.git
   ```
 * Create the development environment by opening Julia via `julia --project` then
   typing in `] instantiate`. This will install all the dependencies in the Project.toml
@@ -84,7 +84,7 @@ written a [guide](https://chris.beams.io/posts/git-commit/) on how to write
 good commit messages.
 
 When you think your changes are ready to be merged into the main repository,
-push to your fork and [submit a pull request](https://github.com/tclements/SeisNoise.jl/compare/).
+push to your fork and [submit a pull request](https://github.com/JuliaSeismo/SeisNoise.jl/compare/).
 
 **Working on your first Pull Request?** You can learn how from this _free_ video series
 [How to Contribute to an Open Source Project on GitHub](https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github), Aaron Meurer's [tutorial on the git workflow](https://www.asmeurer.com/git-workflow/), or the guide [“How to Contribute to Open Source"](https://opensource.guide/how-to-contribute/).

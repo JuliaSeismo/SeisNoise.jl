@@ -6,7 +6,7 @@ are possible.
 
 !!! tip "Running on GPUs"
     If you are having issues with running SeisNoise on a GPU or setting things up,
-    please [open an issue](https://github.com/tclements/SeisNoise.jl/issues/new)
+    please [open an issue](https://github.com/JuliaSeismo/SeisNoise.jl/issues/new)
     and we'll do our best to help out!
 
 ## When to use a GPU
